@@ -15,35 +15,36 @@ import (
 	"github.com/Xa4y322/go_final_project/models"
 )
 
-const DATE_FORMAT string = "20060102"
+const DateFormat string = "20060102"
 
 func nextDate(now time.Time, date string, repeat string) (string, error) {
 	if repeat == "" {
 		return "", errors.New("repeate is empty")
 
-	} else if strings.Contains(repeat, "d ") {
-		days_to_add, err := strconv.Atoi(strings.TrimPrefix(repeat, "d "))
+	}
+	if strings.Contains(repeat, "d ") {
+		DaysToAdd, err := strconv.Atoi(strings.TrimPrefix(repeat, "d "))
 		if err != nil {
 			return "", err
 		}
-		if days_to_add > 400 {
+		if DaysToAdd > 400 {
 			return "", errors.New("repeat period in days max 400")
 		}
 
-		beginDate, err := time.Parse(DATE_FORMAT, date)
+		beginDate, err := time.Parse(DateFormat, date)
 		if err != nil {
 			return "", err
 		}
 
-		newDate := beginDate.AddDate(0, 0, days_to_add)
+		newDate := beginDate.AddDate(0, 0, DaysToAdd)
 		for newDate.Before(now) {
-			newDate = newDate.AddDate(0, 0, days_to_add)
+			newDate = newDate.AddDate(0, 0, DaysToAdd)
 		}
 
-		return newDate.Format(DATE_FORMAT), nil
+		return newDate.Format(DateFormat), nil
 
 	} else if repeat == "y" {
-		beginDate, err := time.Parse(DATE_FORMAT, date)
+		beginDate, err := time.Parse(DateFormat, date)
 		if err != nil {
 			return "", err
 		}
@@ -54,22 +55,22 @@ func nextDate(now time.Time, date string, repeat string) (string, error) {
 			newDate = newDate.AddDate(1, 0, 0)
 		}
 
-		return newDate.Format(DATE_FORMAT), nil
+		return newDate.Format(DateFormat), nil
 	} else {
 		return "", errors.New("repeat string has wrong format")
 	}
 }
 
 func NextDateGET(w http.ResponseWriter, r *http.Request) {
-	p_now, err := time.Parse(DATE_FORMAT, r.FormValue("now"))
+	Pnow, err := time.Parse(DateFormat, r.FormValue("now"))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	p_date := r.FormValue("date")
-	p_repeat := r.FormValue("repeat")
-	newDate, err := nextDate(p_now, p_date, p_repeat)
+	Pdate := r.FormValue("date")
+	Prepeat := r.FormValue("repeat")
+	newDate, err := nextDate(Pnow, Pdate, Prepeat)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -80,12 +81,12 @@ func NextDateGET(w http.ResponseWriter, r *http.Request) {
 	_, err = w.Write([]byte(newDate))
 
 	if err != nil {
-		http.Error(w, fmt.Errorf("nextDateGET error: %w", err).Error(), http.StatusBadRequest)
+		http.Error(w, fmt.Sprintf("nextDateGET error: %v", err), http.StatusBadRequest)
 	}
 }
 
 func responseWithError(w http.ResponseWriter, err error) {
-	log.Printf("Error: %W", err)
+	log.Printf("Error: Внутрення ошибка сервера")
 
 	error, _ := json.Marshal(models.ResponseError{Error: err.Error()})
 
@@ -100,6 +101,8 @@ func responseWithError(w http.ResponseWriter, err error) {
 func TaskPost(w http.ResponseWriter, r *http.Request) {
 	var task models.Task
 	var buf bytes.Buffer
+
+	w.WriteHeader(http.StatusInternalServerError)
 
 	if _, err := buf.ReadFrom(r.Body); err != nil {
 		responseWithError(w, err)
@@ -118,9 +121,9 @@ func TaskPost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(task.Date) == 0 {
-		task.Date = time.Now().Format(DATE_FORMAT)
+		task.Date = time.Now().Format(DateFormat)
 	} else {
-		_, err := time.Parse(DATE_FORMAT, task.Date)
+		_, err := time.Parse(DateFormat, task.Date)
 		if err != nil {
 			responseWithError(w, errors.New("bad date"))
 			return
@@ -130,18 +133,18 @@ func TaskPost(w http.ResponseWriter, r *http.Request) {
 			if nextDate, err := nextDate(time.Now(), task.Date, task.Repeat); err != nil {
 				responseWithError(w, err)
 				return
-			} else if task.Date < time.Now().Format(DATE_FORMAT) {
+			} else if task.Date < time.Now().Format(DateFormat) {
 				task.Date = nextDate
 			}
 		}
 
-		if task.Date < time.Now().Format(DATE_FORMAT) {
-			task.Date = time.Now().Format(DATE_FORMAT)
+		if task.Date < time.Now().Format(DateFormat) {
+			task.Date = time.Now().Format(DateFormat)
 		}
 	}
 
 	if result := database.Db.Create(&task); result.Error != nil {
-		responseWithError(w, result.Error)
+		log.Fatalf("Err: %s", result.Error)
 		return
 	}
 
@@ -200,17 +203,18 @@ func TaskReadByID(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	//w.WriteHeader(http.StatusOK)
 	_, err = w.Write(tasksData)
-	log.Println(fmt.Sprintf("Read task. Id = %d", task.ID))
 
 	if err != nil {
 		responseWithError(w, err)
 	}
+	log.Println(fmt.Sprintf("Read task. Id = %d", task.ID))
 }
 
 func TaskUpdate(w http.ResponseWriter, r *http.Request) {
 	var task models.Task
 	var buf bytes.Buffer
 
+	w.WriteHeader(http.StatusInternalServerError)
 	if _, err := buf.ReadFrom(r.Body); err != nil {
 		responseWithError(w, err)
 		return
@@ -222,7 +226,7 @@ func TaskUpdate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if _, err := database.ReadTaskByID(task.ID); err != nil {
-		responseWithError(w, err)
+		log.Fatalf("Err: %s", err)
 		return
 	}
 
@@ -233,9 +237,9 @@ func TaskUpdate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(task.Date) == 0 {
-		task.Date = time.Now().Format(DATE_FORMAT)
+		task.Date = time.Now().Format(DateFormat)
 	} else {
-		_, err := time.Parse(DATE_FORMAT, task.Date)
+		_, err := time.Parse(DateFormat, task.Date)
 		if err != nil {
 			responseWithError(w, errors.New("bad date"))
 			return
@@ -245,13 +249,13 @@ func TaskUpdate(w http.ResponseWriter, r *http.Request) {
 			if nextDate, err := nextDate(time.Now(), task.Date, task.Repeat); err != nil {
 				responseWithError(w, err)
 				return
-			} else if task.Date < time.Now().Format(DATE_FORMAT) {
+			} else if task.Date < time.Now().Format(DateFormat) {
 				task.Date = nextDate
 			}
 		}
 
-		if task.Date < time.Now().Format(DATE_FORMAT) {
-			task.Date = time.Now().Format(DATE_FORMAT)
+		if task.Date < time.Now().Format(DateFormat) {
+			task.Date = time.Now().Format(DateFormat)
 		}
 	}
 

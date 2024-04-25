@@ -14,11 +14,11 @@ import (
 )
 
 func getPort() string {
-	const default_port = "7540"
+	const defaultPort = "7540"
 	if val, exists := os.LookupEnv("TODO_PORT"); exists {
 		return ":" + val
 	}
-	return ":" + default_port
+	return ":" + defaultPort
 }
 
 func main() {
