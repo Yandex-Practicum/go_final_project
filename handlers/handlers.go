@@ -23,11 +23,11 @@ func nextDate(now time.Time, date string, repeat string) (string, error) {
 
 	}
 	if strings.Contains(repeat, "d ") {
-		DaysToAdd, err := strconv.Atoi(strings.TrimPrefix(repeat, "d "))
+		daysToAdd, err := strconv.Atoi(strings.TrimPrefix(repeat, "d "))
 		if err != nil {
 			return "", err
 		}
-		if DaysToAdd > 400 {
+		if daysToAdd > 400 {
 			return "", errors.New("repeat period in days max 400")
 		}
 
@@ -36,9 +36,9 @@ func nextDate(now time.Time, date string, repeat string) (string, error) {
 			return "", err
 		}
 
-		newDate := beginDate.AddDate(0, 0, DaysToAdd)
+		newDate := beginDate.AddDate(0, 0, daysToAdd)
 		for newDate.Before(now) {
-			newDate = newDate.AddDate(0, 0, DaysToAdd)
+			newDate = newDate.AddDate(0, 0, daysToAdd)
 		}
 
 		return newDate.Format(DateFormat), nil
@@ -62,15 +62,15 @@ func nextDate(now time.Time, date string, repeat string) (string, error) {
 }
 
 func NextDateGET(w http.ResponseWriter, r *http.Request) {
-	Pnow, err := time.Parse(DateFormat, r.FormValue("now"))
+	pNow, err := time.Parse(DateFormat, r.FormValue("now"))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	Pdate := r.FormValue("date")
-	Prepeat := r.FormValue("repeat")
-	newDate, err := nextDate(Pnow, Pdate, Prepeat)
+	pDate := r.FormValue("date")
+	prepeat := r.FormValue("repeat")
+	newDate, err := nextDate(pNow, pDate, prepeat)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -86,7 +86,7 @@ func NextDateGET(w http.ResponseWriter, r *http.Request) {
 }
 
 func responseWithError(w http.ResponseWriter, err error) {
-	log.Printf("Error: Внутрення ошибка сервера")
+	log.Printf("Error: %w", err)
 
 	error, _ := json.Marshal(models.ResponseError{Error: err.Error()})
 
@@ -101,8 +101,6 @@ func responseWithError(w http.ResponseWriter, err error) {
 func TaskPost(w http.ResponseWriter, r *http.Request) {
 	var task models.Task
 	var buf bytes.Buffer
-
-	w.WriteHeader(http.StatusInternalServerError)
 
 	if _, err := buf.ReadFrom(r.Body); err != nil {
 		responseWithError(w, err)
@@ -145,6 +143,7 @@ func TaskPost(w http.ResponseWriter, r *http.Request) {
 
 	if result := database.Db.Create(&task); result.Error != nil {
 		log.Fatalf("Err: %s", result.Error)
+		http.Error(w, "Internal error", http.StatusInternalServerError)
 		return
 	}
 
@@ -206,7 +205,9 @@ func TaskReadByID(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		responseWithError(w, err)
+		return
 	}
+
 	log.Println(fmt.Sprintf("Read task. Id = %d", task.ID))
 }
 
@@ -214,7 +215,6 @@ func TaskUpdate(w http.ResponseWriter, r *http.Request) {
 	var task models.Task
 	var buf bytes.Buffer
 
-	w.WriteHeader(http.StatusInternalServerError)
 	if _, err := buf.ReadFrom(r.Body); err != nil {
 		responseWithError(w, err)
 		return
@@ -227,6 +227,7 @@ func TaskUpdate(w http.ResponseWriter, r *http.Request) {
 
 	if _, err := database.ReadTaskByID(task.ID); err != nil {
 		log.Fatalf("Err: %s", err)
+		http.Error(w, "Internal error", http.StatusInternalServerError)
 		return
 	}
 
