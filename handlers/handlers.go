@@ -43,7 +43,8 @@ func nextDate(now time.Time, date string, repeat string) (string, error) {
 
 		return newDate.Format(DateFormat), nil
 
-	} else if repeat == "y" {
+	}
+	if repeat == "y" {
 		beginDate, err := time.Parse(DateFormat, date)
 		if err != nil {
 			return "", err
@@ -69,8 +70,8 @@ func NextDateGET(w http.ResponseWriter, r *http.Request) {
 	}
 
 	pDate := r.FormValue("date")
-	prepeat := r.FormValue("repeat")
-	newDate, err := nextDate(pNow, pDate, prepeat)
+	pRepeat := r.FormValue("repeat")
+	newDate, err := nextDate(pNow, pDate, pRepeat)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
