@@ -161,4 +161,5 @@ func TestAddTask(t *testing.T) {
 		{"today", "Фитнес", "", "d 1"},
 		{"today", "Шмитнес", "", ""},
 	}
+	check()
 }
