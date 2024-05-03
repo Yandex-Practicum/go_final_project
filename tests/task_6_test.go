@@ -71,7 +71,7 @@ func TestEditTask(t *testing.T) {
 	tbl := []fulltask{
 		{"", task{"20240129", "Тест", "", ""}},
 		{"abc", task{"20240129", "Тест", "", ""}},
-		{"a7645346343", task{"20240129", "Тест", "", ""}},
+		{"7645346343", task{"20240129", "Тест", "", ""}},
 		{id, task{"20240129", "", "", ""}},
 		{id, task{"20240192", "Qwerty", "", ""}},
 		{id, task{"28.01.2024", "Заголовок", "", ""}},
@@ -117,7 +117,7 @@ func TestEditTask(t *testing.T) {
 		assert.Equal(t, newVals["comment"], task.Comment)
 		assert.Equal(t, newVals["repeat"], task.Repeat)
 		now := time.Now().Format(`20060102`)
-		if task.Date > now {
+		if task.Date < now {
 			t.Errorf("Дата не может быть меньше сегодняшней")
 		}
 	}
