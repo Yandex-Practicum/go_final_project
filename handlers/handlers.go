@@ -56,7 +56,7 @@ func nextDate(now time.Time, date string, repeat string) (string, error) {
 			newDate = newDate.AddDate(1, 0, 0)
 		}
 
-		return newDate.Format(DateFormat), nil
+		return fmt.Sprint(newDate.Format(DateFormat)), nil
 	} else {
 		return "", errors.New("repeat string has wrong format")
 	}
@@ -82,7 +82,7 @@ func NextDateGET(w http.ResponseWriter, r *http.Request) {
 	_, err = w.Write([]byte(newDate))
 
 	if err != nil {
-		http.Error(w, fmt.Sprintf("nextDateGET error: %v", err), http.StatusBadRequest)
+		http.Error(w, fmt.Sprintf("nextDateGET error: %w", err), http.StatusBadRequest)
 	}
 }
 
@@ -177,6 +177,7 @@ func TasksRead(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		responseWithError(w, err)
 	}
+
 }
 
 func TaskReadByID(w http.ResponseWriter, r *http.Request) {
@@ -227,8 +228,7 @@ func TaskUpdate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if _, err := database.ReadTaskByID(task.ID); err != nil {
-		log.Fatalf("Err: %s", err)
-		http.Error(w, "Internal error", http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf(`{"error":"%s"}`, err.Error()), http.StatusInternalServerError)
 		return
 	}
 
