@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"testing"
@@ -21,7 +22,13 @@ func getURL(path string) string {
 			port = int(eport)
 		}
 	}
-	path = strings.ReplaceAll(strings.TrimPrefix(path, `../web/`), `\`, `/`)
+	os := runtime.GOOS
+	switch os {
+	case "linux":
+		path = strings.ReplaceAll(strings.TrimPrefix(path, `../web/`), `\`, `/`)
+	case "windows":
+		path = strings.ReplaceAll(strings.TrimPrefix(path, `..\web\`), `\`, `/`)
+	}
 	return fmt.Sprintf("http://localhost:%d/%s", port, path)
 }
 
