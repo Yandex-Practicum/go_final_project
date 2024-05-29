@@ -47,6 +47,7 @@ func TestTasks(t *testing.T) {
 	assert.NoError(t, err)
 
 	tasks := getTasks(t, "")
+	fmt.Println(tasks)
 	assert.NotNil(t, tasks)
 	assert.Empty(t, tasks)
 

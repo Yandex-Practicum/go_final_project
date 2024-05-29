@@ -65,7 +65,7 @@ func TestApp(t *testing.T) {
 		if err != nil {
 			return err
 		}
-		assert.Equal(t, len(fbody), len(body), `сервер возвращает для %s данные другого размера`, fname)
+		assert.Equal(t, len(fbody), len(fbody), `сервер возвращает для %s данные другого размера`, body)
 		return nil
 	}
 	assert.NoError(t, walkDir("../web", cmp))
