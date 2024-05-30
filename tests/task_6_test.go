@@ -25,7 +25,6 @@ func TestTask(t *testing.T) {
 	}
 
 	todo := addTask(t, task)
-
 	body, err := requestJSON("api/task", nil, http.MethodGet)
 	assert.NoError(t, err)
 	var m map[string]string

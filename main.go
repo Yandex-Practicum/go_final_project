@@ -22,6 +22,22 @@ import (
 
 var DBFile = "./scheduler.db"
 
+type Task struct {
+	ID      string `json:"id,omitempty"`
+	Date    string `json:"date"`
+	Title   string `json:"title"`
+	Comment string `json:"comment,omitempty"`
+	Repeat  string `json:"repeat"`
+}
+
+type Tasks struct {
+	Tasks []Task `json:"tasks"`
+}
+
+var response struct {
+	Error string `json:"error,omitempty"`
+}
+
 // daysInMonth - функция, которая принимает год и месяц в качестве аргументов и возвращает количество дней в этом месяце.
 func daysInMonth(year, month int) int {
 	// Используем switch-case, чтобы определить количество дней в каждом месяце.
@@ -97,7 +113,7 @@ func NextDate(now time.Time, date string, repeat string) (string, error) {
 			return "", err                           //если агрумент для >400
 		}
 		for dateFound == false {
-			if newDate.After(now) && newDate.After(parsedDate) { //если ближайшая дата перевалила за текущий день
+			if (newDate.After(now) && newDate.After(parsedDate)) || now.Format("20060102") == newDate.Format("20060102") { //если ближайшая дата перевалила за текущий день
 				dateFound = true //ну вот тут вопрос как правильнее, так как при return мы все равно выходим из функции, стоит ли поднимать флаг и стоит ли делать break
 				return newDate.Format("20060102"), nil
 			}
@@ -271,19 +287,47 @@ func CreateDB() {
 	}
 }
 
-type Task struct {
-	ID      string `json:"id"`
-	Date    string `json:"date"`
-	Title   string `json:"title"`
-	Comment string `json:"comment,omitempty"`
-	Repeat  string `json:"repeat"`
+func checkInputJSON(res http.ResponseWriter, task *Task) error {
+	var err error
+	res.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	if task.Title == "" {
+		err := errors.New("Title error")
+		response.Error = err.Error()
+		json.NewEncoder(res).Encode(response)
+		return err
+	}
+
+	date := time.Now()
+
+	if task.Date != "" {
+		date, err = time.Parse("20060102", task.Date)
+		if err != nil {
+			err := errors.New("Date error")
+			response.Error = err.Error()
+			json.NewEncoder(res).Encode(response)
+			return err
+		}
+	} else {
+		task.Date = date.Format("20060102")
+	}
+
+	if date.Before(time.Now()) {
+		if task.Repeat == "" {
+			task.Date = time.Now().Format("20060102")
+		} else {
+			task.Date, err = NextDate(time.Now(), task.Date, task.Repeat)
+			if err != nil {
+				err := errors.New("Date error")
+				response.Error = err.Error()
+				json.NewEncoder(res).Encode(response)
+				return err
+			}
+		}
+	}
+	return nil
 }
 
-type Tasks struct {
-	Tasks []Task `json:"tasks"`
-}
-
-func addTask(res http.ResponseWriter, req *http.Request) {
+func taskHandler(res http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodPost:
 		res.Header().Set("Content-Type", "application/json; charset=UTF-8")
@@ -291,55 +335,26 @@ func addTask(res http.ResponseWriter, req *http.Request) {
 		task := &Task{}
 		_, err := buf.ReadFrom(req.Body)
 		if err != nil {
-			http.Error(res, err.Error(), http.StatusBadRequest)
+			err := errors.New("JSON read error")
+			response.Error = err.Error()
+			json.NewEncoder(res).Encode(response)
 			return
 		}
 
 		err = json.Unmarshal(buf.Bytes(), &task)
 		if err != nil {
-			http.Error(res, err.Error(), http.StatusBadRequest)
-			responseError := struct {
-				Error string `json:"error"`
-			}{Error: err.Error()}
-			json.NewEncoder(res).Encode(responseError)
-			return
-		}
-		if task.Title == "" {
-			responseError := struct {
-				Error string `json:"error"`
-			}{Error: "Не указан заголовок задачи"}
-			json.NewEncoder(res).Encode(responseError)
+			err := errors.New("JSON Unmarshalling error")
+			response.Error = err.Error()
+			json.NewEncoder(res).Encode(response)
 			return
 		}
 
-		date := time.Now()
-
-		if task.Date != "" {
-			date, err = time.Parse("20060102", task.Date)
-			if err != nil {
-				responseError := struct {
-					Error string `json:"error"`
-				}{Error: err.Error()}
-				json.NewEncoder(res).Encode(responseError)
-				return
-			}
-		} else {
-			task.Date = date.Format("20060102")
-		}
-
-		if date.Before(time.Now()) {
-			if task.Repeat == "" {
-				task.Date = time.Now().Format("20060102")
-			} else {
-				task.Date, err = NextDate(time.Now(), task.Date, task.Repeat)
-				if err != nil {
-					responseError := struct {
-						Error string `json:"error"`
-					}{Error: err.Error()}
-					json.NewEncoder(res).Encode(responseError)
-					return
-				}
-			}
+		err = checkInputJSON(res, task)
+		if err != nil {
+			err := errors.New("Title error")
+			response.Error = err.Error()
+			json.NewEncoder(res).Encode(response)
+			return
 		}
 
 		db, err := sql.Open("sqlite3", DBFile)
@@ -360,6 +375,191 @@ func addTask(res http.ResponseWriter, req *http.Request) {
 		}{ID: lastId}
 		json.NewEncoder(res).Encode(response)
 
+	case http.MethodGet:
+		id := req.FormValue("id")
+		if id == "" {
+			err := errors.New("Не укаазан ID задачи")
+			response.Error = err.Error()
+			json.NewEncoder(res).Encode(response)
+			return
+		}
+
+		db, err := sql.Open("sqlite3", DBFile)
+		defer db.Close()
+		if err != nil {
+			return
+		}
+
+		query := "SELECT * FROM scheduler WHERE id=?"
+		row, err := db.Query(query, id)
+
+		if err != nil {
+			response.Error = err.Error()
+			json.NewEncoder(res).Encode(response)
+			return
+
+		}
+		task := &Task{}
+		for row.Next() {
+
+			err := row.Scan(&task.ID, &task.Date, &task.Title, &task.Comment, &task.Repeat)
+			if err != nil {
+				response.Error = err.Error()
+				json.NewEncoder(res).Encode(response)
+				return
+			}
+		}
+
+		data, err := json.Marshal(&task)
+		if err != nil {
+			response.Error = err.Error()
+			json.NewEncoder(res).Encode(response)
+			return
+		}
+		res.WriteHeader(http.StatusOK)
+		res.Write(data)
+
+	case http.MethodPut:
+		res.Header().Set("Content-Type", "application/json; charset=UTF-8")
+		var buf bytes.Buffer
+		task := &Task{}
+		_, err := buf.ReadFrom(req.Body)
+		if err != nil {
+			http.Error(res, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		err = json.Unmarshal(buf.Bytes(), &task)
+		if err != nil {
+			http.Error(res, err.Error(), http.StatusBadRequest)
+			responseError := struct {
+				Error string `json:"error"`
+			}{Error: err.Error()}
+			json.NewEncoder(res).Encode(responseError)
+			return
+		}
+
+		err = checkInputJSON(res, task)
+		if err != nil {
+			response.Error = err.Error()
+			json.NewEncoder(res).Encode(response)
+			return
+		}
+
+		db, err := sql.Open("sqlite3", DBFile)
+		defer db.Close()
+		query := "UPDATE scheduler SET date = ?, title = ?, comment = ?, repeat = ? WHERE id = ?"
+		_, err = db.Exec(query,
+			task.Date,
+			task.Title,
+			task.Comment,
+			task.Repeat,
+			task.ID)
+
+		if err != nil {
+			response.Error = err.Error()
+			json.NewEncoder(res).Encode(response)
+			return
+		}
+		json.NewEncoder(res).Encode(response)
+		return
+
+	case http.MethodDelete:
+		id := req.FormValue("id")
+		if id == "" {
+			err := errors.New("Не укаазан ID задачи")
+			response.Error = err.Error()
+			json.NewEncoder(res).Encode(response)
+			return
+		}
+
+		db, err := sql.Open("sqlite3", DBFile)
+		defer db.Close()
+		if err != nil {
+			return
+		}
+
+		query := "DELETE FROM scheduler WHERE id=?"
+		_, err = db.Exec(query, id)
+
+		if err != nil {
+			response.Error = err.Error()
+			json.NewEncoder(res).Encode(response)
+			return
+
+		}
+		json.NewEncoder(res).Encode(response)
+	}
+}
+
+func doneTask(res http.ResponseWriter, req *http.Request) {
+	switch req.Method {
+	case http.MethodPost:
+		id := req.FormValue("id")
+		if id == "" {
+			err := errors.New("Не укаазан ID задачи")
+			response.Error = err.Error()
+			json.NewEncoder(res).Encode(response)
+			return
+		}
+
+		db, err := sql.Open("sqlite3", DBFile)
+		defer db.Close()
+		if err != nil {
+			return
+		}
+
+		query := "SELECT * FROM scheduler WHERE id=?"
+		row, err := db.Query(query, id)
+
+		if err != nil {
+			response.Error = err.Error()
+			json.NewEncoder(res).Encode(response)
+			return
+
+		}
+		task := &Task{}
+		for row.Next() {
+
+			err := row.Scan(&task.ID, &task.Date, &task.Title, &task.Comment, &task.Repeat)
+			if err != nil {
+				response.Error = err.Error()
+				json.NewEncoder(res).Encode(response)
+				return
+			}
+		}
+		if task.Repeat == "" {
+			query := "DELETE FROM scheduler WHERE id=?"
+			_, err := db.Exec(query, id)
+
+			if err != nil {
+				response.Error = err.Error()
+				json.NewEncoder(res).Encode(response)
+				return
+			}
+		} else {
+			newDate, err := NextDate(time.Now(), task.Date, task.Repeat)
+			if err != nil {
+				response.Error = err.Error()
+				json.NewEncoder(res).Encode(response)
+				return
+			}
+			query := "UPDATE scheduler SET date=? WHERE id=?"
+			_, err = db.Exec(query, newDate, id)
+
+			if err != nil {
+				response.Error = err.Error()
+				json.NewEncoder(res).Encode(response)
+				return
+			}
+		}
+		_, err = json.Marshal(response)
+		if err != nil {
+			response.Error = err.Error()
+			json.NewEncoder(res).Encode(response)
+			return
+		}
+		json.NewEncoder(res).Encode(response)
 	}
 }
 
@@ -371,19 +571,15 @@ func getTasks(res http.ResponseWriter, req *http.Request) {
 
 		if err != nil {
 			http.Error(res, err.Error(), http.StatusBadRequest)
-			responseError := struct {
-				Error string `json:"error"`
-			}{Error: err.Error()}
-			json.NewEncoder(res).Encode(responseError)
+			response.Error = err.Error()
+			json.NewEncoder(res).Encode(response)
 			return
 		}
 
 		rows, err := db.Query("SELECT * FROM scheduler ORDER BY date LIMIT ?", 10)
 		if err != nil {
-			responseError := struct {
-				Error string `json:"error"`
-			}{Error: err.Error()}
-			json.NewEncoder(res).Encode(responseError)
+			response.Error = err.Error()
+			json.NewEncoder(res).Encode(response)
 			return
 		}
 		tasks := &Tasks{}
@@ -392,10 +588,8 @@ func getTasks(res http.ResponseWriter, req *http.Request) {
 
 			err := rows.Scan(&task.ID, &task.Date, &task.Title, &task.Comment, &task.Repeat)
 			if err != nil {
-				responseError := struct {
-					Error string `json:"error"`
-				}{Error: err.Error()}
-				json.NewEncoder(res).Encode(responseError)
+				response.Error = err.Error()
+				json.NewEncoder(res).Encode(response)
 				return
 			}
 			tasks.Tasks = append(tasks.Tasks, *task)
@@ -405,10 +599,8 @@ func getTasks(res http.ResponseWriter, req *http.Request) {
 		}
 		data, err := json.Marshal(&tasks)
 		if err != nil {
-			responseError := struct {
-				Error string `json:"error"`
-			}{Error: err.Error()}
-			json.NewEncoder(res).Encode(responseError)
+			response.Error = err.Error()
+			json.NewEncoder(res).Encode(response)
 			return
 		}
 		res.WriteHeader(http.StatusOK)
@@ -416,19 +608,6 @@ func getTasks(res http.ResponseWriter, req *http.Request) {
 	}
 }
 func main() {
-	debug := false
-	if debug {
-		line := []string{"20240125", "ooops", "20240129"}
-
-		now, err := time.Parse("20060102", "20240126")
-		if err != nil {
-			return
-		}
-		date := line[0]
-		repeat := line[1]
-		fmt.Println(NextDate(now, date, repeat))
-		return
-	}
 	var webDir = "./web"
 
 	var port = ":7540"
@@ -456,8 +635,12 @@ func main() {
 	}
 
 	http.Handle("/", http.FileServer(http.Dir(webDir)))
-	http.HandleFunc("/api/task", addTask)
+
+	http.HandleFunc("/api/task", taskHandler)
+	http.HandleFunc("/api/task/done", doneTask)
+
 	http.HandleFunc("/api/tasks", getTasks)
+
 	http.HandleFunc("/api/nextdate", nextDateHandler)
 
 	err = http.ListenAndServe(port, nil)
