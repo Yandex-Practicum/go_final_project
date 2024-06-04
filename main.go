@@ -2,6 +2,8 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
+	"time"
 
 	_ "github.com/mattn/go-sqlite3"
 	_ "modernc.org/sqlite"
@@ -21,48 +23,6 @@ type Tasks struct {
 
 var response struct {
 	Error string `json:"error,omitempty"`
-}
-
-// daysInMonth - функция, которая принимает год и месяц в качестве аргументов и возвращает количество дней в этом месяце.
-func daysInMonth(year, month int) int {
-	// Используем switch-case, чтобы определить количество дней в каждом месяце.
-	switch month {
-	// Месяцы с 31 дня.
-	case 1, 3, 5, 7, 8, 10, 12:
-		return 31
-	// Месяцы с 30 дня.
-	case 4, 6, 9, 11:
-		return 30
-	// Февраль.
-	case 2:
-		// Если год является высокосным, то в феврале 29 дней.
-		if isLeapYear(year) {
-			return 29
-		}
-		// Иначе в феврале 28 дней.
-		return 28
-	// Неверный номер месяца.
-	default:
-		return 0
-	}
-}
-
-// isLeapYear - функция, которая принимает год в качестве аргумента и возвращает true, если год является высокосным, и false, если нет.
-func isLeapYear(year int) bool {
-	// Если год делится на 400 без остатка, то это высокосный год.
-	if year%400 == 0 {
-		return true
-	}
-	// Если год делится на 100 без остатка, то это не высокосный год.
-	if year%100 == 0 {
-		return false
-	}
-	// Если год делится на 4 без остатка, то это высокосный год.
-	if year%4 == 0 {
-		return true
-	}
-	// Иначе это не высокосный год.
-	return false
 }
 
 func CreateDB(DBFile string) {
@@ -92,5 +52,21 @@ func CreateDB(DBFile string) {
 }
 
 func main() {
-	serverStart()
+	if debugNextDate {
+		line := []string{"20240409", "m 31", "20240531"}
+		now, err := time.Parse(dataFormat, "20240126")
+		if err != nil {
+			return
+		}
+		date := line[0]
+		repeat := line[1]
+		repeatDate, err := NextDate(now, date, repeat)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		fmt.Println(repeatDate)
+		return
+	}
+	ServerStart()
 }

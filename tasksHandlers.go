@@ -22,7 +22,7 @@ func checkInputJSON(res http.ResponseWriter, task *Task) error {
 	date := time.Now()
 
 	if task.Date != "" {
-		date, err = time.Parse("20060102", task.Date)
+		date, err = time.Parse(dataFormat, task.Date)
 		if err != nil {
 			err := errors.New("Date error")
 			response.Error = err.Error()
@@ -30,12 +30,12 @@ func checkInputJSON(res http.ResponseWriter, task *Task) error {
 			return err
 		}
 	} else {
-		task.Date = date.Format("20060102")
+		task.Date = date.Format(dataFormat)
 	}
 
 	if date.Before(time.Now()) {
 		if task.Repeat == "" {
-			task.Date = time.Now().Format("20060102")
+			task.Date = time.Now().Format(dataFormat)
 		} else {
 			task.Date, err = NextDate(time.Now(), task.Date, task.Repeat)
 			if err != nil {
@@ -123,13 +123,18 @@ func taskHandler(res http.ResponseWriter, req *http.Request) {
 		}
 		task := &Task{}
 		for row.Next() {
-
 			err := row.Scan(&task.ID, &task.Date, &task.Title, &task.Comment, &task.Repeat)
 			if err != nil {
 				response.Error = err.Error()
 				json.NewEncoder(res).Encode(response)
 				return
 			}
+		}
+		row.Close()
+		if err = row.Err(); err != nil {
+			response.Error = err.Error()
+			json.NewEncoder(res).Encode(response)
+			return
 		}
 
 		data, err := json.Marshal(&task)
@@ -139,7 +144,12 @@ func taskHandler(res http.ResponseWriter, req *http.Request) {
 			return
 		}
 		res.WriteHeader(http.StatusOK)
-		res.Write(data)
+		_, err = res.Write(data)
+		if err != nil {
+			response.Error = err.Error()
+			json.NewEncoder(res).Encode(response)
+			return
+		}
 
 	case http.MethodPut:
 		res.Header().Set("Content-Type", "application/json; charset=UTF-8")
@@ -250,6 +260,7 @@ func doneTask(res http.ResponseWriter, req *http.Request) {
 				return
 			}
 		}
+		row.Close()
 		if task.Repeat == "" {
 			query := "DELETE FROM scheduler WHERE id=?"
 			_, err := db.Exec(query, id)
@@ -298,7 +309,7 @@ func getTasks(res http.ResponseWriter, req *http.Request) {
 			return
 		}
 
-		rows, err := db.Query("SELECT * FROM scheduler ORDER BY date LIMIT ?", 10)
+		rows, err := db.Query("SELECT * FROM scheduler ORDER BY date LIMIT ?", tasksLimit)
 		if err != nil {
 			response.Error = err.Error()
 			json.NewEncoder(res).Encode(response)
@@ -316,6 +327,7 @@ func getTasks(res http.ResponseWriter, req *http.Request) {
 			}
 			tasks.Tasks = append(tasks.Tasks, *task)
 		}
+		rows.Close()
 		if tasks.Tasks == nil {
 			tasks.Tasks = []Task{}
 		}
@@ -326,6 +338,11 @@ func getTasks(res http.ResponseWriter, req *http.Request) {
 			return
 		}
 		res.WriteHeader(http.StatusOK)
-		res.Write(data)
+		_, err = res.Write(data)
+		if err != nil {
+			response.Error = err.Error()
+			json.NewEncoder(res).Encode(response)
+			return
+		}
 	}
 }

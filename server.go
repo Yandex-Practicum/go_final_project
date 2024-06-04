@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 )
 
-func serverStart() {
+func ServerStart() {
 
 	if len(os.Getenv("TODO_PORT")) > 0 {
 		port = os.Getenv("TODO_PORT")

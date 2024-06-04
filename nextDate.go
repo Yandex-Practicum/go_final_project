@@ -17,7 +17,7 @@ func NextDate(now time.Time, date string, repeat string) (string, error) {
 		return "", err                           //пустой repeat
 	}
 
-	parsedDate, err := time.Parse("20060102", date)
+	parsedDate, err := time.Parse(dataFormat, date)
 	if err != nil {
 		return "", err //неверный формат даты
 	}
@@ -43,9 +43,9 @@ func NextDate(now time.Time, date string, repeat string) (string, error) {
 			return "", err                           //если агрумент для >400
 		}
 		for dateFound == false {
-			if (newDate.After(now) && newDate.After(parsedDate)) || now.Format("20060102") == newDate.Format("20060102") { //если ближайшая дата перевалила за текущий день
+			if (newDate.After(now) && newDate.After(parsedDate)) || now.Format(dataFormat) == newDate.Format(dataFormat) { //если ближайшая дата перевалила за текущий день
 				dateFound = true //ну вот тут вопрос как правильнее, так как при return мы все равно выходим из функции, стоит ли поднимать флаг и стоит ли делать break
-				return newDate.Format("20060102"), nil
+				return newDate.Format(dataFormat), nil
 			}
 			newDate = newDate.AddDate(0, 0, repeatPeriod)
 		}
@@ -56,7 +56,7 @@ func NextDate(now time.Time, date string, repeat string) (string, error) {
 			if newDate.After(now) && newDate.After(parsedDate) { //если ближайшая дата перевалила за текущий день
 				dateFound = true
 
-				return newDate.Format("20060102"), nil
+				return newDate.Format(dataFormat), nil
 			}
 			newDate = newDate.AddDate(1, 0, 0) //находим ближайшую новую дату
 		}
@@ -98,7 +98,7 @@ func NextDate(now time.Time, date string, repeat string) (string, error) {
 
 				if newDate.After(now) && newDate.After(parsedDate) { //если ближайшая дата перевалила за текущий день
 					dateFound = true
-					return newDate.Format("20060102"), nil
+					return newDate.Format(dataFormat), nil
 				}
 			}
 			weekAdd += 1
@@ -149,19 +149,20 @@ func NextDate(now time.Time, date string, repeat string) (string, error) {
 		for dateFound == false {
 			for _, month := range monthSlice {
 				for _, day := range daysToRepeatInts {
-					newDate = time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC)
-
-					if day < 0 && day > -3 {
-						newDate = time.Date(year, time.Month(month), day+1, 0, 0, 0, 0, time.UTC)
-					}
 					if day == 0 || day < -2 {
 						err := errors.New("invalid repeat rule") //дефолтная ошибка для вывода при некорректном вводе
 						return "", err
 					}
+					newDate = time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC)
 
+					if day < 0 && day > -3 {
+						newDate = time.Date(year, time.Month(month), day+1, 0, 0, 0, 0, time.UTC)
+					} else if day != newDate.Day() {
+						newDate = time.Date(year, time.Month(month), 0, 0, 0, 0, 0, time.UTC)
+					}
 					if newDate.After(now) && newDate.After(parsedDate) { //если ближайшая дата перевалила за текущий день
 						dateFound = true
-						return newDate.Format("20060102"), err
+						return newDate.Format(dataFormat), err
 					}
 				}
 			}
@@ -183,7 +184,7 @@ func nextDateHandler(res http.ResponseWriter, req *http.Request) {
 
 	res.Header().Set("Content-Type", "application/json; charset=UTF-8")
 
-	nowTime, err := time.Parse("20060102", now)
+	nowTime, err := time.Parse(dataFormat, now)
 	if err != nil {
 		return
 	}
