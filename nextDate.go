@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"sort"
@@ -13,24 +14,25 @@ import (
 func NextDate(now time.Time, date string, repeat string) (string, error) {
 
 	if repeat == "" {
-		err := errors.New("invalid repeat rule") //дефотлтная ошибка для вывода при некорректном вводе
-		return "", err                           //пустой repeat
+		err := errors.New("Not specified repeat rule") //дефотлтная ошибка для вывода при некорректном вводе
+		return "", err                                 //пустой repeat
 	}
 
 	parsedDate, err := time.Parse(dataFormat, date)
 	if err != nil {
 		return "", err //неверный формат даты
 	}
-
 	commands := strings.Split(repeat, " ") //вычленяем команды для повторов
 	ruleType := commands[0]                //берем тип команды
 
 	newDate := parsedDate
 	dateFound := false
+	fmt.Println(repeat)
 	switch ruleType {
 
 	case "d":
 		if len(commands) < 2 {
+			err := errors.New("Invalid repeat rule for d")
 			return "", err
 		}
 		repeatPeriod, err := strconv.Atoi(commands[1]) //находим дни для переноса задачи
@@ -39,9 +41,10 @@ func NextDate(now time.Time, date string, repeat string) (string, error) {
 			return "", err
 		}
 		if repeatPeriod > 400 {
-			err := errors.New("invalid repeat rule") //дефотлтная ошибка для вывода при некорректном вводе
-			return "", err                           //если агрумент для >400
+			err := errors.New("Invalid repeat rule for d") //дефотлтная ошибка для вывода при некорректном вводе
+			return "", err                                 //если агрумент для >400
 		}
+		newDate = newDate.AddDate(0, 0, repeatPeriod)
 		for dateFound == false {
 			if (newDate.After(now) && newDate.After(parsedDate)) || now.Format(dataFormat) == newDate.Format(dataFormat) { //если ближайшая дата перевалила за текущий день
 				dateFound = true //ну вот тут вопрос как правильнее, так как при return мы все равно выходим из функции, стоит ли поднимать флаг и стоит ли делать break
@@ -65,7 +68,7 @@ func NextDate(now time.Time, date string, repeat string) (string, error) {
 	case "w":
 
 		if len(commands) < 2 {
-			err := errors.New("invalid repeat rule") //дефолтная ошибка для вывода при некорректном вводе
+			err := errors.New("Invalid repeat rule for w") //дефолтная ошибка для вывода при некорректном вводе
 			return "", err
 		}
 
@@ -77,10 +80,11 @@ func NextDate(now time.Time, date string, repeat string) (string, error) {
 
 			dayInt, err := strconv.Atoi(day) //проверяем что день недели корректный
 			if err != nil {
+				err := errors.New("Invalid day for w")
 				return "", err
 			}
 			if dayInt > 7 { // все еще проверяем
-				err := errors.New("invalid repeat rule") //дефолтная ошибка для вывода при некорректном вводе
+				err := errors.New("Invalid day for w") //дефолтная ошибка для вывода при некорректном вводе
 				return "", err
 			}
 			daysToRepeatInts = append(daysToRepeatInts, dayInt)
@@ -115,7 +119,7 @@ func NextDate(now time.Time, date string, repeat string) (string, error) {
 				return "", err
 			}
 			if dayInt == 0 || dayInt > 31 || dayInt < -2 { // все еще проверяем
-				err := errors.New("invalid repeat rule")
+				err := errors.New("Invalid repeat rule for m")
 				return "", err
 			}
 			daysToRepeatInts = append(daysToRepeatInts, dayInt)
@@ -134,7 +138,7 @@ func NextDate(now time.Time, date string, repeat string) (string, error) {
 					return "", err
 				}
 				if monthInt > 12 || monthInt <= 0 {
-					err := errors.New("invalid repeat rule") //дефолтная ошибка для вывода при некорректном вводе
+					err := errors.New("Invalid day for m") //дефолтная ошибка для вывода при некорректном вводе
 					return "", err
 				}
 				monthSlice = append(monthSlice, monthInt)
@@ -150,7 +154,7 @@ func NextDate(now time.Time, date string, repeat string) (string, error) {
 			for _, month := range monthSlice {
 				for _, day := range daysToRepeatInts {
 					if day == 0 || day < -2 {
-						err := errors.New("invalid repeat rule") //дефолтная ошибка для вывода при некорректном вводе
+						err := errors.New("Invalid day for m") //дефолтная ошибка для вывода при некорректном вводе
 						return "", err
 					}
 					newDate = time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC)
@@ -172,7 +176,8 @@ func NextDate(now time.Time, date string, repeat string) (string, error) {
 		return "", err
 
 	default:
-		err := errors.New("invalid repeat rule") //дефотлтная ошибка для вывода при некорректном вводе
+		fmt.Println("Err", repeat)
+		err := errors.New("Invalid repeat rule") //дефотлтная ошибка для вывода при некорректном вводе
 		return "", err
 	}
 }

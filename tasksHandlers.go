@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
 )
@@ -24,7 +25,6 @@ func checkInputJSON(res http.ResponseWriter, task *Task) error {
 	if task.Date != "" {
 		date, err = time.Parse(dataFormat, task.Date)
 		if err != nil {
-			err := errors.New("Date error")
 			response.Error = err.Error()
 			json.NewEncoder(res).Encode(response)
 			return err
@@ -39,7 +39,6 @@ func checkInputJSON(res http.ResponseWriter, task *Task) error {
 		} else {
 			task.Date, err = NextDate(time.Now(), task.Date, task.Repeat)
 			if err != nil {
-				err := errors.New("Date error")
 				response.Error = err.Error()
 				json.NewEncoder(res).Encode(response)
 				return err
@@ -73,23 +72,25 @@ func taskHandler(res http.ResponseWriter, req *http.Request) {
 
 		err = checkInputJSON(res, task)
 		if err != nil {
-			err := errors.New("Title error")
 			response.Error = err.Error()
 			json.NewEncoder(res).Encode(response)
 			return
 		}
-
 		db, err := sql.Open("sqlite3", DBFile)
 		defer db.Close()
 		query := "INSERT INTO scheduler (date, title, comment, repeat) VALUES (?, ?, ?, ?)"
 		result, err := db.Exec(query, task.Date, task.Title, task.Comment, task.Repeat)
 
 		if err != nil {
+			response.Error = err.Error()
+			json.NewEncoder(res).Encode(response)
 			return
 		}
 
 		lastId, err := result.LastInsertId()
 		if err != nil {
+			response.Error = err.Error()
+			json.NewEncoder(res).Encode(response)
 			return
 		}
 		response := struct {
@@ -100,18 +101,16 @@ func taskHandler(res http.ResponseWriter, req *http.Request) {
 	case http.MethodGet:
 		id := req.FormValue("id")
 		if id == "" {
-			err := errors.New("Не укаазан ID задачи")
+			err := errors.New("Не указан ID задачи")
 			response.Error = err.Error()
 			json.NewEncoder(res).Encode(response)
 			return
 		}
-
 		db, err := sql.Open("sqlite3", DBFile)
 		defer db.Close()
 		if err != nil {
 			return
 		}
-
 		query := "SELECT * FROM scheduler WHERE id=?"
 		row, err := db.Query(query, id)
 
@@ -119,9 +118,9 @@ func taskHandler(res http.ResponseWriter, req *http.Request) {
 			response.Error = err.Error()
 			json.NewEncoder(res).Encode(response)
 			return
-
 		}
 		task := &Task{}
+		defer row.Close()
 		for row.Next() {
 			err := row.Scan(&task.ID, &task.Date, &task.Title, &task.Comment, &task.Repeat)
 			if err != nil {
@@ -130,13 +129,11 @@ func taskHandler(res http.ResponseWriter, req *http.Request) {
 				return
 			}
 		}
-		row.Close()
 		if err = row.Err(); err != nil {
 			response.Error = err.Error()
 			json.NewEncoder(res).Encode(response)
 			return
 		}
-
 		data, err := json.Marshal(&task)
 		if err != nil {
 			response.Error = err.Error()
@@ -189,6 +186,7 @@ func taskHandler(res http.ResponseWriter, req *http.Request) {
 			task.ID)
 
 		if err != nil {
+			fmt.Println(task, err)
 			response.Error = err.Error()
 			json.NewEncoder(res).Encode(response)
 			return
@@ -238,19 +236,21 @@ func doneTask(res http.ResponseWriter, req *http.Request) {
 		db, err := sql.Open("sqlite3", DBFile)
 		defer db.Close()
 		if err != nil {
+			response.Error = err.Error()
+			json.NewEncoder(res).Encode(response)
 			return
 		}
 
 		query := "SELECT * FROM scheduler WHERE id=?"
 		row, err := db.Query(query, id)
-
+		defer row.Close()
 		if err != nil {
 			response.Error = err.Error()
 			json.NewEncoder(res).Encode(response)
 			return
-
 		}
 		task := &Task{}
+
 		for row.Next() {
 
 			err := row.Scan(&task.ID, &task.Date, &task.Title, &task.Comment, &task.Repeat)
@@ -260,12 +260,12 @@ func doneTask(res http.ResponseWriter, req *http.Request) {
 				return
 			}
 		}
-		row.Close()
 		if task.Repeat == "" {
 			query := "DELETE FROM scheduler WHERE id=?"
 			_, err := db.Exec(query, id)
 
 			if err != nil {
+				fmt.Println(task, err)
 				response.Error = err.Error()
 				json.NewEncoder(res).Encode(response)
 				return
@@ -273,6 +273,7 @@ func doneTask(res http.ResponseWriter, req *http.Request) {
 		} else {
 			newDate, err := NextDate(time.Now(), task.Date, task.Repeat)
 			if err != nil {
+				fmt.Println(task, err)
 				response.Error = err.Error()
 				json.NewEncoder(res).Encode(response)
 				return
@@ -281,6 +282,7 @@ func doneTask(res http.ResponseWriter, req *http.Request) {
 			_, err = db.Exec(query, newDate, id)
 
 			if err != nil {
+				fmt.Println(task, err)
 				response.Error = err.Error()
 				json.NewEncoder(res).Encode(response)
 				return
@@ -316,6 +318,7 @@ func getTasks(res http.ResponseWriter, req *http.Request) {
 			return
 		}
 		tasks := &Tasks{}
+		defer rows.Close()
 		for rows.Next() {
 			task := &Task{}
 
@@ -327,7 +330,6 @@ func getTasks(res http.ResponseWriter, req *http.Request) {
 			}
 			tasks.Tasks = append(tasks.Tasks, *task)
 		}
-		rows.Close()
 		if tasks.Tasks == nil {
 			tasks.Tasks = []Task{}
 		}
