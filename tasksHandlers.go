@@ -1,350 +1,413 @@
 package main
 
 import (
-	"bytes"
 	"database/sql"
 	"encoding/json"
-	"errors"
 	"fmt"
+	"io"
 	"net/http"
+	"strconv"
 	"time"
 )
 
-func checkInputJSON(res http.ResponseWriter, task *Task) error {
-	var err error
-	res.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	if task.Title == "" {
-		err := errors.New("Title error")
-		response.Error = err.Error()
-		json.NewEncoder(res).Encode(response)
+type ErrResponse struct {
+	Error        bool   `json:"error"`
+	ErrorMessage string `json:"error_message"`
+}
+
+type ReturnResponse struct {
+	ID int64 `json:"id"`
+}
+
+func sendJson(rw http.ResponseWriter, status int, r any) error {
+	b, err := json.Marshal(r)
+	if err != nil {
 		return err
 	}
+	rw.Header().Set("Content-Type", "application/json") // set content-type so our clients know how to read our response
+	rw.WriteHeader(status)                              // write our status header with the proper http code
+	// write the marshalled json into the response.
+	// as per documentation, this is a final call in handling requests and will finish the handling process.
+	_, err = rw.Write(b)
+	return err
+}
 
-	date := time.Now()
+func taskHandler(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodPost:
+		createTaskHandler(w, r)
 
-	if task.Date != "" {
-		date, err = time.Parse(dataFormat, task.Date)
-		if err != nil {
-			response.Error = err.Error()
-			json.NewEncoder(res).Encode(response)
-			return err
-		}
-	} else {
-		task.Date = date.Format(dataFormat)
+	case http.MethodGet:
+		getTaskHandler(w, r)
+
+	case http.MethodPut:
+		editTaskHandler(w, r)
+
+	case http.MethodDelete:
+		deleteTaskHandler(w, r)
+	}
+}
+
+func createTask(t *Task) (int64, error) {
+
+	db, err := sql.Open("sqlite3", DBFile)
+	defer db.Close()
+	query := "INSERT INTO scheduler (date, title, comment, repeat) VALUES (?, ?, ?, ?) RETURNING id"
+	result, err := db.Exec(query, t.Date, t.Title, t.Comment, t.Repeat)
+	if err != nil {
+		return 0, err
 	}
 
-	if date.Before(time.Now()) {
-		if task.Repeat == "" {
-			task.Date = time.Now().Format(dataFormat)
-		} else {
-			task.Date, err = NextDate(time.Now(), task.Date, task.Repeat)
-			if err != nil {
-				response.Error = err.Error()
-				json.NewEncoder(res).Encode(response)
-				return err
-			}
+	lastId, err := result.LastInsertId()
+
+	return lastId, nil
+}
+
+func createTaskHandler(w http.ResponseWriter, r *http.Request) {
+	// read data
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		panic(err)
+	}
+
+	var task *Task
+	err = json.Unmarshal(body, &task)
+	if err != nil {
+		panic(err)
+	}
+
+	// validate
+
+	if valid, message := task.IsValid(); !valid {
+		if err := sendJson(w, 400, ErrResponse{
+			Error:        true,
+			ErrorMessage: message,
+		}); err != nil {
+			panic(err) // couldn't even send json, panic
 		}
+	}
+	// execute
+	valid, message, newTask := task.MakeValid()
+
+	if !valid {
+		if err := sendJson(w, 400, ErrResponse{
+			Error:        true,
+			ErrorMessage: message,
+		}); err != nil {
+			panic(err) // couldn't even send json, panic
+		}
+	}
+
+	newTaskID, err := createTask(newTask)
+	if err != nil {
+		if err := sendJson(w, 400, ErrResponse{
+			Error:        true,
+			ErrorMessage: err.Error(),
+		}); err != nil {
+			panic(err) // couldn't even send json, panic
+		}
+	}
+
+	// send json
+	if err := sendJson(w, 200, ReturnResponse{
+		ID: newTaskID,
+	}); err != nil {
+		panic(err)
+	}
+}
+
+func getTask(id int) (*Task, error) {
+	db, err := sql.Open("sqlite3", DBFile)
+	defer db.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	query := "SELECT * FROM scheduler WHERE id=?"
+	row := db.QueryRow(query, id)
+
+	var task *Task
+	switch err := row.Scan(task); err {
+	case sql.ErrNoRows:
+		return nil, nil // no task, but no error too
+	case nil:
+		return task, nil // no error, return task
+	default:
+		return nil, err // any other error, return it as is
+	}
+}
+
+func getTaskHandler(w http.ResponseWriter, r *http.Request) {
+	// get input
+	idStr := r.URL.Query().Get("id") // r.FormValue extracts from the request body too, if available, we don't need that
+
+	// validate
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		if err := sendJson(w, 400, ErrResponse{
+			Error:        true,
+			ErrorMessage: "invalid id",
+		}); err != nil {
+			panic(err)
+		}
+	}
+
+	// execute
+	task, err := getTask(id)
+
+	// handle error
+	if err != nil {
+		if err := sendJson(w, 500, ErrResponse{
+			Error:        true,
+			ErrorMessage: "internal server error",
+		}); err != nil {
+			panic(err)
+		}
+	}
+
+	// handle 404
+	if task == nil {
+		if err := sendJson(w, 404, ErrResponse{
+			Error:        true,
+			ErrorMessage: "no task with this id",
+		}); err != nil {
+			panic(err)
+		}
+	}
+
+	// return
+	if err := sendJson(w, 200, task); err != nil {
+		panic(err)
+	}
+}
+
+func getTasks(limit int) (*Tasks, error) {
+	db, err := sql.Open("sqlite3", DBFile)
+	defer db.Close()
+	if err != nil {
+		fmt.Println(1, err)
+		return nil, err
+	}
+	rows, err := db.Query("SELECT * FROM scheduler ORDER BY date LIMIT ?", limit)
+	if err != nil {
+		fmt.Println(2, err)
+		return nil, err
+	}
+
+	tasks := &Tasks{}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		task := &Task{}
+
+		err := rows.Scan(&task.ID, &task.Date, &task.Title, &task.Comment, &task.Repeat)
+		if err != nil {
+			fmt.Println(3, err)
+			return nil, err
+		}
+		tasks.Tasks = append(tasks.Tasks, *task)
+	}
+	if tasks.Tasks == nil {
+		tasks.Tasks = []Task{}
+	}
+	return tasks, nil
+}
+
+func getTasksHandler(w http.ResponseWriter, r *http.Request) {
+	tasks, err := getTasks(tasksLimit)
+	if err != nil {
+		if err := sendJson(w, 500, ErrResponse{
+			Error:        true,
+			ErrorMessage: "internal server error",
+		}); err != nil {
+			panic(err)
+		}
+	}
+	if err := sendJson(w, 200, tasks); err != nil {
+		panic(err)
+	}
+}
+
+func editTask(id int, t *Task) error {
+	db, err := sql.Open("sqlite3", DBFile)
+	defer db.Close()
+	query := "UPDATE scheduler SET date = ?, title = ?, comment = ?, repeat = ? WHERE id = ?"
+	_, err = db.Exec(query,
+		t.Date,
+		t.Title,
+		t.Comment,
+		t.Repeat,
+		id)
+
+	if err != nil {
+		return err
 	}
 	return nil
 }
 
-func taskHandler(res http.ResponseWriter, req *http.Request) {
-	switch req.Method {
-	case http.MethodPost:
-		res.Header().Set("Content-Type", "application/json; charset=UTF-8")
-		var buf bytes.Buffer
-		task := &Task{}
-		_, err := buf.ReadFrom(req.Body)
-		if err != nil {
-			err := errors.New("JSON read error")
-			response.Error = err.Error()
-			json.NewEncoder(res).Encode(response)
-			return
-		}
+func editTaskHandler(w http.ResponseWriter, r *http.Request) {
+	// read
+	idStr := r.URL.Query().Get("id")
 
-		err = json.Unmarshal(buf.Bytes(), &task)
-		if err != nil {
-			err := errors.New("JSON Unmarshalling error")
-			response.Error = err.Error()
-			json.NewEncoder(res).Encode(response)
-			return
-		}
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		panic(err)
+	}
 
-		err = checkInputJSON(res, task)
-		if err != nil {
-			response.Error = err.Error()
-			json.NewEncoder(res).Encode(response)
-			return
-		}
-		db, err := sql.Open("sqlite3", DBFile)
-		defer db.Close()
-		query := "INSERT INTO scheduler (date, title, comment, repeat) VALUES (?, ?, ?, ?)"
-		result, err := db.Exec(query, task.Date, task.Title, task.Comment, task.Repeat)
+	var task *Task
+	err = json.Unmarshal(body, &task)
+	if err != nil {
+		panic(err)
+	}
 
-		if err != nil {
-			response.Error = err.Error()
-			json.NewEncoder(res).Encode(response)
-			return
+	// validate
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		if err := sendJson(w, 400, ErrResponse{
+			Error:        true,
+			ErrorMessage: "invalid id",
+		}); err != nil {
+			panic(err)
 		}
+	}
+	valid, message := task.IsValid()
+	if !valid {
+		if err := sendJson(w, 400, ErrResponse{
+			Error:        true,
+			ErrorMessage: message,
+		}); err != nil {
+			panic(err) // couldn't even send json, panic
+		}
+	}
 
-		lastId, err := result.LastInsertId()
-		if err != nil {
-			response.Error = err.Error()
-			json.NewEncoder(res).Encode(response)
-			return
+	valid, message, newTask := task.MakeValid()
+	if !valid {
+		if err := sendJson(w, 400, ErrResponse{
+			Error:        true,
+			ErrorMessage: message,
+		}); err != nil {
+			panic(err) // couldn't even send json, panic
 		}
-		response := struct {
-			ID int64 `json:"id"`
-		}{ID: lastId}
-		json.NewEncoder(res).Encode(response)
+	}
+	//fmt.Println(2, valid, message)
 
-	case http.MethodGet:
-		id := req.FormValue("id")
-		if id == "" {
-			err := errors.New("Не указан ID задачи")
-			response.Error = err.Error()
-			json.NewEncoder(res).Encode(response)
-			return
+	// execute
+	err = editTask(id, newTask)
+	if err != nil {
+		if err := sendJson(w, 400, ErrResponse{
+			Error:        true,
+			ErrorMessage: err.Error(),
+		}); err != nil {
+			panic(err) // couldn't even send json, panic
 		}
-		db, err := sql.Open("sqlite3", DBFile)
-		defer db.Close()
-		if err != nil {
-			return
-		}
-		query := "SELECT * FROM scheduler WHERE id=?"
-		row, err := db.Query(query, id)
-
-		if err != nil {
-			response.Error = err.Error()
-			json.NewEncoder(res).Encode(response)
-			return
-		}
-		task := &Task{}
-		defer row.Close()
-		for row.Next() {
-			err := row.Scan(&task.ID, &task.Date, &task.Title, &task.Comment, &task.Repeat)
-			if err != nil {
-				response.Error = err.Error()
-				json.NewEncoder(res).Encode(response)
-				return
-			}
-		}
-		if err = row.Err(); err != nil {
-			response.Error = err.Error()
-			json.NewEncoder(res).Encode(response)
-			return
-		}
-		data, err := json.Marshal(&task)
-		if err != nil {
-			response.Error = err.Error()
-			json.NewEncoder(res).Encode(response)
-			return
-		}
-		res.WriteHeader(http.StatusOK)
-		_, err = res.Write(data)
-		if err != nil {
-			response.Error = err.Error()
-			json.NewEncoder(res).Encode(response)
-			return
-		}
-
-	case http.MethodPut:
-		res.Header().Set("Content-Type", "application/json; charset=UTF-8")
-		var buf bytes.Buffer
-		task := &Task{}
-		_, err := buf.ReadFrom(req.Body)
-		if err != nil {
-			http.Error(res, err.Error(), http.StatusBadRequest)
-			return
-		}
-
-		err = json.Unmarshal(buf.Bytes(), &task)
-		if err != nil {
-			http.Error(res, err.Error(), http.StatusBadRequest)
-			responseError := struct {
-				Error string `json:"error"`
-			}{Error: err.Error()}
-			json.NewEncoder(res).Encode(responseError)
-			return
-		}
-
-		err = checkInputJSON(res, task)
-		if err != nil {
-			response.Error = err.Error()
-			json.NewEncoder(res).Encode(response)
-			return
-		}
-
-		db, err := sql.Open("sqlite3", DBFile)
-		defer db.Close()
-		query := "UPDATE scheduler SET date = ?, title = ?, comment = ?, repeat = ? WHERE id = ?"
-		_, err = db.Exec(query,
-			task.Date,
-			task.Title,
-			task.Comment,
-			task.Repeat,
-			task.ID)
-
-		if err != nil {
-			fmt.Println(task, err)
-			response.Error = err.Error()
-			json.NewEncoder(res).Encode(response)
-			return
-		}
-		json.NewEncoder(res).Encode(response)
-		return
-
-	case http.MethodDelete:
-		id := req.FormValue("id")
-		if id == "" {
-			err := errors.New("Не укаазан ID задачи")
-			response.Error = err.Error()
-			json.NewEncoder(res).Encode(response)
-			return
-		}
-
-		db, err := sql.Open("sqlite3", DBFile)
-		defer db.Close()
-		if err != nil {
-			return
-		}
-
-		query := "DELETE FROM scheduler WHERE id=?"
-		_, err = db.Exec(query, id)
-
-		if err != nil {
-			response.Error = err.Error()
-			json.NewEncoder(res).Encode(response)
-			return
-
-		}
-		json.NewEncoder(res).Encode(response)
+	}
+	// return
+	if err := sendJson(w, 200, task); err != nil {
+		panic(err)
 	}
 }
 
-func doneTask(res http.ResponseWriter, req *http.Request) {
-	switch req.Method {
-	case http.MethodPost:
-		id := req.FormValue("id")
-		if id == "" {
-			err := errors.New("Не укаазан ID задачи")
-			response.Error = err.Error()
-			json.NewEncoder(res).Encode(response)
-			return
-		}
+func deleteTask(id int) error {
+	db, err := sql.Open("sqlite3", DBFile)
+	defer db.Close()
+	if err != nil {
+		return err
+	}
 
-		db, err := sql.Open("sqlite3", DBFile)
-		defer db.Close()
-		if err != nil {
-			response.Error = err.Error()
-			json.NewEncoder(res).Encode(response)
-			return
-		}
+	query := "DELETE FROM scheduler WHERE id=?"
+	_, err = db.Exec(query, id)
 
-		query := "SELECT * FROM scheduler WHERE id=?"
-		row, err := db.Query(query, id)
-		defer row.Close()
-		if err != nil {
-			response.Error = err.Error()
-			json.NewEncoder(res).Encode(response)
-			return
-		}
-		task := &Task{}
+	if err != nil {
+		return err
 
-		for row.Next() {
+	}
+	return nil
+}
 
-			err := row.Scan(&task.ID, &task.Date, &task.Title, &task.Comment, &task.Repeat)
-			if err != nil {
-				response.Error = err.Error()
-				json.NewEncoder(res).Encode(response)
-				return
-			}
-		}
-		if task.Repeat == "" {
-			query := "DELETE FROM scheduler WHERE id=?"
-			_, err := db.Exec(query, id)
+func deleteTaskHandler(w http.ResponseWriter, r *http.Request) {
+	// read
+	idStr := r.URL.Query().Get("id")
 
-			if err != nil {
-				fmt.Println(task, err)
-				response.Error = err.Error()
-				json.NewEncoder(res).Encode(response)
-				return
-			}
-		} else {
-			newDate, err := NextDate(time.Now(), task.Date, task.Repeat)
-			if err != nil {
-				fmt.Println(task, err)
-				response.Error = err.Error()
-				json.NewEncoder(res).Encode(response)
-				return
-			}
-			query := "UPDATE scheduler SET date=? WHERE id=?"
-			_, err = db.Exec(query, newDate, id)
-
-			if err != nil {
-				fmt.Println(task, err)
-				response.Error = err.Error()
-				json.NewEncoder(res).Encode(response)
-				return
-			}
+	// validate
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		if err := sendJson(w, 400, ErrResponse{
+			Error:        true,
+			ErrorMessage: "invalid id",
+		}); err != nil {
+			panic(err)
 		}
-		_, err = json.Marshal(response)
-		if err != nil {
-			response.Error = err.Error()
-			json.NewEncoder(res).Encode(response)
-			return
+	}
+	// execute
+	err = deleteTask(id)
+	if err != nil {
+		if err := sendJson(w, 400, ErrResponse{
+			Error:        true,
+			ErrorMessage: "invalid id",
+		}); err != nil {
+			panic(err)
 		}
-		json.NewEncoder(res).Encode(response)
+	}
+	// return
+	if err := sendJson(w, 200, struct{}{}); err != nil {
+		panic(err)
 	}
 }
 
-func getTasks(res http.ResponseWriter, req *http.Request) {
-	switch req.Method {
-	case http.MethodGet:
-		db, err := sql.Open("sqlite3", DBFile)
-		defer db.Close()
+func doneTask(id int, t *Task) error {
+	db, err := sql.Open("sqlite3", DBFile)
+	defer db.Close()
+	if err != nil {
+		return err
+	}
 
-		if err != nil {
-			http.Error(res, err.Error(), http.StatusBadRequest)
-			response.Error = err.Error()
-			json.NewEncoder(res).Encode(response)
-			return
-		}
+	newDate, err := NextDate(time.Now(), t.Date, t.Repeat)
 
-		rows, err := db.Query("SELECT * FROM scheduler ORDER BY date LIMIT ?", tasksLimit)
-		if err != nil {
-			response.Error = err.Error()
-			json.NewEncoder(res).Encode(response)
-			return
-		}
-		tasks := &Tasks{}
-		defer rows.Close()
-		for rows.Next() {
-			task := &Task{}
+	query := "UPDATE scheduler SET date = ? WHERE id = ?"
+	_, err = db.Exec(query, newDate, id)
 
-			err := rows.Scan(&task.ID, &task.Date, &task.Title, &task.Comment, &task.Repeat)
-			if err != nil {
-				response.Error = err.Error()
-				json.NewEncoder(res).Encode(response)
-				return
-			}
-			tasks.Tasks = append(tasks.Tasks, *task)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func doneTaskHandler(w http.ResponseWriter, r *http.Request) {
+	idStr := r.URL.Query().Get("id")
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		panic(err)
+	}
+
+	var task *Task
+	err = json.Unmarshal(body, &task)
+	if err != nil {
+		panic(err)
+	}
+
+	// validate
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		if err := sendJson(w, 400, ErrResponse{
+			Error:        true,
+			ErrorMessage: "invalid id",
+		}); err != nil {
+			panic(err)
 		}
-		if tasks.Tasks == nil {
-			tasks.Tasks = []Task{}
+	}
+	// execute
+	err = doneTask(id, task)
+	if err != nil {
+		if err := sendJson(w, 400, ErrResponse{
+			Error:        true,
+			ErrorMessage: "invalid id",
+		}); err != nil {
+			panic(err)
 		}
-		data, err := json.Marshal(&tasks)
-		if err != nil {
-			response.Error = err.Error()
-			json.NewEncoder(res).Encode(response)
-			return
-		}
-		res.WriteHeader(http.StatusOK)
-		_, err = res.Write(data)
-		if err != nil {
-			response.Error = err.Error()
-			json.NewEncoder(res).Encode(response)
-			return
-		}
+	}
+	// return
+	if err := sendJson(w, 200, struct{}{}); err != nil {
+		panic(err)
 	}
 }

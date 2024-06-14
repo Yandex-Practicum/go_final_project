@@ -36,9 +36,9 @@ func ServerStart() {
 	http.Handle("/", http.FileServer(http.Dir(webDir)))
 
 	http.HandleFunc("/api/task", taskHandler)
-	http.HandleFunc("/api/task/done", doneTask)
+	http.HandleFunc("/api/task/done", doneTaskHandler)
 
-	http.HandleFunc("/api/tasks", getTasks)
+	http.HandleFunc("/api/tasks", getTasksHandler)
 
 	http.HandleFunc("/api/nextdate", nextDateHandler)
 

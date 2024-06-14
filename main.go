@@ -21,8 +21,44 @@ type Tasks struct {
 	Tasks []Task `json:"tasks"`
 }
 
-var response struct {
-	Error string `json:"error,omitempty"`
+func (t *Task) MakeValid() (bool, string, *Task) {
+	newTask := t
+
+	todayDateStr := time.Now().Format(dataFormat)
+	if len(t.Date) == 0 || t.Date == "" {
+		t.Date = todayDateStr
+		return true, "", newTask
+	}
+
+	date, err := time.Parse(dataFormat, t.Date)
+	if err != nil {
+		return false, err.Error(), newTask
+	}
+
+	if date.Before(time.Now()) {
+		ruleIsSet := !(len(t.Repeat) == 0 || t.Repeat == "")
+		if !ruleIsSet {
+			t.Date = todayDateStr
+			return true, todayDateStr, newTask
+		}
+		if ruleIsSet {
+			newDateStr, err := NextDate(time.Now(), t.Date, t.Repeat)
+
+			if err != nil {
+				return false, err.Error(), newTask
+			}
+			t.Date = newDateStr
+			return true, "", newTask
+		}
+	}
+	return true, "", newTask
+}
+
+func (t *Task) IsValid() (bool, string) {
+	if len(t.Title) == 0 {
+		return false, "no title"
+	}
+	return true, ""
 }
 
 func CreateDB(DBFile string) {

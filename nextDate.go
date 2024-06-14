@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"sort"
@@ -27,7 +26,6 @@ func NextDate(now time.Time, date string, repeat string) (string, error) {
 
 	newDate := parsedDate
 	dateFound := false
-	fmt.Println(repeat)
 	switch ruleType {
 
 	case "d":
@@ -176,7 +174,6 @@ func NextDate(now time.Time, date string, repeat string) (string, error) {
 		return "", err
 
 	default:
-		fmt.Println("Err", repeat)
 		err := errors.New("Invalid repeat rule") //дефотлтная ошибка для вывода при некорректном вводе
 		return "", err
 	}
