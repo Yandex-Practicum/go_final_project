@@ -6,4 +6,4 @@ CREATE TABLE  scheduler (
     repeat VARCHAR(128)
 );
 
-CREATE INDEX  idx_date ON scheduler (date);
+CREATE INDEX idx_date ON scheduler (date);
