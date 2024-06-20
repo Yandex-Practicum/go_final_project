@@ -11,7 +11,7 @@ import (
 // daysBetweenWD возвращает количество дней между днями недели, с учётом их цикличности, в формате int (понедельник 1 ближе к воскресенью 7, чем пятница 5)
 func daysBetweenWD(from, to int) int {
 	week := make(map[int]int)
-	for i := range 7 {
+	for i := from; i <= 7; {
 		if i+1 < 7 {
 			week[i+1] = i + 2
 		} else {
