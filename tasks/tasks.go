@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Masteker/go_final_project"
+	"github.com/qavaleria/go_final_project/models"
 )
 
 // NextDate вычисляет следующую дату для задачи в соответствии с правилом повторения
