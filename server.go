@@ -1,18 +1,39 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 	"os"
+	"time"
+
+	"github.com/joho/godotenv"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 func main() {
-	port := os.Getenv("TODO_PORT")
-	if port == "" {
-		port = "7540"
+	// Загружаем переменные среды
+	err := godotenv.Load(".env")
+	if err != nil {
+		fmt.Println(err)
 	}
 
-	webDir := "web"
-	http.Handle("/", http.FileServer(http.Dir(webDir)))
+	// Если бд не существует, создаём
+	if !dbExists() {
+		installDB()
+	}
 
-	http.ListenAndServe(":"+port, nil)
+	// Адрес для запуска сервера
+	ip := ""
+	port := os.Getenv("TODO_PORT")
+	addr := fmt.Sprintf("%s:%s", ip, port)
+
+	// Запуска сервера
+	fmt.Println("Запускаем сервер")
+	err = http.ListenAndServe(addr, http.FileServer(http.Dir("web/")))
+	if err != nil {
+		panic(err)
+	}
+	NextDate(time.Now(), "", "")
+
+	fmt.Println("Завершаем работу")
 }
