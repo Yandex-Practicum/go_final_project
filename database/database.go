@@ -1,71 +1,48 @@
-package storage
+package database
 
 import (
-	"fmt"
-	"log"
-
-	"github.com/jmoiron/sqlx"
-
+	"database/sql"
 	"os"
-	"path/filepath"
-	"time"
 
 	_ "github.com/mattn/go-sqlite3"
 )
 
-type DbConnection struct {
-	Db *sqlx.DB
-}
+const dbFileName = "scheduler.db"
 
-type scheduler struct {
-	ID      int
-	Date    time.Duration
-	Title   string
-	Comment string
-	Repeat  string
-}
-
-func NewDb() (*DbConnection, error) {
-	file, err := os.Getwd()
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println(file)
-
-	dbFile := filepath.Join(file, os.Getenv("DB_NAME"))
-
-	_, err = os.Stat(dbFile)
-	var install bool
-	if err != nil {
-		install = true
-	}
-	db, err := sqlx.Open(os.Getenv("DB_DRIVER"), dbFile)
-	if err != nil {
-		log.Printf("DbConnection: can't open db: %s\n", err)
-	}
-
-	if install {
-		_, err = db.Exec(`
-		CREATE TABLE IF NOT EXISTS scheduler (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			date СHAR(8) NOT NULL,
-			title VARCHAR NOT NULL,
-			comment TEXT,
-			repeat VARCHAR(128)
-		);
-		CREATE INDEX idx_scheduler_date ON scheduler (date);
-		`)
+// InitializeDatabase проверяет существование файла базы данных и создает таблицу, если необходимо
+func InitializeDatabase() (*sql.DB, error) {
+	if _, err := os.Stat(dbFileName); os.IsNotExist(err) {
+		file, err := os.Create(dbFileName)
 		if err != nil {
-			log.Printf("DbConnection: can't create db: %s\n", err)
+			return nil, err
 		}
+		file.Close()
 	}
 
-	log.Printf("Database connected. Database file: %s", dbFile)
-	return &DbConnection{Db: db}, nil
-}
+	db, err := sql.Open("sqlite3", dbFileName)
+	if err != nil {
+		return nil, err
+	}
 
-// TODO: close db
-func (db *DbConnection) Close() {
-	db.Db.Close()
+	createTableSQL := `CREATE TABLE IF NOT EXISTS scheduler (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+		date CHAR(8) NOT NULL DEFAULT "",
+		title VARCHAR(128) NOT NULL DEFAULT "",
+		comment TEXT NOT NULL DEFAULT "",
+		repeat VARCHAR(128) NOT NULL DEFAULT ""
+    );`
 
+	_, err = db.Exec(createTableSQL)
+	if err != nil {
+		return nil, err
+	}
+
+	// Создаем индекс по полю date для сортировки задач по дате
+	createIndexSQL := `CREATE INDEX IF NOT EXISTS idx_scheduler_date ON scheduler(date);`
+	_, err = db.Exec(createIndexSQL)
+	if err != nil {
+		return nil, err
+	}
+
+	return db, nil
 }
