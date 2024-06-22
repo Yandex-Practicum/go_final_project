@@ -1,39 +1,48 @@
 package main
 
 import (
-	"fmt"
-	"net/http"
+	"database/sql"
+	"log"
 	"os"
-	"time"
+	"path/filepath"
 
-	"github.com/joho/godotenv"
 	_ "github.com/mattn/go-sqlite3"
 )
 
-func main() {
-	// Загружаем переменные среды
-	err := godotenv.Load(".env")
+func checkDatabase() {
+	appPath, err := os.Executable()
 	if err != nil {
-		fmt.Println(err)
+		log.Fatal(err)
 	}
+	dbFile := filepath.Join(filepath.Dir(appPath), "scheduler.db")
+	_, err = os.Stat(dbFile)
 
-	// Если бд не существует, создаём
-	if !dbExists() {
-		installDB()
-	}
-
-	// Адрес для запуска сервера
-	ip := ""
-	port := os.Getenv("TODO_PORT")
-	addr := fmt.Sprintf("%s:%s", ip, port)
-
-	// Запуска сервера
-	fmt.Println("Запускаем сервер")
-	err = http.ListenAndServe(addr, http.FileServer(http.Dir("web/")))
+	var install bool
 	if err != nil {
-		panic(err)
+		install = true
 	}
-	NextDate(time.Now(), "", "")
 
-	fmt.Println("Завершаем работу")
+	if install {
+		db, err := sql.Open("sqlite3", dbFile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer db.Close()
+
+		_, err = db.Exec(`CREATE TABLE IF NOT EXISTS scheduler (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            date TEXT,
+            title TEXT,
+            comment TEXT,
+            repeat TEXT
+        );`)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		_, err = db.Exec("CREATE INDEX IF NOT EXISTS idx_date ON scheduler (date);")
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
 }
