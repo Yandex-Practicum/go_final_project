@@ -4,11 +4,12 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	models "go_final_project/models"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/Masteker/go_final_project/models"
 )
 
 // NextDate вычисляет следующую дату для задачи в соответствии с правилом повторения

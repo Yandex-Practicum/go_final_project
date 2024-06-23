@@ -4,10 +4,11 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	models "go_final_project/models"
-	tasks "go_final_project/tasks"
 	"net/http"
 	"time"
+
+	"github.com/Masteker/go_final_project/models"
+	"github.com/Masteker/go_final_project/tasks"
 )
 
 // HandleNextDate обработчик для API запроса /api/nextdate

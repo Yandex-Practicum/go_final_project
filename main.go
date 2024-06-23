@@ -1,13 +1,14 @@
 package main
 
 import (
-	database "go_final_project/database"
-	handlers "go_final_project/handlers"
-	tests "go_final_project/tests"
 	"log"
 	"net/http"
 	"os"
 	"strconv"
+
+	"github.com/Masteker/go_final_project/database"
+	"github.com/Masteker/go_final_project/handlers"
+	"github.com/Masteker/go_final_project/tests"
 
 	"github.com/go-chi/chi/v5"
 )
