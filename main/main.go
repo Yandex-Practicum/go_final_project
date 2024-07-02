@@ -6,8 +6,11 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/Masteker/go_final_project/api"
 	_ "github.com/Masteker/go_final_project/api"
+	"github.com/Masteker/go_final_project/database/auth"
 	_ "github.com/Masteker/go_final_project/database/auth"
+	"github.com/Masteker/go_final_project/database/db"
 	_ "github.com/Masteker/go_final_project/database/db"
 
 	"github.com/go-chi/chi/v5"
