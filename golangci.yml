@@ -1,0 +1,23 @@
+linters-settings:
+forbidigo:
+    forbid:
+      - .*\.Fatal.*
+      - fmt\.Print.*
+
+linters:
+  enable-all: true
+
+  disable:
+    - depguard
+    - execinquery
+    - exhaustive
+    - exhaustruct
+    - gomnd
+    - ireturn
+    - varnamelen
+    - tagalign
+    - wastedassign
+
+run:
+  timeout: 10m
+  tests: false
