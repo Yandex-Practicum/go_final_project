@@ -1,50 +1,68 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"os"
-	"strconv"
 
-	"github.com/Masteker/go_final_project/database"
-	"github.com/Masteker/go_final_project/handlers"
-	"github.com/Masteker/go_final_project/tests"
+	_ "github.com/Masteker/go_final_project/api"
+	_ "github.com/Masteker/go_final_project/database/auth"
+	_ "github.com/Masteker/go_final_project/database/db"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/joho/godotenv"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 func main() {
-	// Получаем порт из переменной окружения или используем значение по умолчанию
-	port := os.Getenv("TODO_PORT")
-	if port == "" {
-		port = strconv.Itoa(tests.Port)
-	}
-
-	db, err := database.InitializeDatabase()
+	// Загружаем переменные среды
+	err := godotenv.Load(".env")
 	if err != nil {
-		log.Fatalf("Failed to initialize database: %v", err)
+		fmt.Println(err)
 	}
-	defer db.Close()
+	// .env сам подгружается если мы используем docker compose для запуска, но для тестов удобнее запускать код напрямую, поэтому оставил godotenv
 
-	r := chi.NewRouter()
-	fs := http.FileServer(http.Dir("./web"))
-	r.Handle("/*", fs)
+	dbFile := os.Getenv("TODO_DBFILE")
+	dbHandl := db.DBHandler{}
 
-	// Добавляем обработчик API для вычисления следующей даты
-	r.Get("/api/nextdate", handlers.HandleNextDate)
+	// Если бд не существует, создаём
+	if !db.DbExists(dbFile) {
+		err = dbHandl.InstallDB()
+		if err != nil {
+			log.Println(err)
+		}
+	}
 
-	r.MethodFunc(http.MethodPost, "/api/task", handlers.HandleTask(db))
-	r.MethodFunc(http.MethodGet, "/api/task", handlers.HandleTask(db))
-	r.MethodFunc(http.MethodPut, "/api/task", handlers.HandleTask(db))
-	r.MethodFunc(http.MethodDelete, "/api/task", handlers.HandleTask(db))
-
-	r.MethodFunc(http.MethodGet, "/api/tasks", handlers.HandleGetTasks(db))
-	r.MethodFunc(http.MethodPost, "/api/task/done", handlers.HandleMarkTaskDone(db))
-
-	// Запускаем сервер
-	log.Printf("Server is listening on port %s", port)
-	err = http.ListenAndServe(":"+port, r)
+	// Запуск бд
+	err = dbHandl.StartDB()
+	defer dbHandl.CloseDB()
 	if err != nil {
 		log.Fatal(err)
 	}
+	api.ApiInit()
+
+	// Адрес для запуска сервера
+	ip := ""
+	port := os.Getenv("TODO_PORT")
+	addr := fmt.Sprintf("%s:%s", ip, port)
+
+	// Router
+	r := chi.NewRouter()
+
+	r.Handle("/*", http.FileServer(http.Dir("./web")))
+
+	r.Get("/api/nextdate", api.GetNextDateHandler)
+	r.Get("/api/tasks", auth.Auth(api.GetTasksHandler))
+	r.Post("/api/task/done", auth.Auth(api.PostTaskDoneHandler))
+	r.Post("/api/signin", auth.Auth(api.PostSigninHandler))
+	r.Handle("/api/task", auth.Auth(api.TaskHandler))
+
+	// Запуск сервера
+	err = http.ListenAndServe(addr, r)
+	if err != nil {
+		log.Println(err)
+	}
+	log.Printf("Server running on %s\n", port)
+
 }
