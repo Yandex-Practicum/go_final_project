@@ -6,8 +6,10 @@ import (
 	"time"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/joho/godotenv"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type Task struct {
@@ -24,8 +26,12 @@ func count(db *sqlx.DB) (int, error) {
 }
 
 func openDB(t *testing.T) *sqlx.DB {
+	err := godotenv.Load("../.env")
+	require.NoError(t, err)
+
 	dbfile := DBFile
-	envFile := os.Getenv("TODO_DBFILE")
+
+	envFile := "../" + os.Getenv("TODO_DBFILE")
 	if len(envFile) > 0 {
 		dbfile = envFile
 	}
@@ -35,12 +41,12 @@ func openDB(t *testing.T) *sqlx.DB {
 }
 
 func TestDB(t *testing.T) {
+
 	db := openDB(t)
 	defer db.Close()
 
 	before, err := count(db)
 	assert.NoError(t, err)
-
 	today := time.Now().Format(`20060102`)
 
 	res, err := db.Exec(`INSERT INTO scheduler (date, title, comment, repeat) 
@@ -48,6 +54,7 @@ func TestDB(t *testing.T) {
 	assert.NoError(t, err)
 
 	id, err := res.LastInsertId()
+	assert.NoError(t, err)
 
 	var task Task
 	err = db.Get(&task, `SELECT * FROM scheduler WHERE id=?`, id)
