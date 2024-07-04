@@ -11,12 +11,10 @@ TODO List - это веб-приложение на Go для управлени
 git clone https://github.com/Epicpt/go_final_project.git
 cd go_final_project
 go mod tidy
-
 ```
 ## Запуск
 ```
 go run main.go
-
 ```
 
 Сервер доступен по адресу http://localhost:7540
@@ -27,10 +25,11 @@ go run main.go
 * SQLite
 * html, css, js
 
-## <details><summary>Структура</summary>...</details>
+## <details><summary>Структура</summary>
 * main.go: Главный файл приложения, точка входа сервера.
 * database/: Пакет для инициализации базы данных, взаимодействия с базой данных.
 * handlers/: Пакет с обработчиками API запросов.
 * model/: Пакет с моделями данных.
 * api/: Пакет с логикой обработки задач и вычисления следующей даты выполнения.
 * web/: Директория для статических файлов (HTML, CSS, JS).
+</details>
