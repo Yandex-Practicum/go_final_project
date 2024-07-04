@@ -1,4 +1,4 @@
-### TODO List
+# TODO List
 
 TODO List - это веб-приложение на Go для управления задачами с поддержкой повторяющихся событий.
 
@@ -6,7 +6,7 @@ TODO List - это веб-приложение на Go для управлени
 
 ## Установка
 
-# Склонируйте репозиторий
+### Склонируйте репозиторий
 ```
 git clone https://github.com/Epicpt/go_final_project.git
 cd go_final_project
@@ -27,7 +27,7 @@ go run main.go
 * SQLite
 * html, css, js
 
-## <details><summary><b>Структура</b></summary>
+## <details><summary>Структура</summary>...</details>
 * main.go: Главный файл приложения, точка входа сервера.
 * database/: Пакет для инициализации базы данных, взаимодействия с базой данных.
 * handlers/: Пакет с обработчиками API запросов.
