@@ -60,20 +60,20 @@ func GetTasksHandler(w http.ResponseWriter, r *http.Request) {
 
 	switch {
 	case len(search) == 0:
-		tasks, err = dbh.GetTasksList()
+		tasks, err = dbs.GetTasksList()
 
 	case isDate:
 		date, err = time.Parse("02.01.2006", search)
 		if err == nil {
 			search = date.Format(dateFormat)
-			tasks, err = dbh.GetTasksList(search)
+			tasks, err = dbs.GetTasksList(search)
 			break
 		}
 		fallthrough
 
 	default:
 		search = fmt.Sprint("%" + search + "%")
-		tasks, err = dbh.GetTasksList(search)
+		tasks, err = dbs.GetTasksList(search)
 
 	}
 
@@ -82,5 +82,4 @@ func GetTasksHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	write()
-
 }

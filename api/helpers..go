@@ -14,13 +14,13 @@ import (
 
 // Общие перменные для пакета
 var (
-	dbh        db.DBHandler
+	dbs        db.Storage
 	dateFormat string
 )
 
 // ApiInit инициплизирует переменные используемые в пакете api, зависящие от переменных среды и других пакетов
-func ApiInit() {
-	dbh = db.DBHandl
+func ApiInit(storage db.Storage) {
+	dbs = storage
 	dateFormat = os.Getenv("TODO_DATEFORMAT")
 }
 

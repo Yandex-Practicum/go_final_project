@@ -14,7 +14,7 @@ var (
 )
 
 // AddTask отправляет SQL запрос на добавление переданной задачи Task. Возвращает ID добавленной задачи и/или ошибку.
-func (dbHandl *DBHandler) AddTask(task Task) (int64, error) {
+func (dbHandl *Storage) AddTask(task Task) (int64, error) {
 	var id int64
 	res, err := dbHandl.db.Exec("INSERT INTO scheduler (date, title, comment, repeat) VALUES (:date, :title, :comment, :repeat)",
 		sql.Named("date", task.Date), sql.Named("title", task.Title),
@@ -26,7 +26,7 @@ func (dbHandl *DBHandler) AddTask(task Task) (int64, error) {
 }
 
 // GetTaskByID возвращает задачу Task с указанным ID, или ошибку.
-func (dbHandl *DBHandler) GetTaskByID(id string) (Task, error) {
+func (dbHandl *Storage) GetTaskByID(id string) (Task, error) {
 	var task Task
 
 	row := dbHandl.db.QueryRow("SELECT * FROM scheduler WHERE id = :id", sql.Named("id", id))
@@ -41,7 +41,7 @@ func (dbHandl *DBHandler) GetTaskByID(id string) (Task, error) {
 }
 
 // PutTask отправляет SQL запрос на обновление задачи Task, возвращает ошибку в случае неудачи.
-func (dbHandl *DBHandler) PutTask(updateTask Task) error {
+func (dbHandl *Storage) PutTask(updateTask Task) error {
 	res, err := dbHandl.db.Exec("UPDATE scheduler SET date = :date, title = :title, comment = :comment, repeat = :repeat WHERE id = :id",
 		sql.Named("date", updateTask.Date),
 		sql.Named("title", updateTask.Title),
@@ -58,7 +58,7 @@ func (dbHandl *DBHandler) PutTask(updateTask Task) error {
 }
 
 // DeleteTask отправялет SQL запрос на удаление задачи с указанным ID. Возваращает ошибку в случае неудачи.
-func (dbHandl *DBHandler) DeleteTask(id string) error {
+func (dbHandl *Storage) DeleteTask(id string) error {
 	_, err := dbHandl.GetTaskByID(id)
 	if err != nil {
 		return err
@@ -77,7 +77,7 @@ func (dbHandl *DBHandler) DeleteTask(id string) error {
 
 // GetTasksList возвращает послдение добавленные задачи []Task, либо последние добавленные задачи подходящие под поисковой запрос search при его наличие.
 // Возвращает ошибку, если что-то пошло не так
-func (dbHandl *DBHandler) GetTasksList(search ...string) ([]Task, error) {
+func (dbHandl *Storage) GetTasksList(search ...string) ([]Task, error) {
 	var tasks []Task
 	var rows *sql.Rows
 	var err error

@@ -8,7 +8,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-type DBHandler struct {
+type Storage struct {
 	db *sql.DB
 }
 
@@ -16,11 +16,9 @@ const (
 	maxIdleConns    = 2
 	maxOpenConns    = 5
 	connMaxIdleTime = time.Minute * 5
-	connMaxLifetime = time.Hour
 )
 
 var (
-	DBHandl    DBHandler
 	DateFormat string
 )
 
@@ -36,26 +34,25 @@ func DbExists(dbFile string) bool {
 }
 
 // StartDB открывает базу данных указанную в .env файле, добавляет её в структуру DBHandler.
-func (dbHandl *DBHandler) StartDB() error {
+func StartDB() (Storage, error) {
 	dbFile := os.Getenv("TODO_DBFILE")
 	DateFormat = os.Getenv("TODO_DATEFORMAT")
 
 	db, err := sql.Open("sqlite3", dbFile)
 	if err != nil {
-		return err
+		return Storage{}, err
 	}
 	db.SetMaxIdleConns(maxIdleConns)
 	db.SetMaxOpenConns(maxOpenConns)
 	db.SetConnMaxIdleTime(connMaxIdleTime)
-	db.SetConnMaxLifetime(connMaxLifetime)
-	dbHandl.db = db
-	DBHandl = *dbHandl
+	dbStorage := Storage{}
+	dbStorage.db = db
 
-	return nil
+	return dbStorage, nil
 }
 
 // CloseDB закрывает подключение к базе данных.
-func (dbHandl *DBHandler) CloseDB() error {
+func (dbHandl *Storage) CloseDB() error {
 	db := dbHandl.db
 	err := db.Close()
 	if err != nil {
@@ -68,7 +65,7 @@ func (dbHandl *DBHandler) CloseDB() error {
 // InstallDB создаёт файл для базы данных с названием, указаным в .env,
 // отправляет SQL запрос на создание таблицы из файла schema.sql.
 // Возвращает ошибку в случае неудачи.
-func (dbHand DBHandler) InstallDB() error {
+func InstallDB() error {
 	dbFile := os.Getenv("TODO_DBFILE")
 	db, err := sql.Open("sqlite3", dbFile)
 	if err != nil {

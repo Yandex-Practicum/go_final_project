@@ -21,13 +21,13 @@ func PostTaskDoneHandler(w http.ResponseWriter, r *http.Request) {
 		writeErr(fmt.Errorf("некорректный формат id"), w)
 		return
 	}
-	task, err := dbh.GetTaskByID(id)
+	task, err := dbs.GetTaskByID(id)
 	if err != nil {
 		writeErr(err, w)
 		return
 	}
 	if len(task.Repeat) == 0 {
-		err = dbh.DeleteTask(id)
+		err = dbs.DeleteTask(id)
 		if err != nil {
 			writeErr(err, w)
 			return
@@ -42,7 +42,7 @@ func PostTaskDoneHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		task.Date = nextDate
 	}
-	err = dbh.PutTask(task)
+	err = dbs.PutTask(task)
 	if err != nil {
 		writeErr(err, w)
 		return

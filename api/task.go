@@ -76,7 +76,7 @@ func postTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err = dbh.AddTask(task)
+	id, err = dbs.AddTask(task)
 	write()
 }
 
@@ -117,7 +117,7 @@ func putTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = dbh.PutTask(updatedTask)
+	err = dbs.PutTask(updatedTask)
 	write()
 
 }
@@ -153,7 +153,7 @@ func getTask(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	id := q.Get("id")
 
-	task, err = dbh.GetTaskByID(id)
+	task, err = dbs.GetTaskByID(id)
 	if err != nil {
 		log.Println(err)
 	}
@@ -175,7 +175,7 @@ func deleteTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = dbh.DeleteTask(id)
+	err = dbs.DeleteTask(id)
 	if err != nil {
 		writeErr(err, w)
 		return
