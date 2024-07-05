@@ -5,7 +5,7 @@ import (
 )
 
 func PutTask(updTask Task) error {
-	db, err := sql.Open("sqlite3", "./db/scheduler.db")
+	db, err := sql.Open("sqlite3", "./scheduler.db")
 	if err != nil {
 		return err
 	}

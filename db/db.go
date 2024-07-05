@@ -11,11 +11,10 @@ import (
 )
 
 func CreateDB() {
-	dbName := "./db/scheduler.db"
-	dbDir := "/Users/dkotov/Desktop/Practicum/go_final_project/"
+	dbName := "scheduler.db"
 	dbtodo := os.Getenv("TODO_DBFILE")
 
-	dbFile := filepath.Join(filepath.Dir(dbDir), dbName)
+	dbFile := filepath.Join(".", dbName)
 	_, err := os.Stat(dbFile)
 
 	var install bool

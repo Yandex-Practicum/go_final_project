@@ -49,30 +49,29 @@ func AddTaskHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		_, err = time.Parse(tasks.Format, task.Date)
 		if err != nil {
-			writeError(w, "Неверный формат даты", http.StatusBadRequest)
+			writeError(w, "Неверный формат даты, ожидается формат "+tasks.Format, http.StatusBadRequest)
 			return
 		}
 	}
 
-	if task.Repeat != "" {
-		_, err = tasks.NextDate(time.Now(), task.Date, task.Repeat)
-		if err != nil {
-			writeError(w, "Неверный формат правила повторения", http.StatusBadRequest)
-			return
+	if task.Repeat == "" {
+		if task.Date < time.Now().Format(tasks.Format) {
+			task.Date = time.Now().Format(tasks.Format)
 		}
 	} else {
-		task.Date = time.Now().Format(tasks.Format)
-	}
-	if task.Date < time.Now().Format(tasks.Format) {
-		task.Date, err = tasks.NextDate(time.Now(), task.Date, task.Repeat)
+		nextDate, err := tasks.NextDate(time.Now(), task.Date, task.Repeat)
 		if err != nil {
-			writeError(w, err.Error(), http.StatusBadRequest)
+			writeError(w, "Неверный формат правила повторения: "+err.Error(), http.StatusBadRequest)
 			return
 		}
+		if task.Date < time.Now().Format(tasks.Format) {
+			task.Date = nextDate
+		}
 	}
+
 	id, err := tasks.AddTask(task)
 	if err != nil {
-		writeError(w, "Ошибка сохранения задачи: ", http.StatusInternalServerError)
+		writeError(w, "Ошибка сохранения задачи: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 	writeResponse(w, map[string]int64{"id": id}, http.StatusCreated)
@@ -117,7 +116,7 @@ func UpdateTaskHandler(w http.ResponseWriter, r *http.Request) {
 
 func GetTasksHandler(w http.ResponseWriter, r *http.Request) {
 	search := r.URL.Query().Get("search")
-	tasksList, err := tasks.GetTasks("./db/scheduler.db", search)
+	tasksList, err := tasks.GetTasks("./scheduler.db", search)
 	if err != nil {
 		writeError(w, "Ошибка поиска задач: ", http.StatusInternalServerError)
 		return
@@ -133,7 +132,7 @@ func DeleteTaskHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db, err := sql.Open("sqlite3", "./db/scheduler.db")
+	db, err := sql.Open("sqlite3", "./scheduler.db")
 	if err != nil {
 		writeError(w, "Ошибка подключения к базе данных", http.StatusInternalServerError)
 		return

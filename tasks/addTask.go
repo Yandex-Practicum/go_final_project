@@ -4,7 +4,7 @@ import "database/sql"
 
 func AddTask(task Task) (int64, error) {
 	var id int64
-	db, err := sql.Open("sqlite3", "./db/scheduler.db")
+	db, err := sql.Open("sqlite3", "./scheduler.db")
 	if err != nil {
 		return 0, err
 	}
