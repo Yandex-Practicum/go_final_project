@@ -1,5 +1,5 @@
 CREATE TABLE "scheduler" (
-	"id" INTEGER PRIMARY KEY AUTOINCREM id ,
+	 PRIMARY KEY AUTOINCREMENT "id",
 	"date"	TEXT NOT NULL,
 	"title"	TEXT NOT NULL,
 	"comment"	TEXT,

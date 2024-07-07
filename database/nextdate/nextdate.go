@@ -42,14 +42,14 @@ func NextDate(nowArg time.Time, date string, repeat string) (string, error) {
 	code = strings.TrimSpace(code)
 
 	switch prefix {
-	case "d":
-		_, err = calcD(code)
-	case "y":
-		calcY()
-	case "w":
-		_, err = calcW(code)
-	case "m":
-		_, err = calcM(code)
+	case "day":
+		_, err = CalculateNextDateAfterDays(code)
+	case "year":
+		CalculateNextDateAfterYear()
+	case "week":
+		_, err = CalculateNextDateAfterWeek(code)
+	case "month":
+		_, err = CalculateNextDateAfterMonth(code)
 	default:
 		return "", fmt.Errorf("некорректный формат repeat")
 	}

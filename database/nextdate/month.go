@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func calcM(code string) (string, error) {
+func CalculateNextDateAfterMonth(code string) (string, error) {
 	// Текущая дата
 	currentMonth := int(now.Month())
 	currentDay := now.Day()

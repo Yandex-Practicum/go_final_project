@@ -14,11 +14,22 @@ var (
 )
 
 // AddTask отправляет SQL запрос на добавление переданной задачи Task. Возвращает ID добавленной задачи и/или ошибку.
+func (dbHandl *Storage) AddTask(task Task) (int64, error) {
+	var id int64
+	res, err := dbHandl.db.Exec("INSERT INTO scheduler (date, title, comment, repeat) VALUES (:date, :title, :comment, :repeat)",
+		sql.Named("date", task.Date), sql.Named("title", task.Title),
+		sql.Named("comment", task.Comment), sql.Named("repeat", task.Repeat))
+	if err == nil {
+		id, _ = res.LastInsertId()
+	}
+	return id, err
+}
+
+// GetTaskByID возвращает задачу Task с указанным ID, или ошибку.
 func (dbHandl *Storage) GetTaskByID(id string) (Task, error) {
 	var task Task
 
-	// Измененный запрос: выбираются только определенные поля
-	row := dbHandl.db.QueryRow("SELECT id, date, title, comment, repeat FROM scheduler WHERE id = :id", sql.Named("id", id))
+	row := dbHandl.db.QueryRow("SELECT * FROM scheduler WHERE id = :id", sql.Named("id", id))
 
 	err := row.Scan(&task.ID, &task.Date, &task.Title, &task.Comment, &task.Repeat)
 	if err != nil {
@@ -26,6 +37,7 @@ func (dbHandl *Storage) GetTaskByID(id string) (Task, error) {
 		return Task{}, err
 	}
 	return task, nil
+
 }
 
 // PutTask отправляет SQL запрос на обновление задачи Task, возвращает ошибку в случае неудачи.
@@ -72,14 +84,15 @@ func (dbHandl *Storage) GetTasksList(search ...string) ([]Task, error) {
 
 	switch {
 	case len(search) == 0:
-		// Измененный запрос: выбираются только определенные поля
-		rows, err = dbHandl.db.Query("SELECT id, date, title, comment, repeat FROM scheduler ORDER BY id LIMIT :limit", sql.Named("limit", rowsLimit))
+		rows, err = dbHandl.db.Query("SELECT * FROM scheduler ORDER BY id LIMIT :limit", sql.Named("limit", rowsLimit))
+		if err != nil {
+			return []Task{}, err
+		}
 	case len(search) > 0:
 		search := search[0]
 		_, err = time.Parse(DateFormat, search)
 		if err != nil {
-			// Измененный запрос: выбираются только определенные поля
-			rows, err = dbHandl.db.Query("SELECT id, date, title, comment, repeat FROM scheduler WHERE title LIKE :search OR comment LIKE :search ORDER BY date LIMIT :limit",
+			rows, err = dbHandl.db.Query(`SELECT id, date, title, comment, repeat FROM scheduler WHERE title LIKE :search OR comment LIKE :search ORDER BY date LIMIT :limit`,
 				sql.Named("search", search),
 				sql.Named("limit", rowsLimit))
 			if err != nil {
@@ -87,8 +100,7 @@ func (dbHandl *Storage) GetTasksList(search ...string) ([]Task, error) {
 			}
 			break
 		}
-		// Измененный запрос: выбираются только определенные поля
-		rows, err = dbHandl.db.Query("SELECT id, date, title, comment, repeat FROM scheduler WHERE date = :date LIMIT :limit",
+		rows, err = dbHandl.db.Query("SELECT * FROM scheduler WHERE date = :date LIMIT :limit",
 			sql.Named("date", search),
 			sql.Named("limit", rowsLimit))
 		if err != nil {
@@ -100,13 +112,26 @@ func (dbHandl *Storage) GetTasksList(search ...string) ([]Task, error) {
 
 	for rows.Next() {
 		task := Task{}
-		// Измененный сканирование: считываются только определенные поля
-		err := rows.Scan(&task.ID, &task.Date, &task.Title, &task.Comment, &task.Repeat)
-		if err != nil {
-			log.Println(err)
-			return []Task{}, err
+		// Проверяем наличие ошибок после Next()
+		if err := rows.Err(); err != nil {
+			log.Printf("Ошибка при переборе строк: %v\n", err)
+			return []Task{}, fmt.Errorf("ошибка при переборе строк: %w", err)
 		}
+
+		// Попытка сканирования данных в структуру
+		if err := rows.Scan(&task.ID, &task.Date, &task.Title, &task.Comment, &task.Repeat); err != nil {
+			log.Printf("Ошибка при сканировании строки: %v\n", err)
+			return []Task{}, fmt.Errorf("ошибка при сканировании строки: %w", err)
+		}
+
 		tasks = append(tasks, task)
 	}
+
+	// Проверяем наличие ошибок после завершения перебора строк
+	if err := rows.Err(); err != nil {
+		log.Printf("Ошибка после перебора строк: %v\n", err)
+		return []Task{}, fmt.Errorf("ошибка после перебора строк: %w", err)
+	}
+
 	return tasks, nil
 }

@@ -8,7 +8,7 @@ import (
 )
 
 // calcW возвращает следующую дату или ошибку, исходя из правила repeat "w"
-func calcW(code string) (string, error) {
+func CalculateNextDateAfterWeek(code string) (string, error) {
 	var days int
 	targetWDs, err := listAtoi(strings.Split(code, ","))
 	if err != nil {

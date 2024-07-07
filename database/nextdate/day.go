@@ -5,9 +5,9 @@ import (
 	"strconv"
 )
 
-// calcD возвращает следующую дату по правилу repeat "d"
-func calcD(code string) (string, error) {
-	days, err := strconv.Atoi(code)
+// CalculateNextDateAfterDays возвращает следующую дату, учитывая количество дней.
+func CalculateNextDateAfterDays(daysCode string) (string, error) {
+	days, err := strconv.Atoi(daysCode)
 	if err != nil {
 		return "", err
 	}
