@@ -64,11 +64,12 @@ func main() {
 	r.Post("/api/signin", auth.Auth(api.PostSigninHandler))
 	r.Handle("/api/task", auth.Auth(api.TaskHandler))
 
+	log.Printf("Server running on %s\n", port)
+
 	// Запуск сервера
 	err = http.ListenAndServe(addr, r)
 	if err != nil {
 		log.Println(err)
 	}
-	log.Printf("Server running on %s\n", port)
 
 }

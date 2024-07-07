@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/Masteker/go_final_project/database/db"
+	"github.com/Masteker/go_final_project/datebase/db"
 )
 
 // task.go содержит обработчики запросов к api/task
