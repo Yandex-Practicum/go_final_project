@@ -1,0 +1,18 @@
+services:
+  web:
+    build: .
+    env_file:
+      - .env
+    ports:
+      - "7540:7540"
+    volumes:
+      - .:/usr/src/app
+    command: go run cmd/api/main.go cmd/api/routes.go
+  db:
+    image: nouchka/sqlite3:latest
+    stdin_open: true
+    tty: true
+    volumes:
+      - db:/root/db/
+volumes:
+  db:
