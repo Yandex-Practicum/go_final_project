@@ -1,4 +1,4 @@
-package tasks
+package db
 
 import (
 	"fmt"
@@ -12,7 +12,7 @@ func NextDate(now time.Time, date string, repeat string) (string, error) {
 		return "", fmt.Errorf("пустое правило повторения")
 	}
 
-	t, err := time.Parse("20060102", date)
+	t, err := time.Parse(DateFormat, date)
 	if err != nil {
 		return "", fmt.Errorf("неверный формат даты: %s", err)
 	}
@@ -43,7 +43,7 @@ func nextDateByDays(now time.Time, t time.Time, repeat string) (string, error) {
 	for {
 		t = t.AddDate(0, 0, days)
 		if t.After(now) {
-			return t.Format("20060102"), nil
+			return t.Format(DateFormat), nil
 		}
 	}
 }
@@ -57,7 +57,7 @@ func nextDateByYear(now time.Time, t time.Time) (string, error) {
 			t = time.Date(t.Year()+1, t.Month(), t.Day(), 0, 0, 0, 0, time.UTC)
 		}
 		if t.After(now) {
-			return t.Format("20060102"), nil
+			return t.Format(DateFormat), nil
 		}
 	}
 }
@@ -92,7 +92,7 @@ func nextDateByWeekday(now time.Time, t time.Time, repeat string) (string, error
 		}
 		if found {
 			if nextDate.After(now) {
-				return nextDate.Format("20060102"), nil
+				return nextDate.Format(DateFormat), nil
 			}
 			nextDate = nextDate.AddDate(0, 0, 7)
 		} else {
@@ -165,7 +165,7 @@ func nextDateByMonth(now time.Time, t time.Time, repeat string) (string, error) 
 		}
 		if matchDay && matchMonth {
 			if nextDate.After(now) {
-				return nextDate.Format("20060102"), nil
+				return nextDate.Format(DateFormat), nil
 			}
 			nextDate = time.Date(nextDate.Year(), nextDate.Month()+1, 1, 0, 0, 0, 0, time.UTC)
 		} else {

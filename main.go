@@ -5,10 +5,18 @@ import (
 	"main/db"
 	"main/server"
 	"net/http"
+
+	_ "github.com/mattn/go-sqlite3"
 )
 
 func main() {
-	db.CreateDB()
+
+	database, err := db.CreateDB()
+	if err != nil {
+		fmt.Println(err)
+	}
+	defer database.Close()
+
 	webDir := "./web"
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		http.FileServer(http.Dir(webDir)).ServeHTTP(w, r)
@@ -19,19 +27,19 @@ func main() {
 	http.HandleFunc("/api/task", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodPost:
-			server.AddTaskHandler(w, r)
+			server.AddTaskHandler(database)(w, r)
 		case http.MethodGet:
-			server.GetTaskHandler(w, r)
+			server.GetTaskHandler(database)(w, r)
 		case http.MethodPut:
-			server.UpdateTaskHandler(w, r)
+			server.UpdateTaskHandler(database)(w, r)
 		case http.MethodDelete:
-			server.DeleteTaskHandler(w, r)
+			server.DeleteTaskHandler(database)(w, r)
 		default:
 			http.Error(w, "Неверный метод запроса", http.StatusBadRequest)
 		}
 	})
-	http.HandleFunc("/api/tasks", server.GetTasksHandler)
-	http.HandleFunc("/api/task/done", server.MarkTasksAsDoneHandler)
+	http.HandleFunc("/api/tasks", server.GetTasksHandler(database))
+	http.HandleFunc("/api/task/done", server.MarkTasksAsDoneHandler(database))
 
 	fmt.Printf("Запуск сервера на порту %d\n", port)
 	http.ListenAndServe(fmt.Sprintf(":%d", port), nil)

@@ -1,4 +1,4 @@
-package tasks
+package db
 
 import (
 	"fmt"
@@ -7,15 +7,15 @@ import (
 	"time"
 )
 
-func FormatTask(task Task) (Task, error) {
+func (task Task) Check() (Task, error) {
 	var date time.Time
 	var err error
 
 	if len(task.Date) == 0 || strings.ToLower(task.Date) == "today" {
 		date = time.Now()
-		task.Date = date.Format(Format)
+		task.Date = date.Format(DateFormat)
 	} else {
-		date, err = time.Parse(Format, task.Date)
+		date, err = time.Parse(DateFormat, task.Date)
 		if err != nil {
 			return Task{}, err
 		}

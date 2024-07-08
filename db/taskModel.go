@@ -1,4 +1,4 @@
-package tasks
+package db
 
 type Task struct {
 	ID      string `json:"id"`
@@ -8,4 +8,4 @@ type Task struct {
 	Repeat  string `json:"repeat"`
 }
 
-var Format string = "20060102"
+var DateFormat string = "20060102"
