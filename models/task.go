@@ -212,12 +212,11 @@ func ReadTaskByIdGET(w http.ResponseWriter, r *http.Request) {
 	}
 	if newID > maxID {
 		http.Error(w, `{"error":"новый ID больше, чем строк в БД"}`, http.StatusBadRequest)
-		log.Println("Error: новый ID больше, чем строк в БД") // Лог
+		log.Printf("Error: новый ID больше, чем строк в БД, %v", newID) // Лог
 		return
 	}
 
 	taskData, err := ReadTaskById(newID)
-	log.Printf("Взята задача: %v", taskData) // Лог
 	if err != nil {
 		http.Error(w, `{"error": "Задача не найдена"}`, http.StatusBadRequest)
 		log.Printf("Задача не найдена: %v", err) // Лог
@@ -443,10 +442,11 @@ func TaskDonePOST(w http.ResponseWriter, r *http.Request) {
 }
 
 func TaskDELETE(w http.ResponseWriter, r *http.Request) {
-	taskID := r.URL.Query().Get("id")
+	/*taskID := r.URL.Query().Get("id")
 
 	if len(taskID) == 0 {
 		http.Error(w, `{"error":"Не указан идентификатор задачи"}`, http.StatusBadRequest)
+		log.Printf("Error: Не указан идентификатор задачи") // Лог
 		return
 	}
 
@@ -484,18 +484,49 @@ func TaskDELETE(w http.ResponseWriter, r *http.Request) {
 		log.Println("Error: Ошибка при удалении задачи") // Лог
 		return
 	}
-
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusNoContent)
-	w.Write([]byte(`{}`))
+	w.Write([]byte(`{}`))*/
+
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+
+	id := r.URL.Query().Get("id")
+	fmt.Println(id)
+	log.Println("Error: qweqw") // Лог
+	newID, err := strconv.Atoi(id)
+	if err != nil {
+		http.Error(w, `{"error":"не парсится ID"}`, http.StatusBadRequest)
+		log.Printf("Error: не парсится ID:%v", id) // Лог
+		return
+	}
+
+	err = DeleteTask(newID)
+	if err != nil {
+		http.Error(w, `{"error": "ошибка удаления"}`, http.StatusBadRequest)
+		return
+	}
+
+	json.NewEncoder(w).Encode(map[string]interface{}{})
 }
 
 func DeleteTask(taskID int) error {
 	query := "DELETE FROM scheduler WHERE id = ?"
 	log.Printf("Удалена задача с ID: %v", taskID) // Лог
-	_, err := db.Exec(query, taskID)
+
+	/*_, err := db.Exec(query, taskID)
 	if err != nil {
 		return fmt.Errorf("ошибка выполнения запроса удаления к БД: %v", err)
+	}
+	*/
+
+	result, err := db.Exec(query, taskID)
+	if err != nil {
+		return err
+	}
+
+	value, err := result.RowsAffected()
+	if value == 0 {
+		return fmt.Errorf("ошибка выполнения запроса удаления к БД")
 	}
 
 	return err

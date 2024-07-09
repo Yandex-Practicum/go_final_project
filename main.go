@@ -46,7 +46,7 @@ func main() {
 	handler.Get("/api/task", models.ReadTaskByIdGET)
 	handler.Put("/api/task", models.TaskUpdatePUT)
 	handler.Post("/api/task/done", models.TaskDonePOST) // выполнение задачи
-	handler.Delete("/api/task/done", models.TaskDELETE) // удаление задачи
+	handler.Delete("/api/task", models.TaskDELETE)      // удаление задачи
 
 	fmt.Printf("Запуск сервера на порту %s ...\n\n", port)
 	err = http.ListenAndServe(":"+port, handler)
