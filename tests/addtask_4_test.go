@@ -70,6 +70,9 @@ func postJSON(apipath string, values map[string]any, method string) (map[string]
 	if err != nil {
 		return nil, err
 	}
+
+	fmt.Printf("Ответ body: %s, метод %v\n", body, method) // проверка
+
 	err = json.Unmarshal(body, &m)
 	return m, err
 }

@@ -1,33 +1,20 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
-	"path/filepath"
 
+	"github.com/VesuvyX/go_final_project/database"
+	"github.com/VesuvyX/go_final_project/handlers"
+	"github.com/VesuvyX/go_final_project/models"
+	"github.com/go-chi/chi/v5"
 	_ "modernc.org/sqlite"
 )
 
 const defaultPort = "7540"
 
-func main() {
-	port := getPort()
-	webDir := "web"
-
-	checkDb()
-
-	fs := http.FileServer(http.Dir(webDir))
-	http.Handle("/", fs)
-
-	fmt.Println("Запуск сервера на 7540....")
-	err := http.ListenAndServe(":"+port, nil)
-	if err != nil {
-		panic(err)
-	}
-}
 func getPort() string {
 	port := os.Getenv("TODO_PORT")
 	if port == "" {
@@ -36,50 +23,34 @@ func getPort() string {
 	return port
 }
 
-func checkDb() {
-	appPath, err := os.Executable()
+func main() {
+	port := getPort()
+	const webDir = "web"
+	//const webDir = "./web"
+
+	db, err := database.InitDb()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("ошибка подключения к бд: %v", err)
 	}
-	dbFile := filepath.Join(filepath.Dir(appPath), "scheduler.db")
-	_, err = os.Stat(dbFile)
+	defer db.Close()
 
-	var install bool
+	models.SetDB(db)
+
+	handler := chi.NewRouter()
+	fs := http.FileServer(http.Dir(webDir))
+
+	handler.Mount("/", fs)
+	handler.Get("/api/nextdate", handlers.NextDateGETHandler)
+	handler.Post("/api/task", models.TaskAddPOST)
+	handler.Get("/api/tasks", models.TasksShowGET)
+	handler.Get("/api/task", models.ReadTaskByIdGET)
+	handler.Put("/api/task", models.TaskUpdatePUT)
+	handler.Post("/api/task/done", models.TaskDonePOST) // выполнение задачи
+	handler.Delete("/api/task/done", models.TaskDELETE) // удаление задачи
+
+	fmt.Printf("Запуск сервера на порту %s ...\n\n", port)
+	err = http.ListenAndServe(":"+port, handler)
 	if err != nil {
-		install = true
-	}
-
-	// если install равен true, после открытия БД требуется выполнить
-	// sql-запрос с CREATE TABLE и CREATE INDEX
-
-	if !install {
-		db, err := sql.Open("sqlite", "scheduler.db")
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-		defer db.Close()
-
-		queryCreate, err := db.Query(`
-		CREATE TABLE scheduler 
-		(
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		date CHAR(8) NOT NULL DEFAULT "",
-		title TEXT NOT NULL DEFAULT "",
-		comment TEXT NOT NULL DEFAULT "",
-		repeat VARCHAR(128) NOT NULL DEFAULT ""
-		);
-		CREATE INDEX date_index ON scheduler (date);`)
-
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-
-		defer queryCreate.Close()
-		/*db.SetMaxIdleConns(2)
-		db.SetMaxOpenConns(5)
-		db.SetConnMaxIdleTime(time.Minute * 5)
-		db.SetConnMaxLifetime(time.Hour)*/
+		panic(err)
 	}
 }
