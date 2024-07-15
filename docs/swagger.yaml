@@ -1,0 +1,17 @@
+basePath: /
+host: http://localhost:7540
+info:
+  contact:
+    email: spdante@mail.ru
+    name: Alexey Yudin
+  description: Учебный сервис (Яндекс Практикум)
+  termsOfService: spdante@mail.ru
+  title: Пользовательская документация API
+  version: 1.0.0
+paths: {}
+securityDefinitions:
+  ApiKeyAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

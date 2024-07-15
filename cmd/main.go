@@ -16,7 +16,7 @@ import (
 // @description Учебный сервис (Яндекс Практикум)
 // @termsOfService spdante@mail.ru
 // @contact.name Alexey Yudin
-// @contact.email yudin@tn.ru
+// @contact.email spdante@mail.ru
 // @version 1.0.0
 // @host http://localhost:7540
 // @BasePath /
