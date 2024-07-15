@@ -14,14 +14,6 @@ type Database struct {
 var DB Database
 
 func ConnectDB() error {
-	/*
-		appPath, err := os.Executable()
-		if err != nil {
-			log.Fatal(err)
-		}
-		dbFile := filepath.Join(filepath.Dir(appPath), os.Getenv("TODO_DBFILE"))
-	*/
-
 	dbFile := os.Getenv("TODO_DBFILE")
 	var install bool
 	_, err := os.Stat(dbFile)
