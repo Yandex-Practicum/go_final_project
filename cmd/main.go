@@ -8,12 +8,19 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/joho/godotenv"
+
+	"github.com/AlexJudin/go_final_project/database"
 )
 
 func main() {
 	err := godotenv.Load(".env")
 	if err != nil {
 		log.Fatalf("Error loading .env file: %s", err)
+	}
+
+	err = database.ConnectDB()
+	if err != nil {
+		log.Fatalf("Error connect to database: %s", err)
 	}
 
 	port := os.Getenv("TODO_PORT")
