@@ -2,10 +2,8 @@ package main
 
 import (
 	"database/sql"
-	"fmt"
 	"log"
 	"os"
-	"path/filepath"
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
@@ -17,18 +15,13 @@ func initDb() {
 	if err != nil {
 		installDb(dbFile)
 	} else {
-		fmt.Println("existing database found in: " + dbFile)
+		log.Println("existing database found in: " + dbFile)
 	}
 
 }
 
 func getDbFilePath() string {
-	appPath, err := os.Executable()
-	if err != nil {
-		panic(err)
-	}
-	dbFile := filepath.Join(filepath.Dir(appPath), "scheduler.db")
-	return dbFile
+	return "scheduler.db"
 }
 
 func installDb(dbFile string) {
@@ -40,7 +33,7 @@ func installDb(dbFile string) {
 	defer db.Close()
 
 	sqlStmt := `
-	create table scheduler (id integer not null primary key, date text, title text, comment text, repeat text);
+	CREATE TABLE scheduler (id INTEGER NOT NULL PRIMARY KEY, date TEXT, title TEXT, comment TEXT, repeat TEXT);
 	
 	`
 	_, err = db.Exec(sqlStmt)
@@ -48,7 +41,7 @@ func installDb(dbFile string) {
 		log.Printf("%q: %s\n", err, sqlStmt)
 		return
 	}
-	fmt.Println("database created in: " + dbFile)
+	log.Println("database created in: " + dbFile)
 }
 
 func getAllTasks() ([]Task, error) {

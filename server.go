@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -30,19 +31,17 @@ type TasksResponse struct {
 	Error string `json:"error,omitempty"`
 }
 
+const DATE_FORMAT = "20060102"
+
 func startServer() {
-
-	webDir := "web"
-	port := os.Getenv("TODO_PORT")
-
-	if len(port) > 0 {
-		if eport, err := strconv.ParseInt(port, 10, 32); err == nil {
-			port = fmt.Sprint(":", eport)
-		}
-	} else {
-		port = ":7540"
+	const webDir = "web"
+	const PORT = "7540"
+	portString := os.Getenv("TODO_PORT")
+	if len(portString) == 0 {
+		portString = PORT
 	}
-	fmt.Println("listen", port)
+	portString = fmt.Sprint(":", portString)
+	log.Println("listen", portString)
 
 	http.Handle("/", http.FileServer(http.Dir(webDir)))
 
@@ -51,11 +50,11 @@ func startServer() {
 	http.HandleFunc("/api/task", taskHandler)
 	http.HandleFunc("/api/tasks", tasksHandler)
 
-	http.ListenAndServe(port, nil)
+	log.Fatal(http.ListenAndServe(portString, nil))
 }
 
 func NextDate(now time.Time, date string, repeat string) (time.Time, error) {
-	startDate, err := time.Parse("20060102", date)
+	startDate, err := time.Parse(DATE_FORMAT, date)
 	if err != nil {
 		return time.Time{}, err
 	}
@@ -96,7 +95,7 @@ func getDate(s string) (time.Time, error) {
 		return time.Now(), nil
 	}
 
-	date, err := time.Parse("20060102", s)
+	date, err := time.Parse(DATE_FORMAT, s)
 	if err != nil {
 		return time.Time{}, err
 	}
@@ -130,12 +129,15 @@ func setOkResponse(w http.ResponseWriter) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write(jsonResponse)
+	_, err = w.Write(jsonResponse)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }
 func NextDateHandler(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	s := q["now"][0]
-	now, err := time.Parse("20060102", s)
+	now, err := time.Parse(DATE_FORMAT, s)
 	if err != nil {
 		http.Error(w, "cant parse now: "+s, http.StatusBadRequest)
 	}
@@ -146,7 +148,7 @@ func NextDateHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, "cant get next date: "+err.Error(), http.StatusBadRequest)
 	}
-	fmt.Fprint(w, nextDate.Format("20060102"))
+	fmt.Fprint(w, nextDate.Format(DATE_FORMAT))
 }
 
 func taskHandler(w http.ResponseWriter, r *http.Request) {
@@ -165,7 +167,6 @@ func taskHandler(w http.ResponseWriter, r *http.Request) {
 func deleteTask(w http.ResponseWriter, r *http.Request) {
 
 	q := r.URL.Query()
-	fmt.Println(q)
 	s, ok := q["id"]
 	if !ok {
 		setErrorResponse(w, "missing id url parameter", nil)
@@ -198,7 +199,6 @@ func deleteTask(w http.ResponseWriter, r *http.Request) {
 func getTaskById(w http.ResponseWriter, r *http.Request) {
 
 	q := r.URL.Query()
-	fmt.Println(q)
 	s, ok := q["id"]
 	if !ok {
 		setErrorResponse(w, "missing id url parameter", nil)
@@ -253,8 +253,8 @@ func addTask(w http.ResponseWriter, r *http.Request) {
 		setErrorResponse(w, "bad date format", err)
 		return
 	}
-	strDate := date.Format("20060102")
-	if strDate < time.Now().Format("20060102") {
+	strDate := date.Format(DATE_FORMAT)
+	if strDate < time.Now().Format(DATE_FORMAT) {
 		if task.Repeat == "" {
 			date = time.Now()
 		} else {
@@ -264,7 +264,7 @@ func addTask(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
-		strDate = date.Format("20060102")
+		strDate = date.Format(DATE_FORMAT)
 	}
 
 	id, err := insertTask(strDate, task.Title, task.Comment, task.Repeat)
@@ -312,8 +312,8 @@ func putTask(w http.ResponseWriter, r *http.Request) {
 		setErrorResponse(w, "bad date format", err)
 		return
 	}
-	strDate := date.Format("20060102")
-	if strDate < time.Now().Format("20060102") {
+	strDate := date.Format(DATE_FORMAT)
+	if strDate < time.Now().Format(DATE_FORMAT) {
 		if task.Repeat == "" {
 			date = time.Now()
 		} else {
@@ -323,7 +323,7 @@ func putTask(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
-		strDate = date.Format("20060102")
+		strDate = date.Format(DATE_FORMAT)
 	}
 	id, err := strconv.ParseInt(task.ID, 10, 32)
 	if err != nil {
@@ -351,7 +351,6 @@ func putTask(w http.ResponseWriter, r *http.Request) {
 func taskDoneHandler(w http.ResponseWriter, r *http.Request) {
 
 	q := r.URL.Query()
-	fmt.Println(q)
 	s, ok := q["id"]
 	if !ok {
 		setErrorResponse(w, "missing id url parameter", nil)
@@ -379,7 +378,7 @@ func taskDoneHandler(w http.ResponseWriter, r *http.Request) {
 		setErrorResponse(w, "failed to get next date", err)
 		return
 	}
-	strDate := date.Format("20060102")
+	strDate := date.Format(DATE_FORMAT)
 
 	err = updateTask(int(id), strDate, task.Title, task.Comment, task.Repeat)
 	if err != nil {
