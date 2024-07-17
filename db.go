@@ -9,11 +9,26 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
+var db *sql.DB
+var dbx *sqlx.DB
+
 func initDb() {
 	dbFile := getDbFilePath()
 	_, err := os.Stat(dbFile)
+	needCreate := err != nil
+	db, err = sql.Open("sqlite3", dbFile)
 	if err != nil {
-		installDb(dbFile)
+		log.Fatal(err)
+		return
+	}	
+	dbx, err = sqlx.Connect("sqlite3", dbFile)
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
+	if needCreate {
+		installDb(db)
+		log.Println("database created in: " + dbFile)
 	} else {
 		log.Println("existing database found in: " + dbFile)
 	}
@@ -24,58 +39,34 @@ func getDbFilePath() string {
 	return "scheduler.db"
 }
 
-func installDb(dbFile string) {
-
-	db, err := sql.Open("sqlite3", dbFile)
+func installDb(db *sql.DB) {
+	sqlStmt := `CREATE TABLE scheduler (id INTEGER NOT NULL PRIMARY KEY, date VARCHAR(10), title NVARCHAR(255), comment NVARCHAR(10000), repeat VARCHAR(10));`
+	_, err := dbx.Exec(sqlStmt)
 	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
-
-	sqlStmt := `
-	CREATE TABLE scheduler (id INTEGER NOT NULL PRIMARY KEY, date TEXT, title TEXT, comment TEXT, repeat TEXT);
-	
-	`
-	_, err = db.Exec(sqlStmt)
-	if err != nil {
-		log.Printf("%q: %s\n", err, sqlStmt)
-		return
-	}
-	log.Println("database created in: " + dbFile)
+		log.Printf("%q: %s\n", err, sqlStmt) 
+	} 
 }
 
 func getAllTasks() ([]Task, error) {
 
-	db, err := sqlx.Connect("sqlite3", getDbFilePath())
-	if err != nil {
-		return nil, err
-	}
-	defer db.Close()
-
 	var tasks []Task
 
-	err = db.Select(&tasks, "SELECT * FROM scheduler ORDER BY date ASC")
-
+	err := dbx.Select(&tasks, "SELECT * FROM scheduler ORDER BY date ASC LIMIT 100")
 	if err != nil {
 		return nil, err
 	}
 	if tasks == nil {
 		tasks = []Task{}
 	}
+
 	return tasks, nil
-
 }
-func loadTaskById(id int64) (*Task, error) {
 
-	db, err := sqlx.Connect("sqlite3", getDbFilePath())
-	if err != nil {
-		return nil, err
-	}
-	defer db.Close()
+func loadTaskById(id int64) (*Task, error) {
 
 	var task Task
 
-	err = db.Get(&task, "SELECT * FROM scheduler where id = ?", id)
+	err := dbx.Get(&task, "SELECT * FROM scheduler where id = ?", id)
 	if err != nil {
 		return nil, err
 	}
@@ -85,14 +76,8 @@ func loadTaskById(id int64) (*Task, error) {
 
 func insertTask(date string, title, comment, repeat string) (int, error) {
 
-	db, err := sql.Open("sqlite3", getDbFilePath())
-	if err != nil {
-		return -1, err
-	}
-	defer db.Close()
-
-	sqlStmt := `insert into scheduler (date, title , comment , repeat) values (?, ?, ?, ?)`
-	r, err := db.Exec(sqlStmt, date, title, comment, repeat)
+	sqlStmt := `INSERT INTO scheduler (date, title , comment , repeat) VALUES (?, ?, ?, ?)`
+	r, err := dbx.Exec(sqlStmt, date, title, comment, repeat)
 	if err != nil {
 		return -1, err
 	}
@@ -105,37 +90,26 @@ func insertTask(date string, title, comment, repeat string) (int, error) {
 }
 
 func deleteTaskById(id int) error {
-	db, err := sql.Open("sqlite3", getDbFilePath())
-	if err != nil {
-		return err
-	}
-	defer db.Close()
 
-	sqlStmt := `delete from scheduler where id = ?`
-	_, err = db.Exec(sqlStmt, id)
+	sqlStmt := `DELETE FROM scheduler WHERE id = ?`
+	_, err := dbx.Exec(sqlStmt, id)
 	if err != nil {
 		return err
 	}
+
 	return nil
-
 }
 
 func updateTask(id int, date string, title, comment, repeat string) error {
 
-	db, err := sql.Open("sqlite3", getDbFilePath())
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-
-	sqlStmt := `update scheduler
-	set date = ?, title = ?, comment = ?, repeat = ? 
-	where id = ?`
-	_, err = db.Exec(sqlStmt, date, title, comment, repeat, id)
+	sqlStmt := `
+	UPDATE scheduler
+	SET date = ?, title = ?, comment = ?, repeat = ? 
+	WHERE id = ?`
+	_, err := dbx.Exec(sqlStmt, date, title, comment, repeat, id)
 	if err != nil {
 		return err
 	}
 
 	return nil
-
 }
