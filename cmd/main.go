@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/AlexJudin/go_final_project/api"
 	"log"
 	"net/http"
 	"os"
@@ -42,6 +43,7 @@ func main() {
 	webDir := "./web"
 	r := chi.NewRouter()
 	r.Handle("/", http.FileServer(http.Dir(webDir)))
+	r.Get("/api/nextdate", api.GetTasks)
 
 	serverAddress := fmt.Sprintf("localhost:%s", port)
 	log.Println("Listening on " + serverAddress)

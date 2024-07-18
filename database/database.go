@@ -7,11 +7,13 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-type Database struct {
+var _ Task = (*TaskRepo)(nil)
+
+type TaskRepo struct {
 	Db *sqlx.DB
 }
 
-var DB Database
+var DB TaskRepo
 
 func ConnectDB() error {
 	dbFile := os.Getenv("TODO_DBFILE")
@@ -41,7 +43,7 @@ func ConnectDB() error {
 		}
 	}
 
-	DB = Database{
+	DB = TaskRepo{
 		Db: db,
 	}
 
