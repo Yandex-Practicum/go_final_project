@@ -47,7 +47,7 @@ func main() {
 
 	serverAddress := fmt.Sprintf("localhost:%s", port)
 	log.Println("Listening on " + serverAddress)
-	if err = http.ListenAndServe(serverAddress, http.FileServer(http.Dir(webDir))); err != nil {
+	if err = http.ListenAndServe(serverAddress, r); err != nil {
 		log.Panicf("Start server error: %+v", err.Error())
 	}
 }

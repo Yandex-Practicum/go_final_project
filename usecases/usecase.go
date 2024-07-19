@@ -9,12 +9,6 @@ import (
 	"github.com/AlexJudin/go_final_project/database"
 )
 
-/*
-func NextDate(now time.Time, date string, repeat string) (string, error) {
-	return "", nil
-}
-*/
-
 var _ Task = (*TaskUsecase)(nil)
 
 type TaskUsecase struct {
@@ -47,7 +41,6 @@ func NextDate(now time.Time, date string, repeat string) (string, error) {
 		dateTask = addDateTask(now, dateTask, 0, 0, digit)
 	default:
 		return "", fmt.Errorf("unknown key in repeat")
-
 	}
 
 	return dateTask.Format("20060102"), nil
