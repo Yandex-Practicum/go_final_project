@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/AlexJudin/go_final_project/api"
+	"github.com/AlexJudin/go_final_project/usecases"
 	"log"
 	"net/http"
 	"os"
@@ -30,20 +31,25 @@ func main() {
 		log.Fatalf("Error loading .env file: %+v", err)
 	}
 
-	err = database.ConnectDB()
+	db, err := database.NewDB()
 	if err != nil {
 		log.Fatalf("Error connect to database: %+v", err)
 	}
+	defer db.Close()
 
 	port := os.Getenv("TODO_PORT")
 	if len(port) == 0 {
 		port = "7540"
 	}
 
+	// init usecases
+	taskUC := usecases.NewTaskUsecase(db)
+	taskHandler := api.NewTaskHandler(taskUC)
+
 	webDir := "./web"
 	r := chi.NewRouter()
 	r.Handle("/", http.FileServer(http.Dir(webDir)))
-	r.Get("/api/nextdate", api.GetTasks)
+	r.Get("/api/nextdate", taskHandler.GetTasks)
 
 	serverAddress := fmt.Sprintf("localhost:%s", port)
 	log.Println("Listening on " + serverAddress)

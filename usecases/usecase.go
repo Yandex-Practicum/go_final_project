@@ -15,14 +15,18 @@ type TaskUsecase struct {
 	DB database.Task
 }
 
-func NextDate(now time.Time, date string, repeat string) (string, error) {
+func NewTaskUsecase(db database.Task) *TaskUsecase {
+	return &TaskUsecase{DB: db}
+}
+
+func (t *TaskUsecase) NextDate(now time.Time, date string, repeat string) (string, error) {
 	if repeat == "" {
 		return "", nil
 	}
 
 	dateTask, err := time.Parse("20060102", date)
 	if err != nil {
-		return "", fmt.Errorf("failed to convert string to date", err)
+		return "", fmt.Errorf("error parsing date: %+v", err)
 	}
 
 	codeRepeat := strings.Split(repeat, " ")

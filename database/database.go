@@ -7,47 +7,34 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-var _ Task = (*TaskRepo)(nil)
-
-type TaskRepo struct {
-	Db *sqlx.DB
-}
-
-var DB TaskRepo
-
-func ConnectDB() error {
+func NewDB() (*sqlx.DB, error) {
 	dbFile := os.Getenv("TODO_DBFILE")
 	var install bool
 	_, err := os.Stat(dbFile)
 	if err != nil {
 		install = true
 	}
-	// если install равен true, после открытия БД требуется выполнить
-	// sql-запрос с CREATE TABLE и CREATE INDEX
+
 	if install {
 		_, err = os.Create(dbFile)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 
 	db, err := sqlx.Connect("sqlite", dbFile)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if install {
 		err = createTable(db)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 
-	DB = TaskRepo{
-		Db: db,
-	}
-
-	return nil
+	return db, nil
 }
 
 func createTable(db *sqlx.DB) error {
