@@ -22,6 +22,15 @@ func NewTaskHandler(uc usecases.Task) TaskHandler {
 	return TaskHandler{uc: uc}
 }
 
+// GetNextDate ... Получение следующей даты
+// @Summary Получение следующей даты
+// @Description Получение следующей даты
+// @Security ApiKeyAuth
+// @Accept json
+// @Tags nextDate
+// @Success 200 {string} string
+// @Failure 400,503 {object} errResponse
+// @Router /api/nextdate [get]
 func (h *TaskHandler) GetNextDate(w http.ResponseWriter, r *http.Request) {
 	now := r.FormValue("now")
 	nowTime, err := time.Parse("20060102", now)

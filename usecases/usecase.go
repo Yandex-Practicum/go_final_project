@@ -26,7 +26,7 @@ func (t *TaskUsecase) GetNextDate(now time.Time, date string, repeat string) (st
 
 	dateTask, err := time.Parse("20060102", date)
 	if err != nil {
-		return "", fmt.Errorf("error parsing date: %+v", err)
+		return "", err
 	}
 
 	codeRepeat := strings.Split(repeat, " ")
