@@ -7,9 +7,14 @@ import (
 	"time"
 
 	"github.com/AlexJudin/go_final_project/database"
+	"github.com/AlexJudin/go_final_project/usecases/model"
 )
 
 var _ Task = (*TaskUsecase)(nil)
+
+const (
+	year = 1
+)
 
 type TaskUsecase struct {
 	DB database.Task
@@ -21,7 +26,7 @@ func NewTaskUsecase(db database.Task) *TaskUsecase {
 
 func (t *TaskUsecase) GetNextDate(now time.Time, date string, repeat string) (string, error) {
 	if repeat == "" {
-		return "", nil
+		return "", fmt.Errorf("repeat is empty")
 	}
 
 	dateTask, err := time.Parse("20060102", date)
@@ -29,45 +34,55 @@ func (t *TaskUsecase) GetNextDate(now time.Time, date string, repeat string) (st
 		return "", err
 	}
 
-	codeRepeat := strings.Split(repeat, " ")
-	if len(codeRepeat) != 2 && !strings.EqualFold(codeRepeat[0], "y") {
-		return "", fmt.Errorf("string conversion error repeat")
-	}
+	repeatString := strings.Split(repeat, " ")
 
-	switch strings.ToLower(codeRepeat[0]) {
-	case "y":
-		dateTask = addDateTask(now, dateTask, 1, 0, 0)
+	switch strings.ToLower(repeatString[0]) {
 	case "d":
-		digit, err := convetToIntAncCheck(codeRepeat[1])
+		days, err := parseValue(repeatString[1])
 		if err != nil {
 			return "", err
 		}
-		dateTask = addDateTask(now, dateTask, 0, 0, digit)
+		dateTask = addDateTask(now, dateTask, 0, 0, days)
+	case "y":
+		dateTask = addDateTask(now, dateTask, year, 0, 0)
+	//case "w":
+	//case "m":
 	default:
-		return "", fmt.Errorf("unknown key in repeat")
+		return "", fmt.Errorf("invalid character")
 	}
 
 	return dateTask.Format("20060102"), nil
 }
 
-func convetToIntAncCheck(num string) (int, error) {
-	digit, err := strconv.Atoi(num)
+func (t *TaskUsecase) CreateTask(task *model.TaskReq) (*model.TaskResp, error) {
+	taskId, err := t.DB.CreateTask(task)
+	if err != nil {
+		return nil, err
+	}
+
+	taskResp := model.NewTaskResp(taskId)
+
+	return taskResp, nil
+}
+
+func parseValue(num string) (int, error) {
+	days, err := strconv.Atoi(num)
 	if err != nil {
 		return 0, err
 	}
 
-	if digit >= 400 || digit < 0 {
-		return 0, fmt.Errorf("the number of days to reschedule the task is greater than 400 or a negative number is specified")
+	if days >= 400 || days < 0 {
+		return 0, fmt.Errorf("invalid value %d", days)
 	}
 
-	return digit, nil
+	return days, nil
 }
 
-func addDateTask(now time.Time, dateTask time.Time, y int, m int, d int) time.Time {
-	dateTask = dateTask.AddDate(y, m, d)
+func addDateTask(now time.Time, dateTask time.Time, year int, month int, day int) time.Time {
+	dateTask = dateTask.AddDate(year, month, day)
 
 	for dateTask.Before(now) {
-		dateTask = dateTask.AddDate(y, m, d)
+		dateTask = dateTask.AddDate(year, month, day)
 	}
 
 	return dateTask

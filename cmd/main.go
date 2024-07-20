@@ -37,21 +37,20 @@ func main() {
 	}
 	defer db.Close()
 
-	port := os.Getenv("TODO_PORT")
-	if len(port) == 0 {
-		port = "7540"
-	}
+	// init repository
+	repo := database.NewNewRepository(db)
 
 	// init usecases
-	taskUC := usecases.NewTaskUsecase(db)
+	taskUC := usecases.NewTaskUsecase(repo)
 	taskHandler := api.NewTaskHandler(taskUC)
 
 	webDir := "./web"
 	r := chi.NewRouter()
 	r.Handle("/", http.FileServer(http.Dir(webDir)))
 	r.Get("/api/nextdate", taskHandler.GetNextDate)
+	r.Post("/api/task", taskHandler.CreateTask)
 
-	serverAddress := fmt.Sprintf("localhost:%s", port)
+	serverAddress := fmt.Sprintf("localhost:%s", os.Getenv("TODO_PORT"))
 	log.Println("Listening on " + serverAddress)
 	if err = http.ListenAndServe(serverAddress, r); err != nil {
 		log.Panicf("Start server error: %+v", err.Error())

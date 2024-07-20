@@ -13,4 +13,6 @@ const (
 	SQLCreateSchedulerIndex = `
 	CREATE INDEX scheduler_date_index ON scheduler (date)
 	`
+
+	SQLCreateTask = `INSERT INTO scheduler (date, title, comment, repeat) VALUES ($1, $2, $3, $4)`
 )

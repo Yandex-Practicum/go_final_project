@@ -1,18 +1,15 @@
 package api
 
 import (
+	"bytes"
 	"encoding/json"
-	"errors"
 	"log"
 	"net/http"
 	"time"
 
 	"github.com/AlexJudin/go_final_project/usecases"
+	"github.com/AlexJudin/go_final_project/usecases/model"
 )
-
-type errResponse struct {
-	Error string `json:"error"`
-}
 
 type TaskHandler struct {
 	uc usecases.Task
@@ -28,18 +25,15 @@ func NewTaskHandler(uc usecases.Task) TaskHandler {
 // @Security ApiKeyAuth
 // @Accept json
 // @Tags nextDate
-// @Success 200 {string} string
-// @Failure 400,503 {object} errResponse
+// @Success 200 {string} []byte
+// @Failure 400,503 {object} http.Error
 // @Router /api/nextdate [get]
 func (h *TaskHandler) GetNextDate(w http.ResponseWriter, r *http.Request) {
 	now := r.FormValue("now")
 	nowTime, err := time.Parse("20060102", now)
 	if err != nil {
 		log.Printf("Failed to parse time. Error: %+v", err)
-		respErr := errResponse{
-			Error: errors.New("Bad Request").Error(),
-		}
-		returnErr(http.StatusBadRequest, respErr, w)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -49,36 +43,61 @@ func (h *TaskHandler) GetNextDate(w http.ResponseWriter, r *http.Request) {
 	nextDate, err := h.uc.GetNextDate(nowTime, date, repeat)
 	if err != nil {
 		log.Printf("Failed to get next date. Error: %+v", err)
-		respErr := errResponse{
-			Error: errors.New("Internal Server Error").Error(),
-		}
-		returnErr(http.StatusInternalServerError, respErr, w)
-		return
-	}
-
-	nextDateJSON, err := json.Marshal(nextDate)
-	if err != nil {
-		log.Printf("Failed to marshal next date. Error: %+v", err)
-		respErr := errResponse{
-			Error: errors.New("Internal Server Error").Error(),
-		}
-		returnErr(http.StatusInternalServerError, respErr, w)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write(nextDateJSON)
+	w.Write([]byte(nextDate))
 }
 
-func returnErr(s int, e interface{}, w http.ResponseWriter) {
-	jb, err := json.Marshal(e)
+// CreateTask ... Добавить новую задачу
+// @Summary Добавить новую задачу
+// @Description Добавить новую задачу
+// @Security ApiKeyAuth
+// @Accept json
+// @Tags Task
+// @Param name body string true "Наименование контрагента" maxlength(300)
+// @Success 201 {object} model.TaskResp
+// @Failure 400 {object} http.Error
+// @Failure 500 {object} http.Error
+// @Router /api/task [post]
+func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
+	var (
+		task model.TaskReq
+		buf  bytes.Buffer
+	)
+
+	_, err := buf.ReadFrom(r.Body)
 	if err != nil {
-		s = http.StatusInternalServerError
-		jb = []byte("{\"error\":\"" + "Internal Server Error" + "\"}")
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if err = json.Unmarshal(buf.Bytes(), &task); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if task.Title == "" {
+		http.Error(w, "title is empty", http.StatusBadRequest)
+		return
+	}
+
+	taskResp, err := h.uc.CreateTask(&task)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	resp, err := json.Marshal(taskResp)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(s)
-	w.Write(jb)
+	w.WriteHeader(http.StatusCreated)
+	w.Write(resp)
 }
