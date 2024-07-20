@@ -19,7 +19,7 @@ func NewTaskUsecase(db database.Task) *TaskUsecase {
 	return &TaskUsecase{DB: db}
 }
 
-func (t *TaskUsecase) NextDate(now time.Time, date string, repeat string) (string, error) {
+func (t *TaskUsecase) GetNextDate(now time.Time, date string, repeat string) (string, error) {
 	if repeat == "" {
 		return "", nil
 	}

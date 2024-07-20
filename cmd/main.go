@@ -2,8 +2,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/AlexJudin/go_final_project/api"
-	"github.com/AlexJudin/go_final_project/usecases"
 	"log"
 	"net/http"
 	"os"
@@ -11,7 +9,9 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/joho/godotenv"
 
+	"github.com/AlexJudin/go_final_project/api"
 	"github.com/AlexJudin/go_final_project/database"
+	"github.com/AlexJudin/go_final_project/usecases"
 )
 
 // @title Пользовательская документация API
@@ -49,7 +49,7 @@ func main() {
 	webDir := "./web"
 	r := chi.NewRouter()
 	r.Handle("/", http.FileServer(http.Dir(webDir)))
-	r.Get("/api/nextdate", taskHandler.GetTasks)
+	r.Get("/api/nextdate", taskHandler.GetNextDate)
 
 	serverAddress := fmt.Sprintf("localhost:%s", port)
 	log.Println("Listening on " + serverAddress)
