@@ -1,4 +1,33 @@
 basePath: /
+definitions:
+  api.errResponse:
+    properties:
+      error:
+        type: string
+    type: object
+  model.TaskReq:
+    properties:
+      comment:
+        type: string
+      date:
+        type: string
+      repeat:
+        type: string
+      title:
+        type: string
+    type: object
+  model.TaskResp:
+    properties:
+      id:
+        type: integer
+    type: object
+  model.TasksResp:
+    properties:
+      tasks:
+        items:
+          $ref: '#/definitions/model.TaskReq'
+        type: array
+    type: object
 host: http://localhost:7540
 info:
   contact:
@@ -8,7 +37,86 @@ info:
   termsOfService: spdante@mail.ru
   title: Пользовательская документация API
   version: 1.0.0
-paths: {}
+paths:
+  /api/task:
+    post:
+      consumes:
+      - application/json
+      description: Добавить новую задачу
+      parameters:
+      - description: Дата задачи
+        in: body
+        name: date
+        required: true
+        schema:
+          type: string
+      - description: Заголовок задачи
+        in: body
+        name: title
+        required: true
+        schema:
+          type: string
+      - description: Комментарий к задаче
+        in: body
+        name: comment
+        required: true
+        schema:
+          type: string
+      - description: Правило повторения
+        in: body
+        name: repeat
+        required: true
+        schema:
+          type: string
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/model.TaskResp'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.errResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.errResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Добавить новую задачу
+      tags:
+      - Task
+  /api/tasks:
+    get:
+      consumes:
+      - application/json
+      description: Получить список ближайших задач
+      parameters:
+      - description: Наименование контрагента
+        in: body
+        maxLength: 300
+        name: name
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.TasksResp'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.errResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.errResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Получить список ближайших задач
+      tags:
+      - Task
 securityDefinitions:
   ApiKeyAuth:
     in: header

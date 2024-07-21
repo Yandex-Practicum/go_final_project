@@ -54,10 +54,13 @@ func (h *TaskHandler) GetNextDate(w http.ResponseWriter, r *http.Request) {
 // @Security ApiKeyAuth
 // @Accept json
 // @Tags Task
-// @Param name body string true "Наименование контрагента" maxlength(300)
+// @Param date body string true "Дата задачи"
+// @Param title body string true "Заголовок задачи"
+// @Param comment body string true "Комментарий к задаче"
+// @Param repeat body string true "Правило повторения"
 // @Success 201 {object} model.TaskResp
-// @Failure 400 {object} http.Error
-// @Failure 500 {object} http.Error
+// @Failure 400 {object} errResponse
+// @Failure 500 {object} errResponse
 // @Router /api/task [post]
 func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
 	var (
@@ -115,6 +118,23 @@ func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	w.Write(resp)
+}
+
+// GetTasks ... Получить список ближайших задач
+// @Summary Получить список ближайших задач
+// @Description Получить список ближайших задач
+// @Security ApiKeyAuth
+// @Accept json
+// @Tags Task
+// @Success 200 {object} model.TasksResp
+// @Failure 400 {object} errResponse
+// @Failure 500 {object} errResponse
+// @Router /api/tasks [get]
+func (h *TaskHandler) GetTasks(w http.ResponseWriter, r *http.Request) {
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	//w.Write(resp)
 }
 
 func returnErr(status int, message interface{}, w http.ResponseWriter) {

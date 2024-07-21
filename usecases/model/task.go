@@ -14,3 +14,7 @@ type TaskResp struct {
 func NewTaskResp(id int64) *TaskResp {
 	return &TaskResp{Id: id}
 }
+
+type TasksResp struct {
+	Tasks []TaskReq `json:"tasks"`
+}

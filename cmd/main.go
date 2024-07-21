@@ -49,6 +49,7 @@ func main() {
 	r.Handle("/", http.FileServer(http.Dir(webDir)))
 	r.Get("/api/nextdate", taskHandler.GetNextDate)
 	r.Post("/api/task", taskHandler.CreateTask)
+	r.Get("/api/tasks", taskHandler.GetTasks)
 
 	serverAddress := fmt.Sprintf("localhost:%s", os.Getenv("TODO_PORT"))
 	log.Println("Listening on " + serverAddress)
