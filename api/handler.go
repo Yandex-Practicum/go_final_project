@@ -154,6 +154,40 @@ func (h *TaskHandler) GetTasks(w http.ResponseWriter, r *http.Request) {
 	w.Write(resp)
 }
 
+// GetTask ... Получить задачу
+// @Summary Получить задачу
+// @Description Получить задачу
+// @Security ApiKeyAuth
+// @Accept json
+// @Tags Task
+// @Success 200 {object} model.TaskResp
+// @Failure 400 {object} errResponse
+// @Failure 500 {object} errResponse
+// @Router /api/task [get]
+func (h *TaskHandler) GetTask(w http.ResponseWriter, r *http.Request) {
+	tasksResp, err := h.uc.GetTasks()
+	if err != nil {
+		errResp := errResponse{
+			Error: err.Error(),
+		}
+		returnErr(http.StatusInternalServerError, errResp, w)
+		return
+	}
+
+	resp, err := json.Marshal(tasksResp)
+	if err != nil {
+		errResp := errResponse{
+			Error: err.Error(),
+		}
+		returnErr(http.StatusInternalServerError, errResp, w)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	w.Write(resp)
+}
+
 func returnErr(status int, message interface{}, w http.ResponseWriter) {
 	messageJson, err := json.Marshal(message)
 	if err != nil {

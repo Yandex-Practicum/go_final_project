@@ -80,6 +80,10 @@ func (t *TaskUsecase) GetTasks() (model.TasksResp, error) {
 	return t.DB.GetTasks()
 }
 
+func (t *TaskUsecase) GetTask(id int) (model.TaskResp, error) {
+	return t.DB.GetTask(id)
+}
+
 func parseValue(num string) (int, error) {
 	days, err := strconv.Atoi(num)
 	if err != nil {

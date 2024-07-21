@@ -54,3 +54,7 @@ func (r *TaskRepo) GetTasks() (model.TasksResp, error) {
 
 	return model.TasksResp{Tasks: tasks}, nil
 }
+
+func (r *TaskRepo) GetTask(id int) (model.TaskResp, error) {
+
+}
