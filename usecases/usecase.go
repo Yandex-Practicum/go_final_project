@@ -25,13 +25,14 @@ func NewTaskUsecase(db database.Task) *TaskUsecase {
 }
 
 func (t *TaskUsecase) GetNextDate(now time.Time, date string, repeat string) (string, error) {
-	if repeat == "" {
-		return "", fmt.Errorf("repeat is empty")
-	}
-
 	dateTask, err := time.Parse("20060102", date)
 	if err != nil {
 		return "", err
+	}
+
+	dateTaskNow := time.Now().Format("20060102")
+	if repeat == "" {
+		return dateTaskNow, nil
 	}
 
 	repeatString := strings.Split(repeat, " ")
@@ -41,6 +42,9 @@ func (t *TaskUsecase) GetNextDate(now time.Time, date string, repeat string) (st
 		days, err := parseValue(repeatString[1])
 		if err != nil {
 			return "", err
+		}
+		if days == 1 {
+			return dateTaskNow, nil
 		}
 		dateTask = addDateTask(now, dateTask, 0, 0, days)
 	case "y":
@@ -55,6 +59,13 @@ func (t *TaskUsecase) GetNextDate(now time.Time, date string, repeat string) (st
 }
 
 func (t *TaskUsecase) CreateTask(task *model.TaskReq) (*model.TaskResp, error) {
+	nextDate, err := t.GetNextDate(time.Now(), task.Date, task.Repeat)
+	if err != nil {
+		return nil, err
+	}
+
+	task.Date = nextDate
+
 	taskId, err := t.DB.CreateTask(task)
 	if err != nil {
 		return nil, err

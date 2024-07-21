@@ -3,6 +3,7 @@ package api
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -19,15 +20,10 @@ func NewTaskHandler(uc usecases.Task) TaskHandler {
 	return TaskHandler{uc: uc}
 }
 
-// GetNextDate ... Получение следующей даты
-// @Summary Получение следующей даты
-// @Description Получение следующей даты
-// @Security ApiKeyAuth
-// @Accept json
-// @Tags nextDate
-// @Success 200 {string} []byte
-// @Failure 400,503 {object} http.Error
-// @Router /api/nextdate [get]
+type errResponse struct {
+	Error string `json:"error"`
+}
+
 func (h *TaskHandler) GetNextDate(w http.ResponseWriter, r *http.Request) {
 	now := r.FormValue("now")
 	nowTime, err := time.Parse("20060102", now)
@@ -71,33 +67,64 @@ func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
 
 	_, err := buf.ReadFrom(r.Body)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		errResp := errResponse{
+			Error: err.Error(),
+		}
+		returnErr(http.StatusBadRequest, errResp, w)
 		return
 	}
 
 	if err = json.Unmarshal(buf.Bytes(), &task); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		errResp := errResponse{
+			Error: err.Error(),
+		}
+		returnErr(http.StatusBadRequest, errResp, w)
 		return
 	}
 
 	if task.Title == "" {
-		http.Error(w, "title is empty", http.StatusBadRequest)
+		errResp := errResponse{
+			Error: fmt.Errorf("task title is empty").Error(),
+		}
+		returnErr(http.StatusBadRequest, errResp, w)
 		return
+	}
+
+	if task.Date == "" {
+		task.Date = time.Now().Format("20060102")
 	}
 
 	taskResp, err := h.uc.CreateTask(&task)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		errResp := errResponse{
+			Error: err.Error(),
+		}
+		returnErr(http.StatusInternalServerError, errResp, w)
 		return
 	}
 
 	resp, err := json.Marshal(taskResp)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		errResp := errResponse{
+			Error: err.Error(),
+		}
+		returnErr(http.StatusInternalServerError, errResp, w)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	w.Write(resp)
+}
+
+func returnErr(status int, message interface{}, w http.ResponseWriter) {
+	messageJson, err := json.Marshal(message)
+	if err != nil {
+		status = http.StatusInternalServerError
+		messageJson = []byte("{\"error\":\"" + err.Error() + "\"}")
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	w.Write(messageJson)
 }

@@ -3,7 +3,7 @@ package model
 type TaskReq struct {
 	Date    string `json:"date"`
 	Title   string `json:"title"`
-	Comment string `json:"comment"`
+	Comment string `json:"comment,omitempty"`
 	Repeat  string `json:"repeat"`
 }
 
