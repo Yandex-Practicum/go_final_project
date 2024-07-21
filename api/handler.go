@@ -131,10 +131,27 @@ func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} errResponse
 // @Router /api/tasks [get]
 func (h *TaskHandler) GetTasks(w http.ResponseWriter, r *http.Request) {
+	tasksResp, err := h.uc.GetTasks()
+	if err != nil {
+		errResp := errResponse{
+			Error: err.Error(),
+		}
+		returnErr(http.StatusInternalServerError, errResp, w)
+		return
+	}
+
+	resp, err := json.Marshal(tasksResp)
+	if err != nil {
+		errResp := errResponse{
+			Error: err.Error(),
+		}
+		returnErr(http.StatusInternalServerError, errResp, w)
+		return
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	//w.Write(resp)
+	w.Write(resp)
 }
 
 func returnErr(status int, message interface{}, w http.ResponseWriter) {

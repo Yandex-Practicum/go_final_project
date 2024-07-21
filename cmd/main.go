@@ -10,7 +10,7 @@ import (
 	"github.com/joho/godotenv"
 
 	"github.com/AlexJudin/go_final_project/api"
-	"github.com/AlexJudin/go_final_project/database"
+	"github.com/AlexJudin/go_final_project/repository"
 	"github.com/AlexJudin/go_final_project/usecases"
 )
 
@@ -31,14 +31,14 @@ func main() {
 		log.Fatalf("Error loading .env file: %+v", err)
 	}
 
-	db, err := database.NewDB()
+	db, err := repository.NewDB()
 	if err != nil {
-		log.Fatalf("Error connect to database: %+v", err)
+		log.Fatalf("Error connect to repository: %+v", err)
 	}
 	defer db.Close()
 
 	// init repository
-	repo := database.NewNewRepository(db)
+	repo := repository.NewNewRepository(db)
 
 	// init usecases
 	taskUC := usecases.NewTaskUsecase(repo)

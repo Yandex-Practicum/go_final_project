@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/AlexJudin/go_final_project/database"
+	"github.com/AlexJudin/go_final_project/repository"
 	"github.com/AlexJudin/go_final_project/usecases/model"
 )
 
@@ -17,10 +17,10 @@ const (
 )
 
 type TaskUsecase struct {
-	DB database.Task
+	DB repository.Task
 }
 
-func NewTaskUsecase(db database.Task) *TaskUsecase {
+func NewTaskUsecase(db repository.Task) *TaskUsecase {
 	return &TaskUsecase{DB: db}
 }
 
@@ -74,6 +74,10 @@ func (t *TaskUsecase) CreateTask(task *model.TaskReq) (*model.TaskResp, error) {
 	taskResp := model.NewTaskResp(taskId)
 
 	return taskResp, nil
+}
+
+func (t *TaskUsecase) GetTasks() (model.TasksResp, error) {
+	return t.DB.GetTasks()
 }
 
 func parseValue(num string) (int, error) {
