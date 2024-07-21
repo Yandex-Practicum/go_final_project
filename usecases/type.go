@@ -10,5 +10,5 @@ type Task interface {
 	GetNextDate(now time.Time, date string, repeat string) (string, error)
 	CreateTask(task *model.TaskReq) (*model.TaskResp, error)
 	GetTasks() (model.TasksResp, error)
-	GetTask(id int) (model.TaskResp, error)
+	GetTask(id string) (model.TaskResp, error)
 }

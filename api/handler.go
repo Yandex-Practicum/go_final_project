@@ -165,7 +165,9 @@ func (h *TaskHandler) GetTasks(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} errResponse
 // @Router /api/task [get]
 func (h *TaskHandler) GetTask(w http.ResponseWriter, r *http.Request) {
-	tasksResp, err := h.uc.GetTasks()
+	taskId := r.FormValue("id")
+
+	taskResp, err := h.uc.GetTask(taskId)
 	if err != nil {
 		errResp := errResponse{
 			Error: err.Error(),
@@ -174,7 +176,7 @@ func (h *TaskHandler) GetTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := json.Marshal(tasksResp)
+	resp, err := json.Marshal(taskResp)
 	if err != nil {
 		errResp := errResponse{
 			Error: err.Error(),

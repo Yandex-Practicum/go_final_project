@@ -80,7 +80,7 @@ func (t *TaskUsecase) GetTasks() (model.TasksResp, error) {
 	return t.DB.GetTasks()
 }
 
-func (t *TaskUsecase) GetTask(id int) (model.TaskResp, error) {
+func (t *TaskUsecase) GetTask(id string) (model.TaskResp, error) {
 	return t.DB.GetTask(id)
 }
 
