@@ -51,6 +51,7 @@ func main() {
 	r.Post("/api/task", taskHandler.CreateTask)
 	r.Get("/api/tasks", taskHandler.GetTasks)
 	r.Get("/api/task", taskHandler.GetTask)
+	r.Put("/api/task", taskHandler.UpdateTask)
 
 	serverAddress := fmt.Sprintf("localhost:%s", os.Getenv("TODO_PORT"))
 	log.Println("Listening on " + serverAddress)

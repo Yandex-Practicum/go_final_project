@@ -1,8 +1,9 @@
 package repository
 
 import (
-	"github.com/jmoiron/sqlx"
 	"time"
+
+	"github.com/jmoiron/sqlx"
 
 	"github.com/AlexJudin/go_final_project/usecases/model"
 )
@@ -68,4 +69,13 @@ func (r *TaskRepo) GetTaskById(id string) (*model.Task, error) {
 	}
 
 	return &task, nil
+}
+
+func (r *TaskRepo) UpdateTask(task *model.Task) error {
+	_, err := r.Db.Exec(SQLUpdateTask, task.Id, task.Date, task.Title, task.Comment, task.Repeat)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

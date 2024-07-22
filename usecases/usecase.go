@@ -31,7 +31,7 @@ func (t *TaskUsecase) GetNextDate(now time.Time, date string, repeat string) (st
 	}
 
 	dateTaskNow := time.Now().Format("20060102")
-	if repeat == "" {
+	if repeat == "" || dateTaskNow <= date {
 		return dateTaskNow, nil
 	}
 
@@ -59,6 +59,13 @@ func (t *TaskUsecase) GetNextDate(now time.Time, date string, repeat string) (st
 }
 
 func (t *TaskUsecase) CreateTask(task *model.Task) (*model.TaskResp, error) {
+	nextDate, err := t.GetNextDate(time.Now(), task.Date, task.Repeat)
+	if err != nil {
+		return nil, err
+	}
+
+	task.Date = nextDate
+
 	taskId, err := t.DB.CreateTask(task)
 	if err != nil {
 		return nil, err
@@ -75,6 +82,17 @@ func (t *TaskUsecase) GetTasks() (model.TasksResp, error) {
 
 func (t *TaskUsecase) GetTaskById(id string) (*model.Task, error) {
 	return t.DB.GetTaskById(id)
+}
+
+func (t *TaskUsecase) UpdateTask(task *model.Task) error {
+	nextDate, err := t.GetNextDate(time.Now(), task.Date, task.Repeat)
+	if err != nil {
+		return err
+	}
+
+	task.Date = nextDate
+
+	return t.DB.UpdateTask(task)
 }
 
 func parseValue(num string) (int, error) {
