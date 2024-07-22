@@ -1,6 +1,6 @@
 package model
 
-type TaskReq struct {
+type Task struct {
 	Id      string `json:"id,omitempty"`
 	Date    string `json:"date"`
 	Title   string `json:"title"`
@@ -17,5 +17,5 @@ func NewTaskResp(id int64) *TaskResp {
 }
 
 type TasksResp struct {
-	Tasks []TaskReq `json:"tasks"`
+	Tasks []Task `json:"tasks"`
 }

@@ -64,7 +64,7 @@ func (h *TaskHandler) GetNextDate(w http.ResponseWriter, r *http.Request) {
 // @Router /api/task [post]
 func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
 	var (
-		task model.TaskReq
+		task model.Task
 		buf  bytes.Buffer
 	)
 
@@ -166,8 +166,15 @@ func (h *TaskHandler) GetTasks(w http.ResponseWriter, r *http.Request) {
 // @Router /api/task [get]
 func (h *TaskHandler) GetTask(w http.ResponseWriter, r *http.Request) {
 	taskId := r.FormValue("id")
+	if taskId == "" {
+		errResp := errResponse{
+			Error: fmt.Errorf("task id is empty").Error(),
+		}
+		returnErr(http.StatusBadRequest, errResp, w)
+		return
+	}
 
-	taskResp, err := h.uc.GetTask(taskId)
+	taskResp, err := h.uc.GetTaskById(taskId)
 	if err != nil {
 		errResp := errResponse{
 			Error: err.Error(),

@@ -1,9 +1,8 @@
 package repository
 
 import (
-	"time"
-
 	"github.com/jmoiron/sqlx"
+	"time"
 
 	"github.com/AlexJudin/go_final_project/usecases/model"
 )
@@ -18,7 +17,7 @@ func NewNewRepository(db *sqlx.DB) *TaskRepo {
 	return &TaskRepo{Db: db}
 }
 
-func (r *TaskRepo) CreateTask(task *model.TaskReq) (int64, error) {
+func (r *TaskRepo) CreateTask(task *model.Task) (int64, error) {
 	res, err := r.Db.Exec(SQLCreateTask, task.Date, task.Title, task.Comment, task.Repeat)
 	if err != nil {
 		return 0, err
@@ -33,7 +32,7 @@ func (r *TaskRepo) CreateTask(task *model.TaskReq) (int64, error) {
 }
 
 func (r *TaskRepo) GetTasks() (model.TasksResp, error) {
-	tasks := make([]model.TaskReq, 0)
+	tasks := make([]model.Task, 0)
 
 	res, err := r.Db.Query(SQLGetTasks, time.Now().Format("20060102"))
 	if err != nil {
@@ -41,7 +40,7 @@ func (r *TaskRepo) GetTasks() (model.TasksResp, error) {
 	}
 	defer res.Close()
 
-	var task model.TaskReq
+	var task model.Task
 
 	for res.Next() {
 		err = res.Scan(&task.Id, &task.Date, &task.Title, &task.Comment, &task.Repeat)
@@ -55,6 +54,18 @@ func (r *TaskRepo) GetTasks() (model.TasksResp, error) {
 	return model.TasksResp{Tasks: tasks}, nil
 }
 
-func (r *TaskRepo) GetTask(id string) (model.TaskResp, error) {
-	return model.TaskResp{}, nil
+func (r *TaskRepo) GetTaskById(id string) (*model.Task, error) {
+	var task model.Task
+
+	res, err := r.Db.Query(SQLGetTaskById, id)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Close()
+
+	if res.Next() {
+		err = res.Scan(&task.Id, &task.Date, &task.Title, &task.Comment, &task.Repeat)
+	}
+
+	return &task, nil
 }

@@ -17,4 +17,6 @@ const (
 	SQLCreateTask = `INSERT INTO scheduler (date, title, comment, repeat) VALUES ($1, $2, $3, $4)`
 
 	SQLGetTasks = `SELECT * FROM scheduler WHERE date >= $1`
+
+	SQLGetTaskById = `SELECT * FROM scheduler WHERE id = $1`
 )
