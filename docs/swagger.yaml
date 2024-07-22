@@ -5,11 +5,13 @@ definitions:
       error:
         type: string
     type: object
-  model.TaskReq:
+  model.Task:
     properties:
       comment:
         type: string
       date:
+        type: string
+      id:
         type: string
       repeat:
         type: string
@@ -25,7 +27,7 @@ definitions:
     properties:
       tasks:
         items:
-          $ref: '#/definitions/model.TaskReq'
+          $ref: '#/definitions/model.Task'
         type: array
     type: object
 host: http://localhost:7540
@@ -33,12 +35,40 @@ info:
   contact:
     email: spdante@mail.ru
     name: Alexey Yudin
-  description: Учебный сервис (Яндекс Практикум)
+  description: Итоговый проект (Яндекс Практикум)
   termsOfService: spdante@mail.ru
   title: Пользовательская документация API
   version: 1.0.0
 paths:
   /api/task:
+    get:
+      consumes:
+      - application/json
+      description: Получить задачу
+      parameters:
+      - description: Идентификатор задачи
+        in: query
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.TaskResp'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.errResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.errResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Получить задачу
+      tags:
+      - Task
     post:
       consumes:
       - application/json
@@ -86,19 +116,64 @@ paths:
       summary: Добавить новую задачу
       tags:
       - Task
+    put:
+      consumes:
+      - application/json
+      description: Редактировать задачу
+      parameters:
+      - description: Идентификатор задачи
+        in: body
+        name: id
+        required: true
+        schema:
+          type: string
+      - description: Дата задачи
+        in: body
+        name: date
+        required: true
+        schema:
+          type: string
+      - description: Заголовок задачи
+        in: body
+        name: title
+        required: true
+        schema:
+          type: string
+      - description: Комментарий к задаче
+        in: body
+        name: comment
+        required: true
+        schema:
+          type: string
+      - description: Правило повторения
+        in: body
+        name: repeat
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.errResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.errResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Редактировать задачу
+      tags:
+      - Task
   /api/tasks:
     get:
       consumes:
       - application/json
       description: Получить список ближайших задач
-      parameters:
-      - description: Наименование контрагента
-        in: body
-        maxLength: 300
-        name: name
-        required: true
-        schema:
-          type: string
       responses:
         "200":
           description: OK

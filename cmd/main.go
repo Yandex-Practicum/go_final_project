@@ -15,7 +15,7 @@ import (
 )
 
 // @title Пользовательская документация API
-// @description Учебный сервис (Яндекс Практикум)
+// @description Итоговый проект (Яндекс Практикум)
 // @termsOfService spdante@mail.ru
 // @contact.name Alexey Yudin
 // @contact.email spdante@mail.ru

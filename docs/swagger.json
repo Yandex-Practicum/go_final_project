@@ -1,7 +1,7 @@
 {
     "swagger": "2.0",
     "info": {
-        "description": "Учебный сервис (Яндекс Практикум)",
+        "description": "Итоговый проект (Яндекс Практикум)",
         "title": "Пользовательская документация API",
         "termsOfService": "spdante@mail.ru",
         "contact": {
@@ -14,6 +14,132 @@
     "basePath": "/",
     "paths": {
         "/api/task": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Получить задачу",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Task"
+                ],
+                "summary": "Получить задачу",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Идентификатор задачи",
+                        "name": "id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.TaskResp"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.errResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.errResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Редактировать задачу",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Task"
+                ],
+                "summary": "Редактировать задачу",
+                "parameters": [
+                    {
+                        "description": "Идентификатор задачи",
+                        "name": "id",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Дата задачи",
+                        "name": "date",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Заголовок задачи",
+                        "name": "title",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Комментарий к задаче",
+                        "name": "comment",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Правило повторения",
+                        "name": "repeat",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.errResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.errResponse"
+                        }
+                    }
+                }
+            },
             "post": {
                 "security": [
                     {
@@ -103,18 +229,6 @@
                     "Task"
                 ],
                 "summary": "Получить список ближайших задач",
-                "parameters": [
-                    {
-                        "maxLength": 300,
-                        "description": "Наименование контрагента",
-                        "name": "name",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -147,13 +261,16 @@
                 }
             }
         },
-        "model.TaskReq": {
+        "model.Task": {
             "type": "object",
             "properties": {
                 "comment": {
                     "type": "string"
                 },
                 "date": {
+                    "type": "string"
+                },
+                "id": {
                     "type": "string"
                 },
                 "repeat": {
@@ -178,7 +295,7 @@
                 "tasks": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/model.TaskReq"
+                        "$ref": "#/definitions/model.Task"
                     }
                 }
             }
