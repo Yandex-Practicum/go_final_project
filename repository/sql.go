@@ -19,4 +19,6 @@ const (
 	SQLGetTasks = `SELECT * FROM scheduler WHERE date >= $1`
 
 	SQLGetTaskById = `SELECT * FROM scheduler WHERE id = $1`
+
+	SQLUpdateTask = ``
 )
