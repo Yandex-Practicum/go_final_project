@@ -7,8 +7,7 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-func NewDB() (*sqlx.DB, error) {
-	dbFile := os.Getenv("TODO_DBFILE")
+func NewDB(dbFile string) (*sqlx.DB, error) {
 	var install bool
 	_, err := os.Stat(dbFile)
 	if err != nil {

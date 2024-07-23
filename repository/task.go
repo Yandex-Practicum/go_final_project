@@ -79,3 +79,21 @@ func (r *TaskRepo) UpdateTask(task *model.Task) error {
 
 	return nil
 }
+
+func (r *TaskRepo) MakeTaskDone(id string, date string) error {
+	_, err := r.Db.Exec(SQLMakeTaskDone, id, date)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *TaskRepo) DeleteTask(id string) error {
+	_, err := r.Db.Exec(SQLDeleteTask, id)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

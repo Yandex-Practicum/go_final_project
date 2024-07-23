@@ -253,7 +253,77 @@ func (h *TaskHandler) UpdateTask(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte(""))
+	w.Write([]byte("{}"))
+}
+
+// MakeTaskDone ... Выполнить задачу
+// @Summary Выполнить задачу
+// @Description Выполнить задачу
+// @Security ApiKeyAuth
+// @Accept json
+// @Tags Task
+// @Param id query string true "Идентификатор задачи"
+// @Success 200 {object} model.TaskResp
+// @Failure 400 {object} errResponse
+// @Failure 500 {object} errResponse
+// @Router /api/task [post]
+func (h *TaskHandler) MakeTaskDone(w http.ResponseWriter, r *http.Request) {
+	taskId := r.FormValue("id")
+	if taskId == "" {
+		errResp := errResponse{
+			Error: fmt.Errorf("task id is empty").Error(),
+		}
+		returnErr(http.StatusBadRequest, errResp, w)
+		return
+	}
+
+	err := h.uc.MakeTaskDone(taskId)
+	if err != nil {
+		errResp := errResponse{
+			Error: err.Error(),
+		}
+		returnErr(http.StatusInternalServerError, errResp, w)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	w.Write([]byte("{}"))
+}
+
+// DeleteTask ... Удалить задачу
+// @Summary Удалить задачу
+// @Description Удалить задачу
+// @Security ApiKeyAuth
+// @Accept json
+// @Tags Task
+// @Param id query string true "Идентификатор задачи"
+// @Success 200 {object} model.TaskResp
+// @Failure 400 {object} errResponse
+// @Failure 500 {object} errResponse
+// @Router /api/task [delete]
+func (h *TaskHandler) DeleteTask(w http.ResponseWriter, r *http.Request) {
+	taskId := r.FormValue("id")
+	if taskId == "" {
+		errResp := errResponse{
+			Error: fmt.Errorf("task id is empty").Error(),
+		}
+		returnErr(http.StatusBadRequest, errResp, w)
+		return
+	}
+
+	err := h.uc.DeleteTask(taskId)
+	if err != nil {
+		errResp := errResponse{
+			Error: err.Error(),
+		}
+		returnErr(http.StatusInternalServerError, errResp, w)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	w.Write([]byte("{}"))
 }
 
 func checkTaskRequest(task *model.Task) error {

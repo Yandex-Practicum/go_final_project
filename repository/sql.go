@@ -20,5 +20,9 @@ const (
 
 	SQLGetTaskById = `SELECT * FROM scheduler WHERE id = $1`
 
-	SQLUpdateTask = ``
+	SQLUpdateTask = `UPDATE scheduler SET date = $2, title = $3, comment = $4, repeat = $5 WHERE id = $1`
+
+	SQLMakeTaskDone = `UPDATE scheduler SET date = $2 WHERE id = $1`
+
+	SQLDeleteTask = `DELETE FROM scheduler WHERE id = $1`
 )

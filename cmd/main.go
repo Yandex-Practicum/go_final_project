@@ -4,12 +4,11 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/joho/godotenv"
 
 	"github.com/AlexJudin/go_final_project/api"
+	"github.com/AlexJudin/go_final_project/config"
 	"github.com/AlexJudin/go_final_project/repository"
 	"github.com/AlexJudin/go_final_project/usecases"
 )
@@ -26,12 +25,12 @@ import (
 // @in header
 // @name Authorization
 func main() {
-	err := godotenv.Load(".env")
+	cfg, err := config.New()
 	if err != nil {
-		log.Fatalf("Error loading .env file: %+v", err)
+		log.Fatal(err)
 	}
 
-	db, err := repository.NewDB()
+	db, err := repository.NewDB(cfg.DBFile)
 	if err != nil {
 		log.Fatalf("Error connect to repository: %+v", err)
 	}
@@ -52,8 +51,10 @@ func main() {
 	r.Get("/api/tasks", taskHandler.GetTasks)
 	r.Get("/api/task", taskHandler.GetTask)
 	r.Put("/api/task", taskHandler.UpdateTask)
+	r.Post("/api/task/done", taskHandler.MakeTaskDone)
+	r.Delete("/api/task/done", taskHandler.DeleteTask)
 
-	serverAddress := fmt.Sprintf("localhost:%s", os.Getenv("TODO_PORT"))
+	serverAddress := fmt.Sprintf("localhost:%s", cfg.Port)
 	log.Println("Listening on " + serverAddress)
 	if err = http.ListenAndServe(serverAddress, r); err != nil {
 		log.Panicf("Start server error: %+v", err.Error())

@@ -41,6 +41,34 @@ info:
   version: 1.0.0
 paths:
   /api/task:
+    delete:
+      consumes:
+      - application/json
+      description: Удалить задачу
+      parameters:
+      - description: Идентификатор задачи
+        in: query
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.TaskResp'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.errResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.errResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Удалить задачу
+      tags:
+      - Task
     get:
       consumes:
       - application/json
@@ -72,35 +100,16 @@ paths:
     post:
       consumes:
       - application/json
-      description: Добавить новую задачу
+      description: Выполнить задачу
       parameters:
-      - description: Дата задачи
-        in: body
-        name: date
+      - description: Идентификатор задачи
+        in: query
+        name: id
         required: true
-        schema:
-          type: string
-      - description: Заголовок задачи
-        in: body
-        name: title
-        required: true
-        schema:
-          type: string
-      - description: Комментарий к задаче
-        in: body
-        name: comment
-        required: true
-        schema:
-          type: string
-      - description: Правило повторения
-        in: body
-        name: repeat
-        required: true
-        schema:
-          type: string
+        type: string
       responses:
-        "201":
-          description: Created
+        "200":
+          description: OK
           schema:
             $ref: '#/definitions/model.TaskResp'
         "400":
@@ -113,7 +122,7 @@ paths:
             $ref: '#/definitions/api.errResponse'
       security:
       - ApiKeyAuth: []
-      summary: Добавить новую задачу
+      summary: Выполнить задачу
       tags:
       - Task
     put:

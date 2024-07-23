@@ -95,6 +95,24 @@ func (t *TaskUsecase) UpdateTask(task *model.Task) error {
 	return t.DB.UpdateTask(task)
 }
 
+func (t *TaskUsecase) MakeTaskDone(id string) error {
+	task, err := t.GetTaskById(id)
+	if err != nil {
+		return err
+	}
+
+	nextDate, err := t.GetNextDate(time.Now(), task.Date, task.Repeat)
+	if err != nil {
+		return err
+	}
+
+	return t.DB.MakeTaskDone(id, nextDate)
+}
+
+func (t *TaskUsecase) DeleteTask(id string) error {
+	return t.DB.DeleteTask(id)
+}
+
 func parseValue(num string) (int, error) {
 	days, err := strconv.Atoi(num)
 	if err != nil {

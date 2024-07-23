@@ -7,4 +7,6 @@ type Task interface {
 	GetTasks() (model.TasksResp, error)
 	GetTaskById(id string) (*model.Task, error)
 	UpdateTask(task *model.Task) error
+	MakeTaskDone(id string, date string) error
+	DeleteTask(id string) error
 }
