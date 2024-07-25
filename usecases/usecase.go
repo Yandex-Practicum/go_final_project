@@ -85,6 +85,15 @@ func (t *TaskUsecase) GetTaskById(id string) (*model.Task, error) {
 }
 
 func (t *TaskUsecase) UpdateTask(task *model.Task) error {
+	taskDB, err := t.GetTaskById(task.Id)
+	if err != nil {
+		return err
+	}
+
+	if taskDB.Id == "" {
+		return fmt.Errorf("task not found")
+	}
+
 	nextDate, err := t.GetNextDate(time.Now(), task.Date, task.Repeat)
 	if err != nil {
 		return err
@@ -101,6 +110,10 @@ func (t *TaskUsecase) MakeTaskDone(id string) error {
 		return err
 	}
 
+	if task.Id == "" {
+		return fmt.Errorf("task not found")
+	}
+
 	nextDate, err := t.GetNextDate(time.Now(), task.Date, task.Repeat)
 	if err != nil {
 		return err
@@ -110,6 +123,15 @@ func (t *TaskUsecase) MakeTaskDone(id string) error {
 }
 
 func (t *TaskUsecase) DeleteTask(id string) error {
+	task, err := t.GetTaskById(id)
+	if err != nil {
+		return err
+	}
+
+	if task.Id == "" {
+		return fmt.Errorf("task not found")
+	}
+
 	return t.DB.DeleteTask(id)
 }
 

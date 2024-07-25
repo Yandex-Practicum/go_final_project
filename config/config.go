@@ -18,7 +18,7 @@ func New() (*Сonfig, error) {
 
 	cfg := Сonfig{
 		Port:   os.Getenv("TODO_PORT"),
-		DBFile: os.Getenv("TODO_DB_FILE"),
+		DBFile: os.Getenv("TODO_DBFILE"),
 	}
 
 	return &cfg, nil
