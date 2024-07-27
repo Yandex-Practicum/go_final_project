@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"path/filepath"
 
 	"github.com/go-chi/chi/v5"
 
@@ -44,7 +45,13 @@ func main() {
 
 	webDir := "./web"
 	r := chi.NewRouter()
-	r.Handle("/", http.FileServer(http.Dir(webDir)))
+	fileServer := http.FileServer(http.Dir(webDir))
+	r.Get("/*", func(w http.ResponseWriter, r *http.Request) {
+		if filepath.Ext(r.URL.Path) == ".css" {
+			w.Header().Set("Content-Type", "text/css")
+		}
+		fileServer.ServeHTTP(w, r)
+	})
 	r.Get("/api/nextdate", taskHandler.GetNextDate)
 	r.Post("/api/task", taskHandler.CreateTask)
 	r.Get("/api/tasks", taskHandler.GetTasks)
