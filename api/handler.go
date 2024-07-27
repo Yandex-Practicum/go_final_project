@@ -86,7 +86,7 @@ func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
 	}
 
 	dateTaskNow := time.Now().Format("20060102")
-	err = checkTaskRequest(&task, dateTaskNow)
+	today, err := checkTaskRequest(&task, dateTaskNow)
 	if err != nil {
 		errResp := errResponse{
 			Error: err.Error(),
@@ -94,8 +94,6 @@ func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
 		returnErr(http.StatusBadRequest, errResp, w)
 		return
 	}
-
-	today := dateTaskNow == task.Date
 
 	taskResp, err := h.uc.CreateTask(&task, today)
 	if err != nil {
@@ -239,7 +237,7 @@ func (h *TaskHandler) UpdateTask(w http.ResponseWriter, r *http.Request) {
 	}
 
 	dateTaskNow := time.Now().Format("20060102")
-	err = checkTaskRequest(&task, dateTaskNow)
+	today, err := checkTaskRequest(&task, dateTaskNow)
 	if err != nil {
 		errResp := errResponse{
 			Error: err.Error(),
@@ -247,8 +245,6 @@ func (h *TaskHandler) UpdateTask(w http.ResponseWriter, r *http.Request) {
 		returnErr(http.StatusBadRequest, errResp, w)
 		return
 	}
-
-	today := dateTaskNow == task.Date
 
 	err = h.uc.UpdateTask(&task, today)
 	if err != nil {
@@ -334,26 +330,27 @@ func (h *TaskHandler) DeleteTask(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("{}"))
 }
 
-func checkTaskRequest(task *model.Task, dateTaskNow string) error {
+func checkTaskRequest(task *model.Task, dateTaskNow string) (bool, error) {
 	if task.Title == "" {
-		return fmt.Errorf("task title is empty")
+		return false, fmt.Errorf("task title is empty")
 	}
 
 	if task.Date == "" {
 		task.Date = dateTaskNow
-		return nil
+		return true, nil
 	}
 
 	_, err := time.Parse("20060102", task.Date)
 	if err != nil {
-		return fmt.Errorf("task date is invalid")
+		return false, fmt.Errorf("task date is invalid")
 	}
 
 	if task.Date < dateTaskNow && task.Repeat == "" {
 		task.Date = dateTaskNow
+		return true, nil
 	}
 
-	return nil
+	return false, nil
 }
 
 func returnErr(status int, message interface{}, w http.ResponseWriter) {
