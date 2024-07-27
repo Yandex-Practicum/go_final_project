@@ -54,8 +54,8 @@ func (t *TaskUsecase) GetNextDate(now time.Time, date string, repeat string) (st
 	return dateTask.Format("20060102"), nil
 }
 
-func (t *TaskUsecase) CreateTask(task *model.Task, today bool) (*model.TaskResp, error) {
-	if !today {
+func (t *TaskUsecase) CreateTask(task *model.Task, pastDay bool) (*model.TaskResp, error) {
+	if pastDay {
 		nextDate, err := t.GetNextDate(time.Now(), task.Date, task.Repeat)
 		if err != nil {
 			return nil, err
@@ -82,13 +82,13 @@ func (t *TaskUsecase) GetTaskById(id string) (*model.Task, error) {
 	return t.DB.GetTaskById(id)
 }
 
-func (t *TaskUsecase) UpdateTask(task *model.Task, today bool) error {
+func (t *TaskUsecase) UpdateTask(task *model.Task, pastDay bool) error {
 	_, err := t.GetTaskById(task.Id)
 	if err != nil {
 		return err
 	}
 
-	if !today {
+	if pastDay {
 		nextDate, err := t.GetNextDate(time.Now(), task.Date, task.Repeat)
 		if err != nil {
 			return err

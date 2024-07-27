@@ -86,7 +86,7 @@ func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
 	}
 
 	dateTaskNow := time.Now().Format("20060102")
-	today, err := checkTaskRequest(&task, dateTaskNow)
+	err = checkTaskRequest(&task, dateTaskNow)
 	if err != nil {
 		errResp := errResponse{
 			Error: err.Error(),
@@ -95,7 +95,9 @@ func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	taskResp, err := h.uc.CreateTask(&task, today)
+	pastDay := dateTaskNow > task.Date
+
+	taskResp, err := h.uc.CreateTask(&task, pastDay)
 	if err != nil {
 		errResp := errResponse{
 			Error: err.Error(),
@@ -237,7 +239,7 @@ func (h *TaskHandler) UpdateTask(w http.ResponseWriter, r *http.Request) {
 	}
 
 	dateTaskNow := time.Now().Format("20060102")
-	today, err := checkTaskRequest(&task, dateTaskNow)
+	err = checkTaskRequest(&task, dateTaskNow)
 	if err != nil {
 		errResp := errResponse{
 			Error: err.Error(),
@@ -246,7 +248,9 @@ func (h *TaskHandler) UpdateTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.uc.UpdateTask(&task, today)
+	pastDay := dateTaskNow > task.Date
+
+	err = h.uc.UpdateTask(&task, pastDay)
 	if err != nil {
 		errResp := errResponse{
 			Error: err.Error(),
@@ -330,27 +334,26 @@ func (h *TaskHandler) DeleteTask(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("{}"))
 }
 
-func checkTaskRequest(task *model.Task, dateTaskNow string) (bool, error) {
+func checkTaskRequest(task *model.Task, dateTaskNow string) error {
 	if task.Title == "" {
-		return false, fmt.Errorf("task title is empty")
+		return fmt.Errorf("task title is empty")
 	}
 
 	if task.Date == "" {
 		task.Date = dateTaskNow
-		return true, nil
+		return nil
 	}
 
 	_, err := time.Parse("20060102", task.Date)
 	if err != nil {
-		return false, fmt.Errorf("task date is invalid")
+		return fmt.Errorf("task date is invalid")
 	}
 
 	if task.Date < dateTaskNow && task.Repeat == "" {
 		task.Date = dateTaskNow
-		return true, nil
 	}
 
-	return false, nil
+	return nil
 }
 
 func returnErr(status int, message interface{}, w http.ResponseWriter) {
