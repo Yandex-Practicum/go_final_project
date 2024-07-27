@@ -33,13 +33,62 @@ func (r *TaskRepo) CreateTask(task *model.Task) (int64, error) {
 	return id, nil
 }
 
-func (r *TaskRepo) GetTasks(searchString string) (model.TasksResp, error) {
+func (r *TaskRepo) GetTasks() (model.TasksResp, error) {
 	tasks := make([]model.Task, 0)
 
 	res, err := r.Db.Query(SQLGetTasks, time.Now().Format("20060102"))
 	if err != nil {
 		return model.TasksResp{Tasks: tasks}, err
 	}
+
+	defer res.Close()
+
+	var task model.Task
+
+	for res.Next() {
+		err = res.Scan(&task.Id, &task.Date, &task.Title, &task.Comment, &task.Repeat)
+		if err != nil {
+			return model.TasksResp{Tasks: tasks}, err
+		}
+
+		tasks = append(tasks, task)
+	}
+
+	return model.TasksResp{Tasks: tasks}, nil
+}
+
+func (r *TaskRepo) GetTasksBySearchString(searchString string) (model.TasksResp, error) {
+	tasks := make([]model.Task, 0)
+
+	res, err := r.Db.Query(SQLGetTasksBySearchString, searchString)
+	if err != nil {
+		return model.TasksResp{Tasks: tasks}, err
+	}
+
+	defer res.Close()
+
+	var task model.Task
+
+	for res.Next() {
+		err = res.Scan(&task.Id, &task.Date, &task.Title, &task.Comment, &task.Repeat)
+		if err != nil {
+			return model.TasksResp{Tasks: tasks}, err
+		}
+
+		tasks = append(tasks, task)
+	}
+
+	return model.TasksResp{Tasks: tasks}, nil
+}
+
+func (r *TaskRepo) GetTasksByDate(searchString string) (model.TasksResp, error) {
+	tasks := make([]model.Task, 0)
+
+	res, err := r.Db.Query(SQLGetTasksByDate, searchString)
+	if err != nil {
+		return model.TasksResp{Tasks: tasks}, err
+	}
+
 	defer res.Close()
 
 	var task model.Task

@@ -75,7 +75,16 @@ func (t *TaskUsecase) CreateTask(task *model.Task, pastDay bool) (*model.TaskRes
 }
 
 func (t *TaskUsecase) GetTasks(searchString string) (model.TasksResp, error) {
-	return t.DB.GetTasks(searchString)
+	_, err := time.Parse("20060102", searchString)
+	if err == nil {
+		return t.DB.GetTasksByDate(searchString)
+	}
+
+	if searchString != "" {
+		return t.DB.GetTasksBySearchString(searchString)
+	}
+
+	return t.DB.GetTasks()
 }
 
 func (t *TaskUsecase) GetTaskById(id string) (*model.Task, error) {
