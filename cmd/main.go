@@ -43,9 +43,9 @@ func main() {
 	taskUC := usecases.NewTaskUsecase(repo)
 	taskHandler := api.NewTaskHandler(taskUC)
 
-	webDir := "./web"
+	//webDir := "./web"
 	r := chi.NewRouter()
-	r.Handle("/", http.FileServer(http.Dir(webDir)))
+	//r.Handle("/", http.FileServer(http.Dir(webDir)))
 	r.Get("/api/nextdate", taskHandler.GetNextDate)
 	r.Post("/api/task", taskHandler.CreateTask)
 	r.Get("/api/tasks", taskHandler.GetTasks)

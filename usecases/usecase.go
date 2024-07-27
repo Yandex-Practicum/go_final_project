@@ -25,38 +25,22 @@ func NewTaskUsecase(db repository.Task) *TaskUsecase {
 }
 
 func (t *TaskUsecase) GetNextDate(now time.Time, date string, repeat string) (string, error) {
-	dateTaskNow := time.Now().Format("20060102")
-	/*
-		if date == "" {
-			return dateTaskNow, nil
-		}
-	*/
-
 	dateTask, err := time.Parse("20060102", date)
 	if err != nil {
 		return "", err
-	}
-
-	if repeat == "" {
-		return dateTaskNow, nil
 	}
 
 	repeatString := strings.Split(repeat, " ")
 
 	switch strings.ToLower(repeatString[0]) {
 	case "d":
-		/*
-			if len(repeatString) < 2 {
-				return "", fmt.Errorf("repeat should be at least two characters for days")
-			}
-		*/
+		if len(repeatString) < 2 {
+			return "", fmt.Errorf("repeat should be at least two characters for days")
+		}
 
 		days, err := parseValue(repeatString[1])
 		if err != nil {
 			return "", err
-		}
-		if days == 1 {
-			return dateTaskNow, nil
 		}
 		dateTask = addDateTask(now, dateTask, 0, 0, days)
 	case "y":
@@ -70,13 +54,15 @@ func (t *TaskUsecase) GetNextDate(now time.Time, date string, repeat string) (st
 	return dateTask.Format("20060102"), nil
 }
 
-func (t *TaskUsecase) CreateTask(task *model.Task) (*model.TaskResp, error) {
-	nextDate, err := t.GetNextDate(time.Now(), task.Date, task.Repeat)
-	if err != nil {
-		return nil, err
-	}
+func (t *TaskUsecase) CreateTask(task *model.Task, today bool) (*model.TaskResp, error) {
+	if !today {
+		nextDate, err := t.GetNextDate(time.Now(), task.Date, task.Repeat)
+		if err != nil {
+			return nil, err
+		}
 
-	task.Date = nextDate
+		task.Date = nextDate
+	}
 
 	taskId, err := t.DB.CreateTask(task)
 	if err != nil {
@@ -96,18 +82,20 @@ func (t *TaskUsecase) GetTaskById(id string) (*model.Task, error) {
 	return t.DB.GetTaskById(id)
 }
 
-func (t *TaskUsecase) UpdateTask(task *model.Task) error {
+func (t *TaskUsecase) UpdateTask(task *model.Task, today bool) error {
 	_, err := t.GetTaskById(task.Id)
 	if err != nil {
 		return err
 	}
 
-	nextDate, err := t.GetNextDate(time.Now(), task.Date, task.Repeat)
-	if err != nil {
-		return err
-	}
+	if !today {
+		nextDate, err := t.GetNextDate(time.Now(), task.Date, task.Repeat)
+		if err != nil {
+			return err
+		}
 
-	task.Date = nextDate
+		task.Date = nextDate
+	}
 
 	return t.DB.UpdateTask(task)
 }
