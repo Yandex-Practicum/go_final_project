@@ -51,7 +51,6 @@ func (h *TaskHandler) GetNextDate(w http.ResponseWriter, r *http.Request) {
 // CreateTask ... Добавить новую задачу
 // @Summary Добавить новую задачу
 // @Description Добавить новую задачу
-// @Security ApiKeyAuth
 // @Accept json
 // @Tags Task
 // @Param date body string true "Дата задачи"
@@ -123,7 +122,6 @@ func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
 // GetTasks ... Получить список ближайших задач
 // @Summary Получить список ближайших задач
 // @Description Получить список ближайших задач
-// @Security ApiKeyAuth
 // @Accept json
 // @Tags Task
 // @Success 200 {object} model.TasksResp
@@ -159,7 +157,6 @@ func (h *TaskHandler) GetTasks(w http.ResponseWriter, r *http.Request) {
 // GetTask ... Получить задачу
 // @Summary Получить задачу
 // @Description Получить задачу
-// @Security ApiKeyAuth
 // @Accept json
 // @Tags Task
 // @Param id query string true "Идентификатор задачи"
@@ -203,7 +200,6 @@ func (h *TaskHandler) GetTask(w http.ResponseWriter, r *http.Request) {
 // UpdateTask ... Редактировать задачу
 // @Summary Редактировать задачу
 // @Description Редактировать задачу
-// @Security ApiKeyAuth
 // @Accept json
 // @Tags Task
 // @Param id body string true "Идентификатор задачи"
@@ -267,14 +263,13 @@ func (h *TaskHandler) UpdateTask(w http.ResponseWriter, r *http.Request) {
 // MakeTaskDone ... Выполнить задачу
 // @Summary Выполнить задачу
 // @Description Выполнить задачу
-// @Security ApiKeyAuth
 // @Accept json
 // @Tags Task
 // @Param id query string true "Идентификатор задачи"
 // @Success 200 {object} model.TaskResp
 // @Failure 400 {object} errResponse
 // @Failure 500 {object} errResponse
-// @Router /api/task [post]
+// @Router /api/task/done [post]
 func (h *TaskHandler) MakeTaskDone(w http.ResponseWriter, r *http.Request) {
 	taskId := r.FormValue("id")
 	if taskId == "" {
@@ -302,7 +297,6 @@ func (h *TaskHandler) MakeTaskDone(w http.ResponseWriter, r *http.Request) {
 // DeleteTask ... Удалить задачу
 // @Summary Удалить задачу
 // @Description Удалить задачу
-// @Security ApiKeyAuth
 // @Accept json
 // @Tags Task
 // @Param id query string true "Идентификатор задачи"

@@ -14,14 +14,13 @@ import (
 )
 
 // @title Пользовательская документация API
-// @description Итоговый проект (Яндекс Практикум)
+// @description Итоговая работа по курсу "Go-разработчик с нуля" (Яндекс Практикум)
 // @termsOfService spdante@mail.ru
 // @contact.name Alexey Yudin
 // @contact.email spdante@mail.ru
 // @version 1.0.0
-// @host http://localhost:7540
-// @BasePath /api/
-// @securityDefinitions.apiKey ApiKeyAuth
+// @host localhost:7540
+// @BasePath /
 // @in header
 // @name Authorization
 func main() {

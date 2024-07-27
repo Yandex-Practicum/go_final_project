@@ -22,11 +22,6 @@ const docTemplate = `{
     "paths": {
         "/api/task": {
             "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
                 "description": "Получить задачу",
                 "consumes": [
                     "application/json"
@@ -66,11 +61,6 @@ const docTemplate = `{
                 }
             },
             "put": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
                 "description": "Редактировать задачу",
                 "consumes": [
                     "application/json"
@@ -148,31 +138,55 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "Выполнить задачу",
+                "description": "Добавить новую задачу",
                 "consumes": [
                     "application/json"
                 ],
                 "tags": [
                     "Task"
                 ],
-                "summary": "Выполнить задачу",
+                "summary": "Добавить новую задачу",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "Идентификатор задачи",
-                        "name": "id",
-                        "in": "query",
-                        "required": true
+                        "description": "Дата задачи",
+                        "name": "date",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Заголовок задачи",
+                        "name": "title",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Комментарий к задаче",
+                        "name": "comment",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Правило повторения",
+                        "name": "repeat",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "201": {
+                        "description": "Created",
                         "schema": {
                             "$ref": "#/definitions/model.TaskResp"
                         }
@@ -192,11 +206,6 @@ const docTemplate = `{
                 }
             },
             "delete": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
                 "description": "Удалить задачу",
                 "consumes": [
                     "application/json"
@@ -236,13 +245,49 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/tasks": {
-            "get": {
-                "security": [
+        "/api/task/done": {
+            "post": {
+                "description": "Выполнить задачу",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Task"
+                ],
+                "summary": "Выполнить задачу",
+                "parameters": [
                     {
-                        "ApiKeyAuth": []
+                        "type": "string",
+                        "description": "Идентификатор задачи",
+                        "name": "id",
+                        "in": "query",
+                        "required": true
                     }
                 ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.TaskResp"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.errResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.errResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/tasks": {
+            "get": {
                 "description": "Получить список ближайших задач",
                 "consumes": [
                     "application/json"
@@ -322,24 +367,17 @@ const docTemplate = `{
                 }
             }
         }
-    },
-    "securityDefinitions": {
-        "ApiKeyAuth": {
-            "type": "apiKey",
-            "name": "Authorization",
-            "in": "header"
-        }
     }
 }`
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0.0",
-	Host:             "http://localhost:7540",
+	Host:             "localhost:7540",
 	BasePath:         "/",
 	Schemes:          []string{},
 	Title:            "Пользовательская документация API",
-	Description:      "Итоговый проект (Яндекс Практикум)",
+	Description:      "Итоговая работа по курсу \"Go-разработчик с нуля\" (Яндекс Практикум)",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 }

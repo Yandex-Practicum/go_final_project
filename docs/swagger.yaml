@@ -30,12 +30,12 @@ definitions:
           $ref: '#/definitions/model.Task'
         type: array
     type: object
-host: http://localhost:7540
+host: localhost:7540
 info:
   contact:
     email: spdante@mail.ru
     name: Alexey Yudin
-  description: Итоговый проект (Яндекс Практикум)
+  description: Итоговая работа по курсу "Go-разработчик с нуля" (Яндекс Практикум)
   termsOfService: spdante@mail.ru
   title: Пользовательская документация API
   version: 1.0.0
@@ -64,8 +64,6 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/api.errResponse'
-      security:
-      - ApiKeyAuth: []
       summary: Удалить задачу
       tags:
       - Task
@@ -92,24 +90,41 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/api.errResponse'
-      security:
-      - ApiKeyAuth: []
       summary: Получить задачу
       tags:
       - Task
     post:
       consumes:
       - application/json
-      description: Выполнить задачу
+      description: Добавить новую задачу
       parameters:
-      - description: Идентификатор задачи
-        in: query
-        name: id
+      - description: Дата задачи
+        in: body
+        name: date
         required: true
-        type: string
+        schema:
+          type: string
+      - description: Заголовок задачи
+        in: body
+        name: title
+        required: true
+        schema:
+          type: string
+      - description: Комментарий к задаче
+        in: body
+        name: comment
+        required: true
+        schema:
+          type: string
+      - description: Правило повторения
+        in: body
+        name: repeat
+        required: true
+        schema:
+          type: string
       responses:
-        "200":
-          description: OK
+        "201":
+          description: Created
           schema:
             $ref: '#/definitions/model.TaskResp'
         "400":
@@ -120,9 +135,7 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/api.errResponse'
-      security:
-      - ApiKeyAuth: []
-      summary: Выполнить задачу
+      summary: Добавить новую задачу
       tags:
       - Task
     put:
@@ -173,9 +186,34 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/api.errResponse'
-      security:
-      - ApiKeyAuth: []
       summary: Редактировать задачу
+      tags:
+      - Task
+  /api/task/done:
+    post:
+      consumes:
+      - application/json
+      description: Выполнить задачу
+      parameters:
+      - description: Идентификатор задачи
+        in: query
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.TaskResp'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.errResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.errResponse'
+      summary: Выполнить задачу
       tags:
       - Task
   /api/tasks:
@@ -196,14 +234,7 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/api.errResponse'
-      security:
-      - ApiKeyAuth: []
       summary: Получить список ближайших задач
       tags:
       - Task
-securityDefinitions:
-  ApiKeyAuth:
-    in: header
-    name: Authorization
-    type: apiKey
 swagger: "2.0"
