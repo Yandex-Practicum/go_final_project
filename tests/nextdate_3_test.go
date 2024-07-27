@@ -44,7 +44,6 @@ func TestNextDate(t *testing.T) {
 			get, err := getBody(urlPath)
 			assert.NoError(t, err)
 			next := strings.TrimSpace(string(get))
-			fmt.Printf("Вот следующая дата %s, предыдущая %s\n", next, v.want)
 			_, err = time.Parse("20060102", next)
 			if err != nil && len(v.want) == 0 {
 				continue

@@ -20,7 +20,7 @@ import (
 // @contact.email spdante@mail.ru
 // @version 1.0.0
 // @host http://localhost:7540
-// @BasePath /
+// @BasePath /api/
 // @securityDefinitions.apiKey ApiKeyAuth
 // @in header
 // @name Authorization
@@ -52,7 +52,7 @@ func main() {
 	r.Get("/api/task", taskHandler.GetTask)
 	r.Put("/api/task", taskHandler.UpdateTask)
 	r.Post("/api/task/done", taskHandler.MakeTaskDone)
-	r.Delete("/api/task/done", taskHandler.DeleteTask)
+	r.Delete("/api/task", taskHandler.DeleteTask)
 
 	serverAddress := fmt.Sprintf("localhost:%s", cfg.Port)
 	log.Println("Listening on " + serverAddress)

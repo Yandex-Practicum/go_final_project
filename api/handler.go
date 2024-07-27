@@ -128,7 +128,9 @@ func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} errResponse
 // @Router /api/tasks [get]
 func (h *TaskHandler) GetTasks(w http.ResponseWriter, r *http.Request) {
-	tasksResp, err := h.uc.GetTasks()
+	searchString := r.FormValue("search")
+
+	tasksResp, err := h.uc.GetTasks(searchString)
 	if err != nil {
 		errResp := errResponse{
 			Error: err.Error(),
@@ -329,10 +331,6 @@ func (h *TaskHandler) DeleteTask(w http.ResponseWriter, r *http.Request) {
 func checkTaskRequest(task *model.Task) error {
 	if task.Title == "" {
 		return fmt.Errorf("task title is empty")
-	}
-
-	if task.Date == "" {
-		task.Date = time.Now().Format("20060102")
 	}
 
 	return nil

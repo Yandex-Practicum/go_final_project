@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -32,7 +33,7 @@ func (r *TaskRepo) CreateTask(task *model.Task) (int64, error) {
 	return id, nil
 }
 
-func (r *TaskRepo) GetTasks() (model.TasksResp, error) {
+func (r *TaskRepo) GetTasks(searchString string) (model.TasksResp, error) {
 	tasks := make([]model.Task, 0)
 
 	res, err := r.Db.Query(SQLGetTasks, time.Now().Format("20060102"))
@@ -66,6 +67,13 @@ func (r *TaskRepo) GetTaskById(id string) (*model.Task, error) {
 
 	if res.Next() {
 		err = res.Scan(&task.Id, &task.Date, &task.Title, &task.Comment, &task.Repeat)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if task.Id == "" {
+		return nil, fmt.Errorf("task id %s not found", id)
 	}
 
 	return &task, nil

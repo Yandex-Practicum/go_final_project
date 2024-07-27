@@ -9,7 +9,7 @@ import (
 type Task interface {
 	GetNextDate(now time.Time, date string, repeat string) (string, error)
 	CreateTask(task *model.Task) (*model.TaskResp, error)
-	GetTasks() (model.TasksResp, error)
+	GetTasks(searchString string) (model.TasksResp, error)
 	GetTaskById(id string) (*model.Task, error)
 	UpdateTask(task *model.Task) error
 	MakeTaskDone(id string) error

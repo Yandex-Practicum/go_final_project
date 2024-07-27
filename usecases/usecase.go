@@ -25,13 +25,19 @@ func NewTaskUsecase(db repository.Task) *TaskUsecase {
 }
 
 func (t *TaskUsecase) GetNextDate(now time.Time, date string, repeat string) (string, error) {
+	dateTaskNow := time.Now().Format("20060102")
+	/*
+		if date == "" {
+			return dateTaskNow, nil
+		}
+	*/
+
 	dateTask, err := time.Parse("20060102", date)
 	if err != nil {
 		return "", err
 	}
 
-	dateTaskNow := time.Now().Format("20060102")
-	if repeat == "" || dateTaskNow <= date {
+	if repeat == "" {
 		return dateTaskNow, nil
 	}
 
@@ -39,6 +45,12 @@ func (t *TaskUsecase) GetNextDate(now time.Time, date string, repeat string) (st
 
 	switch strings.ToLower(repeatString[0]) {
 	case "d":
+		/*
+			if len(repeatString) < 2 {
+				return "", fmt.Errorf("repeat should be at least two characters for days")
+			}
+		*/
+
 		days, err := parseValue(repeatString[1])
 		if err != nil {
 			return "", err
@@ -76,8 +88,8 @@ func (t *TaskUsecase) CreateTask(task *model.Task) (*model.TaskResp, error) {
 	return taskResp, nil
 }
 
-func (t *TaskUsecase) GetTasks() (model.TasksResp, error) {
-	return t.DB.GetTasks()
+func (t *TaskUsecase) GetTasks(searchString string) (model.TasksResp, error) {
+	return t.DB.GetTasks(searchString)
 }
 
 func (t *TaskUsecase) GetTaskById(id string) (*model.Task, error) {
@@ -85,13 +97,9 @@ func (t *TaskUsecase) GetTaskById(id string) (*model.Task, error) {
 }
 
 func (t *TaskUsecase) UpdateTask(task *model.Task) error {
-	taskDB, err := t.GetTaskById(task.Id)
+	_, err := t.GetTaskById(task.Id)
 	if err != nil {
 		return err
-	}
-
-	if taskDB.Id == "" {
-		return fmt.Errorf("task not found")
 	}
 
 	nextDate, err := t.GetNextDate(time.Now(), task.Date, task.Repeat)
@@ -110,8 +118,8 @@ func (t *TaskUsecase) MakeTaskDone(id string) error {
 		return err
 	}
 
-	if task.Id == "" {
-		return fmt.Errorf("task not found")
+	if task.Repeat == "" {
+		return t.DB.DeleteTask(id)
 	}
 
 	nextDate, err := t.GetNextDate(time.Now(), task.Date, task.Repeat)
@@ -123,13 +131,9 @@ func (t *TaskUsecase) MakeTaskDone(id string) error {
 }
 
 func (t *TaskUsecase) DeleteTask(id string) error {
-	task, err := t.GetTaskById(id)
+	_, err := t.GetTaskById(id)
 	if err != nil {
 		return err
-	}
-
-	if task.Id == "" {
-		return fmt.Errorf("task not found")
 	}
 
 	return t.DB.DeleteTask(id)
