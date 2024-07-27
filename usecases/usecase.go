@@ -75,9 +75,9 @@ func (t *TaskUsecase) CreateTask(task *model.Task, pastDay bool) (*model.TaskRes
 }
 
 func (t *TaskUsecase) GetTasks(searchString string) (model.TasksResp, error) {
-	_, err := time.Parse("20060102", searchString)
+	date, err := time.Parse("02.01.2006", searchString)
 	if err == nil {
-		return t.DB.GetTasksByDate(searchString)
+		return t.DB.GetTasksByDate(date)
 	}
 
 	if searchString != "" {
@@ -110,7 +110,7 @@ func (t *TaskUsecase) UpdateTask(task *model.Task, pastDay bool) error {
 }
 
 func (t *TaskUsecase) MakeTaskDone(id string) error {
-	task, err := t.GetTaskById(id)
+	task, err := t.DB.GetTaskById(id)
 	if err != nil {
 		return err
 	}
@@ -128,7 +128,7 @@ func (t *TaskUsecase) MakeTaskDone(id string) error {
 }
 
 func (t *TaskUsecase) DeleteTask(id string) error {
-	_, err := t.GetTaskById(id)
+	_, err := t.DB.GetTaskById(id)
 	if err != nil {
 		return err
 	}

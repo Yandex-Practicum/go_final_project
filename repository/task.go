@@ -81,10 +81,10 @@ func (r *TaskRepo) GetTasksBySearchString(searchString string) (model.TasksResp,
 	return model.TasksResp{Tasks: tasks}, nil
 }
 
-func (r *TaskRepo) GetTasksByDate(searchString string) (model.TasksResp, error) {
+func (r *TaskRepo) GetTasksByDate(searchDate time.Time) (model.TasksResp, error) {
 	tasks := make([]model.Task, 0)
 
-	res, err := r.Db.Query(SQLGetTasksByDate, searchString)
+	res, err := r.Db.Query(SQLGetTasksByDate, searchDate.Format("20060102"))
 	if err != nil {
 		return model.TasksResp{Tasks: tasks}, err
 	}

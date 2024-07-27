@@ -1,12 +1,16 @@
 package repository
 
-import "github.com/AlexJudin/go_final_project/usecases/model"
+import (
+	"time"
+
+	"github.com/AlexJudin/go_final_project/usecases/model"
+)
 
 type Task interface {
 	CreateTask(task *model.Task) (int64, error)
 	GetTasks() (model.TasksResp, error)
 	GetTasksBySearchString(searchString string) (model.TasksResp, error)
-	GetTasksByDate(searchString string) (model.TasksResp, error)
+	GetTasksByDate(searchDate time.Time) (model.TasksResp, error)
 	GetTaskById(id string) (*model.Task, error)
 	UpdateTask(task *model.Task) error
 	MakeTaskDone(id string, date string) error
