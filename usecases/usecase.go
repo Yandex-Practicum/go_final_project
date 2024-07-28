@@ -92,7 +92,7 @@ func (t *TaskUsecase) GetTaskById(id string) (*model.Task, error) {
 }
 
 func (t *TaskUsecase) UpdateTask(task *model.Task, pastDay bool) error {
-	_, err := t.GetTaskById(task.Id)
+	_, err := t.DB.GetTaskById(task.Id)
 	if err != nil {
 		return err
 	}
@@ -128,11 +128,6 @@ func (t *TaskUsecase) MakeTaskDone(id string) error {
 }
 
 func (t *TaskUsecase) DeleteTask(id string) error {
-	_, err := t.DB.GetTaskById(id)
-	if err != nil {
-		return err
-	}
-
 	return t.DB.DeleteTask(id)
 }
 

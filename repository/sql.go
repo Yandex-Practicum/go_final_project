@@ -18,7 +18,7 @@ const (
 
 	SQLGetTasks = `SELECT * FROM scheduler WHERE date >= $1`
 
-	SQLGetTasksBySearchString = `SELECT * FROM scheduler WHERE title LIKE '%$1%' OR comment LIKE '%$1%' ORDER BY date`
+	SQLGetTasksBySearchString = `SELECT * FROM scheduler WHERE title LIKE $1 OR comment LIKE $1 ORDER BY date`
 
 	SQLGetTasksByDate = `SELECT * FROM scheduler WHERE date = $1`
 

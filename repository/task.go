@@ -60,7 +60,7 @@ func (r *TaskRepo) GetTasks() (model.TasksResp, error) {
 func (r *TaskRepo) GetTasksBySearchString(searchString string) (model.TasksResp, error) {
 	tasks := make([]model.Task, 0)
 
-	res, err := r.Db.Query(SQLGetTasksBySearchString, searchString)
+	res, err := r.Db.Query(SQLGetTasksBySearchString, "%"+searchString+"%")
 	if err != nil {
 		return model.TasksResp{Tasks: tasks}, err
 	}
@@ -138,18 +138,36 @@ func (r *TaskRepo) UpdateTask(task *model.Task) error {
 }
 
 func (r *TaskRepo) MakeTaskDone(id string, date string) error {
-	_, err := r.Db.Exec(SQLMakeTaskDone, id, date)
+	res, err := r.Db.Exec(SQLMakeTaskDone, id, date)
 	if err != nil {
 		return err
+	}
+
+	count, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if count == 0 {
+		return fmt.Errorf("task id %s not found", id)
 	}
 
 	return nil
 }
 
 func (r *TaskRepo) DeleteTask(id string) error {
-	_, err := r.Db.Exec(SQLDeleteTask, id)
+	res, err := r.Db.Exec(SQLDeleteTask, id)
 	if err != nil {
 		return err
+	}
+
+	count, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if count == 0 {
+		return fmt.Errorf("task id %s not found", id)
 	}
 
 	return nil
