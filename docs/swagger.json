@@ -264,11 +264,6 @@
         },
         "/api/tasks": {
             "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
                 "description": "Получить список ближайших задач",
                 "consumes": [
                     "application/json"
@@ -380,13 +375,6 @@
                     }
                 }
             }
-        }
-    },
-    "securityDefinitions": {
-        "ApiKeyAuth": {
-            "type": "apiKey",
-            "name": "Authorization",
-            "in": "header"
         }
     }
 }

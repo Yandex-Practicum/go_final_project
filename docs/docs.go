@@ -271,11 +271,6 @@ const docTemplate = `{
         },
         "/api/tasks": {
             "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
                 "description": "Получить список ближайших задач",
                 "consumes": [
                     "application/json"
@@ -387,13 +382,6 @@ const docTemplate = `{
                     }
                 }
             }
-        }
-    },
-    "securityDefinitions": {
-        "ApiKeyAuth": {
-            "type": "apiKey",
-            "name": "Authorization",
-            "in": "header"
         }
     }
 }`
