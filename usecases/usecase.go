@@ -179,11 +179,11 @@ func addDateTask(now time.Time, dateTask time.Time, year int, month int, day int
 }
 
 func getDateTaskByWeek(now, dateTask time.Time, daysString string) (time.Time, error) {
-	days := strings.Split(daysString, ",")
+	daysSlice := strings.Split(daysString, ",")
 	daysOfWeek := regexp.MustCompile("[1-7]")
 
 	daysOfWeekMap := make(map[int]bool)
-	for _, day := range days {
+	for _, day := range daysSlice {
 		numberOfDay, err := strconv.Atoi(day)
 		if err != nil {
 			return dateTask, err
@@ -211,81 +211,78 @@ func getDateTaskByWeek(now, dateTask time.Time, daysString string) (time.Time, e
 	return dateTask, nil
 }
 
-func getDateTaskByMonth(now, dateTask time.Time, repeatRule []string) (time.Time, error) {
-	daysOfMounth := regexp.MustCompile("[1-31], -1, -2")
-	mounth := regexp.MustCompile("[1-12]")
-
-	daysString := repeatRule[1]
+func getDateTaskByMonth(now, dateTask time.Time, repeat []string) (time.Time, error) {
+	daysString := repeat[1]
 
 	monthsString := ""
-	if len(repeatRule) > 2 {
-		monthsString = repeatRule[2]
+	if len(repeat) > 2 {
+		monthsString = repeat[2]
 	}
 
-	days := strings.Split(daysString, ",")
-	months := strings.Split(monthsString, ",")
+	daysSlice := strings.Split(daysString, ",")
+	monthsSlice := strings.Split(monthsString, ",")
 
 	daysMap := make(map[int]bool)
-	for _, dayString := range days {
-		day, err := strconv.Atoi(dayString)
+	for _, day := range daysSlice {
+		numberOfDay, err := strconv.Atoi(day)
 		if err != nil {
 			return dateTask, err
 		}
-		if len(daysOfMounth.FindAllString(dayString, -1)) == 0 {
-			return dateTask, fmt.Errorf("invalid value %d day of the month", day)
+		if numberOfDay < -2 || numberOfDay > 31 || numberOfDay == 0 {
+			return dateTask, fmt.Errorf("invalid value %d day of the month", numberOfDay)
 		}
-		daysMap[day] = true
+		daysMap[numberOfDay] = true
 	}
 
 	monthsMap := make(map[int]bool)
-	for _, monthString := range months {
-		if monthString != "" {
-			month, err := strconv.Atoi(monthString)
-			if err != nil {
-				return dateTask, err
-			}
-			if len(mounth.FindAllString(monthString, -1)) == 0 {
-				return dateTask, fmt.Errorf("invalid value %d month", month)
-			}
-			monthsMap[month] = true
-		}
-	}
-
-	found := false
-	for i := 0; i < 12*10; i++ {
-		month := int(dateTask.Month())
-		if len(monthsMap) > 0 && !monthsMap[month] {
-			dateTask = dateTask.AddDate(0, 1, 0)
-			dateTask = time.Date(dateTask.Year(), dateTask.Month(), 1, 0, 0, 0, 0, dateTask.Location())
+	for _, month := range monthsSlice {
+		if month == "" {
 			continue
 		}
-
-		lastDayOfMonth := time.Date(dateTask.Year(), dateTask.Month()+1, 0, 0, 0, 0, 0, dateTask.Location()).Day()
-		for targetDay := range daysMap {
-			if targetDay > 0 {
-				if dateTask.Day() == targetDay && now.Before(dateTask) {
-					found = true
-					break
-				}
-			} else if targetDay < 0 {
-				if dateTask.Day() == lastDayOfMonth+targetDay+1 && now.Before(dateTask) {
-					found = true
-					break
-				}
-			}
+		numberOfMonth, err := strconv.Atoi(month)
+		if err != nil {
+			return dateTask, err
 		}
-		if found {
+		if numberOfMonth < 1 || numberOfMonth > 12 {
+			return dateTask, fmt.Errorf("invalid value %d month", numberOfMonth)
+		}
+		monthsMap[numberOfMonth] = true
+	}
+
+	for {
+		if len(monthsMap) == 0 {
 			break
 		}
 
-		dateTask = dateTask.AddDate(0, 0, 1)
-		if dateTask.Day() == 1 {
-			dateTask = time.Date(dateTask.Year(), dateTask.Month(), 1, 0, 0, 0, 0, dateTask.Location())
+		if monthsMap[int(dateTask.Month())] {
+			if now.Before(dateTask) {
+				break
+			}
 		}
+		dateTask = dateTask.AddDate(0, 0, 1)
 	}
 
-	if !found {
-		return dateTask, nil
+	for {
+		/*
+			key := dateTask.Day()
+			targetDay := dateTask.Day()
+			lastDayOfMonth := time.Date(dateTask.Year(), dateTask.Month()+1, 0, 0, 0, 0, 0, dateTask.Location()).Day()
+
+			if _, ok := daysMap[-1]; ok {
+				lastDayOfMonth = lastDayOfMonth - 1
+			}
+
+			if targetDay == lastDayOfMonth {
+				key = -1
+			}
+		*/
+
+		if daysMap[dateTask.Day()] {
+			if now.Before(dateTask) {
+				break
+			}
+		}
+		dateTask = dateTask.AddDate(0, 0, 1)
 	}
 
 	return dateTask, nil
