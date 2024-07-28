@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/golang-jwt/jwt/v4"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/AlexJudin/go_final_project/config"
 )
@@ -47,6 +48,8 @@ func (a *AuthHandler) GetAuthByPassword(w http.ResponseWriter, r *http.Request) 
 
 	_, err := buf.ReadFrom(r.Body)
 	if err != nil {
+		log.Errorf("http.GetAuthByPassword: %+v", err)
+
 		errResp := errResponse{
 			Error: err.Error(),
 		}
@@ -55,6 +58,8 @@ func (a *AuthHandler) GetAuthByPassword(w http.ResponseWriter, r *http.Request) 
 	}
 
 	if err = json.Unmarshal(buf.Bytes(), &body); err != nil {
+		log.Errorf("http.GetAuthByPassword: %+v", err)
+
 		errResp := errResponse{
 			Error: err.Error(),
 		}
@@ -63,8 +68,11 @@ func (a *AuthHandler) GetAuthByPassword(w http.ResponseWriter, r *http.Request) 
 	}
 
 	if body.Password != a.Config.Password {
+		err := fmt.Errorf("password mismatch")
+		log.Errorf("http.GetAuthByPassword: %+v", err)
+
 		errResp := errResponse{
-			Error: fmt.Errorf("invalid password").Error(),
+			Error: err.Error(),
 		}
 		returnErr(http.StatusUnauthorized, errResp, w)
 		return
@@ -73,6 +81,8 @@ func (a *AuthHandler) GetAuthByPassword(w http.ResponseWriter, r *http.Request) 
 	jwtToken := jwt.New(jwt.SigningMethodHS256)
 	signedToken, err := jwtToken.SignedString([]byte(body.Password))
 	if err != nil {
+		log.Errorf("http.GetAuthByPassword: %+v", err)
+
 		errResp := errResponse{
 			Error: err.Error(),
 		}
@@ -86,6 +96,8 @@ func (a *AuthHandler) GetAuthByPassword(w http.ResponseWriter, r *http.Request) 
 
 	resp, err := json.Marshal(authResp)
 	if err != nil {
+		log.Errorf("http.GetAuthByPassword: %+v", err)
+
 		errResp := errResponse{
 			Error: err.Error(),
 		}

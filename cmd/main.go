@@ -2,11 +2,11 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"path/filepath"
 
 	"github.com/go-chi/chi/v5"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/AlexJudin/go_final_project/api"
 	"github.com/AlexJudin/go_final_project/config"
@@ -28,6 +28,9 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	logLevel, _ := log.ParseLevel(cfg.LogLevel)
+	log.SetLevel(logLevel)
 
 	db, err := repository.NewDB(cfg.DBFile)
 	if err != nil {

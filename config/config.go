@@ -10,6 +10,7 @@ type Сonfig struct {
 	Port     string
 	DBFile   string
 	Password string
+	LogLevel string
 }
 
 func New() (*Сonfig, error) {
@@ -22,6 +23,7 @@ func New() (*Сonfig, error) {
 		Port:     os.Getenv("TODO_PORT"),
 		DBFile:   os.Getenv("TODO_DBFILE"),
 		Password: os.Getenv("TODO_PASSWORD"),
+		LogLevel: os.Getenv("TODO_LOGLEVEL"),
 	}
 
 	return &cfg, nil

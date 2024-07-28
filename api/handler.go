@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/AlexJudin/go_final_project/usecases"
 	"github.com/AlexJudin/go_final_project/usecases/model"
@@ -28,7 +29,7 @@ func (h *TaskHandler) GetNextDate(w http.ResponseWriter, r *http.Request) {
 	now := r.FormValue("now")
 	nowTime, err := time.Parse("20060102", now)
 	if err != nil {
-		log.Printf("Failed to parse time. Error: %+v", err)
+		log.Errorf("Failed to parse time. Error: %+v", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -38,7 +39,7 @@ func (h *TaskHandler) GetNextDate(w http.ResponseWriter, r *http.Request) {
 
 	nextDate, err := h.uc.GetNextDate(nowTime, date, repeat)
 	if err != nil {
-		log.Printf("Failed to get next date. Error: %+v", err)
+		log.Errorf("Failed to get next date. Error: %+v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -66,6 +67,8 @@ func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
 
 	_, err := buf.ReadFrom(r.Body)
 	if err != nil {
+		log.Errorf("http.CreateTask: %+v", err)
+
 		errResp := errResponse{
 			Error: err.Error(),
 		}
@@ -74,6 +77,8 @@ func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err = json.Unmarshal(buf.Bytes(), &task); err != nil {
+		log.Errorf("http.CreateTask: %+v", err)
+
 		errResp := errResponse{
 			Error: err.Error(),
 		}
@@ -84,6 +89,8 @@ func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
 	dateTaskNow := time.Now().Format("20060102")
 	err = checkTaskRequest(&task, dateTaskNow)
 	if err != nil {
+		log.Errorf("http.CreateTask: %+v", err)
+
 		errResp := errResponse{
 			Error: err.Error(),
 		}
@@ -95,6 +102,8 @@ func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
 
 	taskResp, err := h.uc.CreateTask(&task, pastDay)
 	if err != nil {
+		log.Errorf("http.CreateTask: %+v", err)
+
 		errResp := errResponse{
 			Error: err.Error(),
 		}
@@ -104,6 +113,8 @@ func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
 
 	resp, err := json.Marshal(taskResp)
 	if err != nil {
+		log.Errorf("http.CreateTask: %+v", err)
+
 		errResp := errResponse{
 			Error: err.Error(),
 		}
@@ -131,6 +142,8 @@ func (h *TaskHandler) GetTasks(w http.ResponseWriter, r *http.Request) {
 
 	tasksResp, err := h.uc.GetTasks(searchString)
 	if err != nil {
+		log.Errorf("http.GetTasks: %+v", err)
+
 		errResp := errResponse{
 			Error: err.Error(),
 		}
@@ -140,6 +153,8 @@ func (h *TaskHandler) GetTasks(w http.ResponseWriter, r *http.Request) {
 
 	resp, err := json.Marshal(tasksResp)
 	if err != nil {
+		log.Errorf("http.GetTasks: %+v", err)
+
 		errResp := errResponse{
 			Error: err.Error(),
 		}
@@ -165,8 +180,11 @@ func (h *TaskHandler) GetTasks(w http.ResponseWriter, r *http.Request) {
 func (h *TaskHandler) GetTask(w http.ResponseWriter, r *http.Request) {
 	taskId := r.FormValue("id")
 	if taskId == "" {
+		err := fmt.Errorf("task id is empty")
+		log.Errorf("http.GetTask: %+v", err)
+
 		errResp := errResponse{
-			Error: fmt.Errorf("task id is empty").Error(),
+			Error: err.Error(),
 		}
 		returnErr(http.StatusBadRequest, errResp, w)
 		return
@@ -174,6 +192,8 @@ func (h *TaskHandler) GetTask(w http.ResponseWriter, r *http.Request) {
 
 	taskResp, err := h.uc.GetTaskById(taskId)
 	if err != nil {
+		log.Errorf("http.GetTask: %+v", err)
+
 		errResp := errResponse{
 			Error: err.Error(),
 		}
@@ -183,6 +203,8 @@ func (h *TaskHandler) GetTask(w http.ResponseWriter, r *http.Request) {
 
 	resp, err := json.Marshal(taskResp)
 	if err != nil {
+		log.Errorf("http.GetTask: %+v", err)
+
 		errResp := errResponse{
 			Error: err.Error(),
 		}
@@ -213,6 +235,8 @@ func (h *TaskHandler) UpdateTask(w http.ResponseWriter, r *http.Request) {
 
 	_, err := buf.ReadFrom(r.Body)
 	if err != nil {
+		log.Errorf("http.UpdateTask: %+v", err)
+
 		errResp := errResponse{
 			Error: err.Error(),
 		}
@@ -221,6 +245,8 @@ func (h *TaskHandler) UpdateTask(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err = json.Unmarshal(buf.Bytes(), &task); err != nil {
+		log.Errorf("http.UpdateTask: %+v", err)
+
 		errResp := errResponse{
 			Error: err.Error(),
 		}
@@ -231,6 +257,8 @@ func (h *TaskHandler) UpdateTask(w http.ResponseWriter, r *http.Request) {
 	dateTaskNow := time.Now().Format("20060102")
 	err = checkTaskRequest(&task, dateTaskNow)
 	if err != nil {
+		log.Errorf("http.UpdateTask: %+v", err)
+
 		errResp := errResponse{
 			Error: err.Error(),
 		}
@@ -242,6 +270,8 @@ func (h *TaskHandler) UpdateTask(w http.ResponseWriter, r *http.Request) {
 
 	err = h.uc.UpdateTask(&task, pastDay)
 	if err != nil {
+		log.Errorf("http.UpdateTask: %+v", err)
+
 		errResp := errResponse{
 			Error: err.Error(),
 		}
@@ -267,8 +297,11 @@ func (h *TaskHandler) UpdateTask(w http.ResponseWriter, r *http.Request) {
 func (h *TaskHandler) MakeTaskDone(w http.ResponseWriter, r *http.Request) {
 	taskId := r.FormValue("id")
 	if taskId == "" {
+		err := fmt.Errorf("task id is empty")
+		log.Errorf("http.MakeTaskDone: %+v", err)
+
 		errResp := errResponse{
-			Error: fmt.Errorf("task id is empty").Error(),
+			Error: err.Error(),
 		}
 		returnErr(http.StatusBadRequest, errResp, w)
 		return
@@ -276,6 +309,8 @@ func (h *TaskHandler) MakeTaskDone(w http.ResponseWriter, r *http.Request) {
 
 	err := h.uc.MakeTaskDone(taskId)
 	if err != nil {
+		log.Errorf("http.MakeTaskDone: %+v", err)
+
 		errResp := errResponse{
 			Error: err.Error(),
 		}
@@ -301,8 +336,11 @@ func (h *TaskHandler) MakeTaskDone(w http.ResponseWriter, r *http.Request) {
 func (h *TaskHandler) DeleteTask(w http.ResponseWriter, r *http.Request) {
 	taskId := r.FormValue("id")
 	if taskId == "" {
+		err := fmt.Errorf("task id is empty")
+		log.Errorf("http.DeleteTask: %+v", err)
+
 		errResp := errResponse{
-			Error: fmt.Errorf("task id is empty").Error(),
+			Error: err.Error(),
 		}
 		returnErr(http.StatusBadRequest, errResp, w)
 		return
@@ -310,6 +348,8 @@ func (h *TaskHandler) DeleteTask(w http.ResponseWriter, r *http.Request) {
 
 	err := h.uc.DeleteTask(taskId)
 	if err != nil {
+		log.Errorf("http.DeleteTask: %+v", err)
+
 		errResp := errResponse{
 			Error: err.Error(),
 		}
