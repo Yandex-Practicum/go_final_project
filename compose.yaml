@@ -1,0 +1,8 @@
+services:
+  web:
+    build: .
+    ports:
+      - "7540:7540"
+    volumes:
+      - .:/usr/src/app
+    command: go run cmd/main.go
