@@ -47,6 +47,9 @@ func main() {
 	// init middleware
 	authMiddleware := middleware.New(cfg)
 
+	// init auth
+	authHandler := middleware.NewAuthHandler(cfg)
+
 	webDir := "./web"
 	r := chi.NewRouter()
 	fileServer := http.FileServer(http.Dir(webDir))
@@ -56,6 +59,7 @@ func main() {
 		}
 		fileServer.ServeHTTP(w, r)
 	})
+	r.Post("/api/sign", authHandler.GetAuthByPassword)
 	r.Get("/api/nextdate", taskHandler.GetNextDate)
 	r.Post("/api/task", authMiddleware.Auth(taskHandler.CreateTask))
 	r.Get("/api/tasks", authMiddleware.Auth(taskHandler.GetTasks))

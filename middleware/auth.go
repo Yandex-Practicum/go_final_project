@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/golang-jwt/jwt/v4"
+
 	"github.com/AlexJudin/go_final_project/config"
 )
 
@@ -20,18 +22,25 @@ func (a *AuthMW) Auth(next http.HandlerFunc) http.HandlerFunc {
 		// смотрим наличие пароля
 		pass := a.cfg.Password
 		if len(pass) > 0 {
-			var jwt string // JWT-токен из куки
+			var (
+				signedToken string
+				password    string
+			)
 			// получаем куку
 			cookie, err := r.Cookie("token")
 			if err == nil {
-				jwt = cookie.Value
+				signedToken = cookie.Value
 			}
-			var valid bool
-			// здесь код для валидации и проверки JWT-токена
-			// ...
-			fmt.Print(jwt)
+			jwtToken, err := jwt.Parse(signedToken, func(t *jwt.Token) (interface{}, error) {
+				// секретный ключ для всех токенов одинаковый, поэтому просто возвращаем его
+				return password, nil
+			})
+			if err != nil {
+				fmt.Errorf("Failed to parse token: %s\n", err)
+				return
+			}
 
-			if !valid {
+			if !jwtToken.Valid {
 				// возвращаем ошибку авторизации 401
 				http.Error(w, "Authentification required", http.StatusUnauthorized)
 				return
