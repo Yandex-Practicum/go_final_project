@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/AlexJudin/go_final_project/config"
@@ -28,6 +29,7 @@ func (a *AuthMW) Auth(next http.HandlerFunc) http.HandlerFunc {
 			var valid bool
 			// здесь код для валидации и проверки JWT-токена
 			// ...
+			fmt.Print(jwt)
 
 			if !valid {
 				// возвращаем ошибку авторизации 401
