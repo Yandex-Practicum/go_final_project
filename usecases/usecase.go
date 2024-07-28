@@ -263,21 +263,23 @@ func getDateTaskByMonth(now, dateTask time.Time, repeat []string) (time.Time, er
 	}
 
 	for {
-		/*
-			key := dateTask.Day()
-			targetDay := dateTask.Day()
-			lastDayOfMonth := time.Date(dateTask.Year(), dateTask.Month()+1, 0, 0, 0, 0, 0, dateTask.Location()).Day()
+		lastDayOfMonth := time.Date(dateTask.Year(), dateTask.Month()+1, 0, 0, 0, 0, 0, dateTask.Location()).Day()
+		predLastDayOfMonth := lastDayOfMonth - 1
+		fmt.Println(predLastDayOfMonth)
 
+		key := dateTask.Day()
+		switch {
+		case lastDayOfMonth == dateTask.Day():
 			if _, ok := daysMap[-1]; ok {
-				lastDayOfMonth = lastDayOfMonth - 1
-			}
-
-			if targetDay == lastDayOfMonth {
 				key = -1
 			}
-		*/
+		case predLastDayOfMonth == dateTask.Day():
+			if _, ok := daysMap[-2]; ok {
+				key = -2
+			}
+		}
 
-		if daysMap[dateTask.Day()] {
+		if daysMap[key] {
 			if now.Before(dateTask) {
 				break
 			}
