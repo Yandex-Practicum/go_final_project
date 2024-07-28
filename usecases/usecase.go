@@ -18,6 +18,14 @@ const (
 
 	sundayEU  = 0
 	sundayRus = 7
+
+	lastDayOfMonth     = -1
+	predLastDayOfMonth = -2
+
+	january  = 1
+	december = 12
+
+	maxDayOfMonth = 31
 )
 
 type TaskUsecase struct {
@@ -228,7 +236,7 @@ func getDateTaskByMonth(now, dateTask time.Time, repeat []string) (time.Time, er
 		if err != nil {
 			return dateTask, err
 		}
-		if numberOfDay < -2 || numberOfDay > 31 || numberOfDay == 0 {
+		if numberOfDay < predLastDayOfMonth || numberOfDay > maxDayOfMonth || numberOfDay == 0 {
 			return dateTask, fmt.Errorf("invalid value %d day of the month", numberOfDay)
 		}
 		daysMap[numberOfDay] = true
@@ -243,7 +251,7 @@ func getDateTaskByMonth(now, dateTask time.Time, repeat []string) (time.Time, er
 		if err != nil {
 			return dateTask, err
 		}
-		if numberOfMonth < 1 || numberOfMonth > 12 {
+		if numberOfMonth < january || numberOfMonth > december {
 			return dateTask, fmt.Errorf("invalid value %d month", numberOfMonth)
 		}
 		monthsMap[numberOfMonth] = true
@@ -263,19 +271,18 @@ func getDateTaskByMonth(now, dateTask time.Time, repeat []string) (time.Time, er
 	}
 
 	for {
-		lastDayOfMonth := time.Date(dateTask.Year(), dateTask.Month()+1, 0, 0, 0, 0, 0, dateTask.Location()).Day()
-		predLastDayOfMonth := lastDayOfMonth - 1
-		fmt.Println(predLastDayOfMonth)
+		lastDay := time.Date(dateTask.Year(), dateTask.Month()+1, 0, 0, 0, 0, 0, dateTask.Location()).Day()
+		predLastDay := lastDay - 1
 
 		key := dateTask.Day()
 		switch {
-		case lastDayOfMonth == dateTask.Day():
-			if _, ok := daysMap[-1]; ok {
-				key = -1
+		case lastDay == dateTask.Day():
+			if _, ok := daysMap[lastDayOfMonth]; ok {
+				key = lastDayOfMonth
 			}
-		case predLastDayOfMonth == dateTask.Day():
-			if _, ok := daysMap[-2]; ok {
-				key = -2
+		case predLastDay == dateTask.Day():
+			if _, ok := daysMap[predLastDayOfMonth]; ok {
+				key = predLastDayOfMonth
 			}
 		}
 
