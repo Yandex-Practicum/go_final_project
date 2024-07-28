@@ -20,6 +20,52 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/api/sign": {
+            "post": {
+                "description": "Получение токена по паролю",
+                "consumes": [
+                    "application/json"
+                ],
+                "summary": "Получение токена по паролю",
+                "parameters": [
+                    {
+                        "description": "Пароль профиля",
+                        "name": "password",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/middleware.bodyRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.getAuthByPassword"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.errResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.errResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.errResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/task": {
             "get": {
                 "description": "Получить задачу",
@@ -225,6 +271,11 @@ const docTemplate = `{
         },
         "/api/tasks": {
             "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
                 "description": "Получить список ближайших задач",
                 "consumes": [
                     "application/json"
@@ -274,6 +325,30 @@ const docTemplate = `{
                 }
             }
         },
+        "middleware.bodyRequest": {
+            "type": "object",
+            "properties": {
+                "password": {
+                    "type": "string"
+                }
+            }
+        },
+        "middleware.errResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string"
+                }
+            }
+        },
+        "middleware.getAuthByPassword": {
+            "type": "object",
+            "properties": {
+                "token": {
+                    "type": "string"
+                }
+            }
+        },
         "model.Task": {
             "type": "object",
             "properties": {
@@ -312,6 +387,13 @@ const docTemplate = `{
                     }
                 }
             }
+        }
+    },
+    "securityDefinitions": {
+        "ApiKeyAuth": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
         }
     }
 }`

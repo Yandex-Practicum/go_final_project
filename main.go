@@ -23,8 +23,6 @@ import (
 // @version 1.0.0
 // @host localhost:7540
 // @BasePath /
-// @in header
-// @name Authorization
 func main() {
 	cfg, err := config.New()
 	if err != nil {

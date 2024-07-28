@@ -35,7 +35,7 @@ type bodyRequest struct {
 // @Summary Получение токена по паролю
 // @Description Получение токена по паролю
 // @Accept json
-// @Param password body bodyRequest true "Пароль от профиля"
+// @Param password body bodyRequest true "Пароль профиля"
 // @Success 200 {object} getAuthByPassword
 // @Failure 400,401,500 {object} errResponse
 // @Router /api/sign [post]
@@ -71,7 +71,7 @@ func (a *AuthHandler) GetAuthByPassword(w http.ResponseWriter, r *http.Request) 
 	}
 
 	jwtToken := jwt.New(jwt.SigningMethodHS256)
-	signedToken, err := jwtToken.SignedString(body.Password)
+	signedToken, err := jwtToken.SignedString([]byte(body.Password))
 	if err != nil {
 		errResp := errResponse{
 			Error: err.Error(),

@@ -21,28 +21,28 @@ func (a *AuthMW) Auth(next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// смотрим наличие пароля
 		pass := a.cfg.Password
+		secret := []byte(pass)
 		if len(pass) > 0 {
 			var (
 				signedToken string
-				password    string
 			)
 			// получаем куку
 			cookie, err := r.Cookie("token")
 			if err == nil {
 				signedToken = cookie.Value
 			}
+
 			jwtToken, err := jwt.Parse(signedToken, func(t *jwt.Token) (interface{}, error) {
-				// секретный ключ для всех токенов одинаковый, поэтому просто возвращаем его
-				return password, nil
+				return secret, nil
 			})
+
 			if err != nil {
-				fmt.Errorf("Failed to parse token: %s\n", err)
+				returnErr(http.StatusUnauthorized, fmt.Errorf("Failed to parse token: %s\n", err), w)
 				return
 			}
 
 			if !jwtToken.Valid {
-				// возвращаем ошибку авторизации 401
-				http.Error(w, "Authentification required", http.StatusUnauthorized)
+				returnErr(http.StatusUnauthorized, fmt.Errorf("Authentification required"), w)
 				return
 			}
 		}

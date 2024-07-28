@@ -5,6 +5,21 @@ definitions:
       error:
         type: string
     type: object
+  middleware.bodyRequest:
+    properties:
+      password:
+        type: string
+    type: object
+  middleware.errResponse:
+    properties:
+      error:
+        type: string
+    type: object
+  middleware.getAuthByPassword:
+    properties:
+      token:
+        type: string
+    type: object
   model.Task:
     properties:
       comment:
@@ -40,6 +55,36 @@ info:
   title: Пользовательская документация API
   version: 1.0.0
 paths:
+  /api/sign:
+    post:
+      consumes:
+      - application/json
+      description: Получение токена по паролю
+      parameters:
+      - description: Пароль профиля
+        in: body
+        name: password
+        required: true
+        schema:
+          $ref: '#/definitions/middleware.bodyRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/middleware.getAuthByPassword'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/middleware.errResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/middleware.errResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/middleware.errResponse'
+      summary: Получение токена по паролю
   /api/task:
     delete:
       consumes:
@@ -198,7 +243,14 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/api.errResponse'
+      security:
+      - ApiKeyAuth: []
       summary: Получить список ближайших задач
       tags:
       - Task
+securityDefinitions:
+  ApiKeyAuth:
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"
