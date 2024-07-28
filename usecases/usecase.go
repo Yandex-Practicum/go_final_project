@@ -216,7 +216,11 @@ func getDateTaskByMonth(now, dateTask time.Time, repeatRule []string) (time.Time
 	mounth := regexp.MustCompile("[1-12]")
 
 	daysString := repeatRule[1]
-	monthsString := repeatRule[2]
+
+	monthsString := ""
+	if len(repeatRule) > 2 {
+		monthsString = repeatRule[2]
+	}
 
 	days := strings.Split(daysString, ",")
 	months := strings.Split(monthsString, ",")
