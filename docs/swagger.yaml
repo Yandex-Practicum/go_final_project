@@ -98,30 +98,12 @@ paths:
       - application/json
       description: Добавить новую задачу
       parameters:
-      - description: Дата задачи
+      - description: Параметры задачи
         in: body
-        name: date
+        name: Body
         required: true
         schema:
-          type: string
-      - description: Заголовок задачи
-        in: body
-        name: title
-        required: true
-        schema:
-          type: string
-      - description: Комментарий к задаче
-        in: body
-        name: comment
-        required: true
-        schema:
-          type: string
-      - description: Правило повторения
-        in: body
-        name: repeat
-        required: true
-        schema:
-          type: string
+          $ref: '#/definitions/model.Task'
       responses:
         "201":
           description: Created
@@ -143,36 +125,12 @@ paths:
       - application/json
       description: Редактировать задачу
       parameters:
-      - description: Идентификатор задачи
+      - description: Параметры задачи
         in: body
-        name: id
+        name: Body
         required: true
         schema:
-          type: string
-      - description: Дата задачи
-        in: body
-        name: date
-        required: true
-        schema:
-          type: string
-      - description: Заголовок задачи
-        in: body
-        name: title
-        required: true
-        schema:
-          type: string
-      - description: Комментарий к задаче
-        in: body
-        name: comment
-        required: true
-        schema:
-          type: string
-      - description: Правило повторения
-        in: body
-        name: repeat
-        required: true
-        schema:
-          type: string
+          $ref: '#/definitions/model.Task'
       responses:
         "200":
           description: OK
@@ -221,6 +179,12 @@ paths:
       consumes:
       - application/json
       description: Получить список ближайших задач
+      parameters:
+      - description: Строка поиска
+        in: query
+        name: search
+        required: true
+        type: string
       responses:
         "200":
           description: OK

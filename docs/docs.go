@@ -71,48 +71,12 @@ const docTemplate = `{
                 "summary": "Редактировать задачу",
                 "parameters": [
                     {
-                        "description": "Идентификатор задачи",
-                        "name": "id",
+                        "description": "Параметры задачи",
+                        "name": "Body",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "description": "Дата задачи",
-                        "name": "date",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "description": "Заголовок задачи",
-                        "name": "title",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "description": "Комментарий к задаче",
-                        "name": "comment",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "description": "Правило повторения",
-                        "name": "repeat",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/model.Task"
                         }
                     }
                 ],
@@ -148,39 +112,12 @@ const docTemplate = `{
                 "summary": "Добавить новую задачу",
                 "parameters": [
                     {
-                        "description": "Дата задачи",
-                        "name": "date",
+                        "description": "Параметры задачи",
+                        "name": "Body",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "description": "Заголовок задачи",
-                        "name": "title",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "description": "Комментарий к задаче",
-                        "name": "comment",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "description": "Правило повторения",
-                        "name": "repeat",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/model.Task"
                         }
                     }
                 ],
@@ -296,6 +233,15 @@ const docTemplate = `{
                     "Task"
                 ],
                 "summary": "Получить список ближайших задач",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Строка поиска",
+                        "name": "search",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",

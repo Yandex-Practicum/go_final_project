@@ -10,6 +10,7 @@ import (
 
 	"github.com/AlexJudin/go_final_project/api"
 	"github.com/AlexJudin/go_final_project/config"
+	"github.com/AlexJudin/go_final_project/middleware"
 	"github.com/AlexJudin/go_final_project/repository"
 	"github.com/AlexJudin/go_final_project/usecases"
 )
@@ -43,6 +44,9 @@ func main() {
 	taskUC := usecases.NewTaskUsecase(repo)
 	taskHandler := api.NewTaskHandler(taskUC)
 
+	// init middleware
+	authMiddleware := middleware.New(cfg)
+
 	webDir := "./web"
 	r := chi.NewRouter()
 	fileServer := http.FileServer(http.Dir(webDir))
@@ -53,12 +57,12 @@ func main() {
 		fileServer.ServeHTTP(w, r)
 	})
 	r.Get("/api/nextdate", taskHandler.GetNextDate)
-	r.Post("/api/task", taskHandler.CreateTask)
-	r.Get("/api/tasks", taskHandler.GetTasks)
-	r.Get("/api/task", taskHandler.GetTask)
-	r.Put("/api/task", taskHandler.UpdateTask)
-	r.Post("/api/task/done", taskHandler.MakeTaskDone)
-	r.Delete("/api/task", taskHandler.DeleteTask)
+	r.Post("/api/task", authMiddleware.Auth(taskHandler.CreateTask))
+	r.Get("/api/tasks", authMiddleware.Auth(taskHandler.GetTasks))
+	r.Get("/api/task", authMiddleware.Auth(taskHandler.GetTask))
+	r.Put("/api/task", authMiddleware.Auth(taskHandler.UpdateTask))
+	r.Post("/api/task/done", authMiddleware.Auth(taskHandler.MakeTaskDone))
+	r.Delete("/api/task", authMiddleware.Auth(taskHandler.DeleteTask))
 
 	serverAddress := fmt.Sprintf("localhost:%s", cfg.Port)
 	log.Println("Listening on " + serverAddress)
