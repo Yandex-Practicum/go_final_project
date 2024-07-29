@@ -31,7 +31,7 @@ API содержит следующие операции:
 7. `go test -run ^TestEditTask$ ./tests`
 8. `go test -run ^TestDone$ ./tests`
 9. `go test -run ^TestDelTask$ ./tests`
-10. `go test ./tests` - Запуск всех тестов сразу
+10. `go test ./tests` - Запуск всех тестов сразу.
 
 
 
