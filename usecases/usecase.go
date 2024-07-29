@@ -26,6 +26,8 @@ const (
 	december = 12
 
 	maxDayOfMonth = 31
+
+	timeFormatForSearch = "02.01.2006"
 )
 
 type TaskUsecase struct {
@@ -41,7 +43,7 @@ func (t *TaskUsecase) GetNextDate(now time.Time, date string, repeat string) (st
 		return "", fmt.Errorf("repeat is required")
 	}
 
-	dateTask, err := time.Parse("20060102", date)
+	dateTask, err := time.Parse(model.TimeFormat, date)
 	if err != nil {
 		return "", err
 	}
@@ -83,7 +85,7 @@ func (t *TaskUsecase) GetNextDate(now time.Time, date string, repeat string) (st
 		return "", fmt.Errorf("invalid character")
 	}
 
-	return dateTask.Format("20060102"), nil
+	return dateTask.Format(model.TimeFormat), nil
 }
 
 func (t *TaskUsecase) CreateTask(task *model.Task, pastDay bool) (*model.TaskResp, error) {
@@ -107,7 +109,7 @@ func (t *TaskUsecase) CreateTask(task *model.Task, pastDay bool) (*model.TaskRes
 }
 
 func (t *TaskUsecase) GetTasks(searchString string) (model.TasksResp, error) {
-	date, err := time.Parse("02.01.2006", searchString)
+	date, err := time.Parse(timeFormatForSearch, searchString)
 	if err == nil {
 		return t.DB.GetTasksByDate(date)
 	}

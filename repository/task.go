@@ -41,7 +41,7 @@ func (r *TaskRepo) CreateTask(task *model.Task) (int64, error) {
 func (r *TaskRepo) GetTasks() (model.TasksResp, error) {
 	tasks := make([]model.Task, 0)
 
-	res, err := r.Db.Query(SQLGetTasks, time.Now().Format("20060102"))
+	res, err := r.Db.Query(SQLGetTasks, time.Now().Format(model.TimeFormat))
 	if err != nil {
 		log.Debugf("Database.GetTasks: %+v", err)
 
@@ -105,7 +105,7 @@ func (r *TaskRepo) GetTasksBySearchString(searchString string) (model.TasksResp,
 func (r *TaskRepo) GetTasksByDate(searchDate time.Time) (model.TasksResp, error) {
 	tasks := make([]model.Task, 0)
 
-	res, err := r.Db.Query(SQLGetTasksByDate, searchDate.Format("20060102"))
+	res, err := r.Db.Query(SQLGetTasksByDate, searchDate.Format(model.TimeFormat))
 	if err != nil {
 		log.Debugf("Database.GetTasksByDate: %+v", err)
 

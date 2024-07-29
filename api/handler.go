@@ -27,7 +27,7 @@ type errResponse struct {
 
 func (h *TaskHandler) GetNextDate(w http.ResponseWriter, r *http.Request) {
 	now := r.FormValue("now")
-	nowTime, err := time.Parse("20060102", now)
+	nowTime, err := time.Parse(model.TimeFormat, now)
 	if err != nil {
 		log.Errorf("Failed to parse time. Error: %+v", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -90,7 +90,7 @@ func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dateTaskNow := time.Now().Format("20060102")
+	dateTaskNow := time.Now().Format(model.TimeFormat)
 	err = checkTaskRequest(&task, dateTaskNow)
 	if err != nil {
 		log.Errorf("http.CreateTask: %+v", err)
@@ -282,7 +282,7 @@ func (h *TaskHandler) UpdateTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dateTaskNow := time.Now().Format("20060102")
+	dateTaskNow := time.Now().Format(model.TimeFormat)
 	err = checkTaskRequest(&task, dateTaskNow)
 	if err != nil {
 		log.Errorf("http.UpdateTask: %+v", err)
@@ -424,7 +424,7 @@ func checkTaskRequest(task *model.Task, dateTaskNow string) error {
 		return nil
 	}
 
-	_, err := time.Parse("20060102", task.Date)
+	_, err := time.Parse(model.TimeFormat, task.Date)
 	if err != nil {
 		return fmt.Errorf("task date is invalid")
 	}

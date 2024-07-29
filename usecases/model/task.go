@@ -1,5 +1,7 @@
 package model
 
+const TimeFormat = "20060102"
+
 type Task struct {
 	Id      string `json:"id,omitempty"`
 	Date    string `json:"date"`
