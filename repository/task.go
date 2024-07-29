@@ -7,7 +7,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/AlexJudin/go_final_project/usecases/model"
+	"github.com/AlexJudin/go_final_project/model"
 )
 
 var _ Task = (*TaskRepo)(nil)
@@ -15,6 +15,8 @@ var _ Task = (*TaskRepo)(nil)
 type TaskRepo struct {
 	Db *sqlx.DB
 }
+
+const limit = 50
 
 func NewNewRepository(db *sqlx.DB) *TaskRepo {
 	return &TaskRepo{Db: db}
@@ -41,7 +43,7 @@ func (r *TaskRepo) CreateTask(task *model.Task) (int64, error) {
 func (r *TaskRepo) GetTasks() (model.TasksResp, error) {
 	tasks := make([]model.Task, 0)
 
-	res, err := r.Db.Query(SQLGetTasks, time.Now().Format(model.TimeFormat))
+	res, err := r.Db.Query(SQLGetTasks, time.Now().Format(model.TimeFormat), limit)
 	if err != nil {
 		log.Debugf("Database.GetTasks: %+v", err)
 
@@ -73,7 +75,7 @@ func (r *TaskRepo) GetTasks() (model.TasksResp, error) {
 func (r *TaskRepo) GetTasksBySearchString(searchString string) (model.TasksResp, error) {
 	tasks := make([]model.Task, 0)
 
-	res, err := r.Db.Query(SQLGetTasksBySearchString, "%"+searchString+"%")
+	res, err := r.Db.Query(SQLGetTasksBySearchString, "%"+searchString+"%", limit)
 	if err != nil {
 		log.Debugf("Database.GetTasksBySearchString: %+v", err)
 
@@ -105,7 +107,7 @@ func (r *TaskRepo) GetTasksBySearchString(searchString string) (model.TasksResp,
 func (r *TaskRepo) GetTasksByDate(searchDate time.Time) (model.TasksResp, error) {
 	tasks := make([]model.Task, 0)
 
-	res, err := r.Db.Query(SQLGetTasksByDate, searchDate.Format(model.TimeFormat))
+	res, err := r.Db.Query(SQLGetTasksByDate, searchDate.Format(model.TimeFormat), limit)
 	if err != nil {
 		log.Debugf("Database.GetTasksByDate: %+v", err)
 

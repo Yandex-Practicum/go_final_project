@@ -3,7 +3,7 @@ package usecases
 import (
 	"time"
 
-	"github.com/AlexJudin/go_final_project/usecases/model"
+	"github.com/AlexJudin/go_final_project/model"
 )
 
 type Task interface {

@@ -9,8 +9,8 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
+	"github.com/AlexJudin/go_final_project/model"
 	"github.com/AlexJudin/go_final_project/usecases"
-	"github.com/AlexJudin/go_final_project/usecases/model"
 )
 
 type TaskHandler struct {

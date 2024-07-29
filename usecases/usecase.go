@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/AlexJudin/go_final_project/model"
 	"github.com/AlexJudin/go_final_project/repository"
-	"github.com/AlexJudin/go_final_project/usecases/model"
 )
 
 var _ Task = (*TaskUsecase)(nil)

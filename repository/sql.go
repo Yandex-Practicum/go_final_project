@@ -28,6 +28,7 @@ const (
     	repeat
     FROM scheduler 
     WHERE date >= $1
+	LIMIT $2
     `
 
 	SQLGetTasksBySearchString = `
@@ -40,6 +41,7 @@ const (
 	FROM scheduler 
 	WHERE title LIKE $1 OR comment LIKE $1 
 	ORDER BY date
+	LIMIT $2
 	`
 
 	SQLGetTasksByDate = `
@@ -51,6 +53,7 @@ const (
     	repeat
 	FROM scheduler 
 	WHERE date = $1
+	LIMIT $2
 	`
 
 	SQLGetTaskById = `
