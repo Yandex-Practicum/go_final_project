@@ -36,7 +36,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5.5.1
         with:
-          images: alexeyjudin/42-docker-final-main
+          images: alexeyjudin/go_final_project
 
       - name: Build and push Docker Inage
         uses: docker/build-push-action@v5
