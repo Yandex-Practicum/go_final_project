@@ -10,23 +10,69 @@ const (
 		repeat  VARCHAR(128) NOT NULL DEFAULT "" 
 	);
 	`
+
 	SQLCreateSchedulerIndex = `
 	CREATE INDEX scheduler_date_index ON scheduler (date)
 	`
 
-	SQLCreateTask = `INSERT INTO scheduler (date, title, comment, repeat) VALUES ($1, $2, $3, $4)`
+	SQLCreateTask = `
+	INSERT INTO scheduler (date, title, comment, repeat) VALUES ($1, $2, $3, $4)
+	`
 
-	SQLGetTasks = `SELECT * FROM scheduler WHERE date >= $1`
+	SQLGetTasks = `
+	SELECT 
+    	id,
+    	date,
+    	title,
+    	comment,
+    	repeat
+    FROM scheduler 
+    WHERE date >= $1
+    `
 
-	SQLGetTasksBySearchString = `SELECT * FROM scheduler WHERE title LIKE $1 OR comment LIKE $1 ORDER BY date`
+	SQLGetTasksBySearchString = `
+	SELECT 
+    	id,
+    	date,
+    	title,
+    	comment,
+    	repeat
+	FROM scheduler 
+	WHERE title LIKE $1 OR comment LIKE $1 
+	ORDER BY date
+	`
 
-	SQLGetTasksByDate = `SELECT * FROM scheduler WHERE date = $1`
+	SQLGetTasksByDate = `
+	SELECT 
+	    id,
+    	date,
+    	title,
+    	comment,
+    	repeat
+	FROM scheduler 
+	WHERE date = $1
+	`
 
-	SQLGetTaskById = `SELECT * FROM scheduler WHERE id = $1`
+	SQLGetTaskById = `
+	SELECT 
+	    id,
+    	date,
+    	title,
+    	comment,
+    	repeat
+	FROM scheduler 
+	WHERE id = $1
+	`
 
-	SQLUpdateTask = `UPDATE scheduler SET date = $2, title = $3, comment = $4, repeat = $5 WHERE id = $1`
+	SQLUpdateTask = `
+	UPDATE scheduler SET date = $2, title = $3, comment = $4, repeat = $5 WHERE id = $1
+	`
 
-	SQLMakeTaskDone = `UPDATE scheduler SET date = $2 WHERE id = $1`
+	SQLMakeTaskDone = `
+	UPDATE scheduler SET date = $2 WHERE id = $1
+	`
 
-	SQLDeleteTask = `DELETE FROM scheduler WHERE id = $1`
+	SQLDeleteTask = `
+	DELETE FROM scheduler WHERE id = $1
+	`
 )
