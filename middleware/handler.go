@@ -107,7 +107,15 @@ func (a *AuthHandler) GetAuthByPassword(w http.ResponseWriter, r *http.Request) 
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	w.Write(resp)
+	_, err = w.Write(resp)
+	if err != nil {
+		log.Errorf("http.GetAuthByPassword: %+v", err)
+
+		errResp := errResponse{
+			Error: err.Error(),
+		}
+		returnErr(http.StatusInternalServerError, errResp, w)
+	}
 }
 
 func returnErr(status int, message interface{}, w http.ResponseWriter) {

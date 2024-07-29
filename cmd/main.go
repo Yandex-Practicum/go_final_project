@@ -70,7 +70,7 @@ func main() {
 	r.Delete("/api/task", authMiddleware.Auth(taskHandler.DeleteTask))
 
 	serverAddress := fmt.Sprintf("localhost:%s", cfg.Port)
-	log.Println("Listening on " + serverAddress)
+	log.Infoln("Listening on " + serverAddress)
 	if err = http.ListenAndServe(serverAddress, r); err != nil {
 		log.Panicf("Start server error: %+v", err.Error())
 	}

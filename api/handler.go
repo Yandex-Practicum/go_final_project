@@ -46,7 +46,11 @@ func (h *TaskHandler) GetNextDate(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(nextDate))
+	_, err = w.Write([]byte(nextDate))
+	if err != nil {
+		log.Errorf("Failed to write response. Error: %+v", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }
 
 // CreateTask ... Добавить новую задачу
@@ -124,7 +128,15 @@ func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	w.Write(resp)
+	_, err = w.Write(resp)
+	if err != nil {
+		log.Errorf("http.CreateTask: %+v", err)
+
+		errResp := errResponse{
+			Error: err.Error(),
+		}
+		returnErr(http.StatusInternalServerError, errResp, w)
+	}
 }
 
 // GetTasks ... Получить список ближайших задач
@@ -164,7 +176,15 @@ func (h *TaskHandler) GetTasks(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	w.Write(resp)
+	_, err = w.Write(resp)
+	if err != nil {
+		log.Errorf("http.GetTasks: %+v", err)
+
+		errResp := errResponse{
+			Error: err.Error(),
+		}
+		returnErr(http.StatusInternalServerError, errResp, w)
+	}
 }
 
 // GetTask ... Получить задачу
@@ -214,7 +234,15 @@ func (h *TaskHandler) GetTask(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	w.Write(resp)
+	_, err = w.Write(resp)
+	if err != nil {
+		log.Errorf("http.GetTask: %+v", err)
+
+		errResp := errResponse{
+			Error: err.Error(),
+		}
+		returnErr(http.StatusInternalServerError, errResp, w)
+	}
 }
 
 // UpdateTask ... Редактировать задачу
@@ -281,7 +309,15 @@ func (h *TaskHandler) UpdateTask(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte("{}"))
+	_, err = w.Write([]byte("{}"))
+	if err != nil {
+		log.Errorf("http.UpdateTask: %+v", err)
+
+		errResp := errResponse{
+			Error: err.Error(),
+		}
+		returnErr(http.StatusInternalServerError, errResp, w)
+	}
 }
 
 // MakeTaskDone ... Выполнить задачу
@@ -320,7 +356,15 @@ func (h *TaskHandler) MakeTaskDone(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte("{}"))
+	_, err = w.Write([]byte("{}"))
+	if err != nil {
+		log.Errorf("http.MakeTaskDone: %+v", err)
+
+		errResp := errResponse{
+			Error: err.Error(),
+		}
+		returnErr(http.StatusInternalServerError, errResp, w)
+	}
 }
 
 // DeleteTask ... Удалить задачу
@@ -359,7 +403,15 @@ func (h *TaskHandler) DeleteTask(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte("{}"))
+	_, err = w.Write([]byte("{}"))
+	if err != nil {
+		log.Errorf("http.DeleteTask: %+v", err)
+
+		errResp := errResponse{
+			Error: err.Error(),
+		}
+		returnErr(http.StatusInternalServerError, errResp, w)
+	}
 }
 
 func checkTaskRequest(task *model.Task, dateTaskNow string) error {

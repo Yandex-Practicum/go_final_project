@@ -63,6 +63,10 @@ func (r *TaskRepo) GetTasks() (model.TasksResp, error) {
 		tasks = append(tasks, task)
 	}
 
+	if err = res.Err(); err != nil {
+		return model.TasksResp{Tasks: tasks}, err
+	}
+
 	return model.TasksResp{Tasks: tasks}, nil
 }
 
@@ -89,6 +93,10 @@ func (r *TaskRepo) GetTasksBySearchString(searchString string) (model.TasksResp,
 		}
 
 		tasks = append(tasks, task)
+	}
+
+	if err = res.Err(); err != nil {
+		return model.TasksResp{Tasks: tasks}, err
 	}
 
 	return model.TasksResp{Tasks: tasks}, nil
@@ -119,6 +127,10 @@ func (r *TaskRepo) GetTasksByDate(searchDate time.Time) (model.TasksResp, error)
 		tasks = append(tasks, task)
 	}
 
+	if err = res.Err(); err != nil {
+		return model.TasksResp{Tasks: tasks}, err
+	}
+
 	return model.TasksResp{Tasks: tasks}, nil
 }
 
@@ -140,6 +152,10 @@ func (r *TaskRepo) GetTaskById(id string) (*model.Task, error) {
 
 			return nil, err
 		}
+	}
+
+	if err = res.Err(); err != nil {
+		return nil, err
 	}
 
 	if task.Id == "" {
