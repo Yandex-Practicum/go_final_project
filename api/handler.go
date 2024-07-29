@@ -445,5 +445,5 @@ func returnErr(status int, message interface{}, w http.ResponseWriter) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	w.Write(messageJson)
+	_, _ = w.Write(messageJson)
 }
