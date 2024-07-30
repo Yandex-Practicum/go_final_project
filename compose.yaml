@@ -1,0 +1,8 @@
+services:
+  web:
+    build: .
+    ports:
+      - "${TODO_PORT}:7540"
+    volumes:
+      - .:/app
+    command: go run cmd/main.go
