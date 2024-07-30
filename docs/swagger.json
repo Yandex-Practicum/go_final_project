@@ -13,7 +13,7 @@
     "host": "localhost:7540",
     "basePath": "/",
     "paths": {
-        "/api/sign": {
+        "/api/signin": {
             "post": {
                 "description": "Получение токена по паролю",
                 "consumes": [

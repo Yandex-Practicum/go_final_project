@@ -39,7 +39,7 @@ type bodyRequest struct {
 // @Param password body bodyRequest true "Пароль профиля"
 // @Success 200 {object} getAuthByPassword
 // @Failure 400,401,500 {object} errResponse
-// @Router /api/sign [post]
+// @Router /api/signin [post]
 func (a *AuthHandler) GetAuthByPassword(w http.ResponseWriter, r *http.Request) {
 	var (
 		buf  bytes.Buffer

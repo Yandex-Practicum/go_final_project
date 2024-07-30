@@ -20,7 +20,7 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/api/sign": {
+        "/api/signin": {
             "post": {
                 "description": "Получение токена по паролю",
                 "consumes": [
