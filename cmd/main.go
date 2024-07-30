@@ -59,7 +59,7 @@ func main() {
 		}
 		fileServer.ServeHTTP(w, r)
 	})
-	r.Post("/api/sign", authHandler.GetAuthByPassword)
+	r.Post("/api/signin", authHandler.GetAuthByPassword)
 	r.Get("/api/nextdate", taskHandler.GetNextDate)
 	r.Post("/api/task", authMiddleware.Auth(taskHandler.CreateTask))
 	r.Get("/api/tasks", authMiddleware.Auth(taskHandler.GetTasks))
