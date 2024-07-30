@@ -29,8 +29,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	logLevel, _ := log.ParseLevel(cfg.LogLevel)
-	log.SetLevel(logLevel)
+	log.SetLevel(cfg.LogLevel)
 
 	db, err := repository.NewDB(cfg.DBFile)
 	if err != nil {

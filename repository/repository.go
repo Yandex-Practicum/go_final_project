@@ -7,6 +7,22 @@ import (
 	_ "modernc.org/sqlite"
 )
 
+const (
+	SQLCreateScheduler = `
+	CREATE TABLE scheduler (
+	    id      INTEGER PRIMARY KEY, 
+	    date    CHAR(8) NOT NULL DEFAULT "", 
+	    title   TEXT NOT NULL DEFAULT "" CHECK (length(title) < 128),
+		comment TEXT NOT NULL DEFAULT "",
+		repeat  VARCHAR(128) NOT NULL DEFAULT "" 
+	);
+	`
+
+	SQLCreateSchedulerIndex = `
+	CREATE INDEX scheduler_date_index ON scheduler (date)
+	`
+)
+
 func NewDB(dbFile string) (*sqlx.DB, error) {
 	var install bool
 	_, err := os.Stat(dbFile)

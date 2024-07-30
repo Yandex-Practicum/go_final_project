@@ -4,13 +4,14 @@ import (
 	"os"
 
 	"github.com/joho/godotenv"
+	log "github.com/sirupsen/logrus"
 )
 
 type Сonfig struct {
 	Port     string
 	DBFile   string
 	Password string
-	LogLevel string
+	LogLevel log.Level
 }
 
 func New() (*Сonfig, error) {
@@ -23,8 +24,14 @@ func New() (*Сonfig, error) {
 		Port:     os.Getenv("TODO_PORT"),
 		DBFile:   os.Getenv("TODO_DBFILE"),
 		Password: os.Getenv("TODO_PASSWORD"),
-		LogLevel: os.Getenv("TODO_LOGLEVEL"),
 	}
+
+	logLevel, err := log.ParseLevel(os.Getenv("TODO_LOGLEVEL"))
+	if err != nil {
+		return nil, err
+	}
+
+	cfg.LogLevel = logLevel
 
 	return &cfg, nil
 }
