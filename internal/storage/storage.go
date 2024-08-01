@@ -6,6 +6,7 @@ import (
 	"go_final_project/internal/config"
 	"log"
 	"os"
+	"path/filepath"
 
 	_ "modernc.org/sqlite"
 )
@@ -40,8 +41,7 @@ func (s *Storage) initDB() error {
 	db, err := sql.Open(dbDriver, dbPath)
 
 	if err != nil {
-		log.Println("Не удалось открыть базу данных")
-		return err
+		return fmt.Errorf("can't open db %s: %w", dbPath, err)
 	}
 
 	err = createTableAndIdx(db)
@@ -56,9 +56,24 @@ func (s *Storage) initDB() error {
 }
 
 func createDB(path string) error {
-	_, err := os.Create(path)
+
+	appPath, err := os.Executable()
 	if err != nil {
-		return fmt.Errorf("не удалось создать хранилище %w", err)
+		log.Fatal(err)
+	}
+	dbFile := filepath.Join(filepath.Dir(appPath), "scheduler.db")
+	_, err = os.Stat(dbFile)
+
+	var install bool
+	if err != nil {
+		install = true
+	}
+
+	if install {
+		_, err := os.Create(path)
+		if err != nil {
+			return fmt.Errorf("не удалось создать хранилище %w", err)
+		}
 	}
 	return nil
 }
@@ -72,7 +87,7 @@ func createTableAndIdx(db *sql.DB) error {
       comment TEXT DEFAULT '',
       repeat VARCHAR(128) NOT NULL
       );
-    CREATE INDEX idx_date ON scheduler (date);
+    CREATE INDEX IF NOT EXISTS idx_date ON scheduler (date);
   `)
 	if err != nil {
 		return fmt.Errorf("не удалось создать новую таблицу %w", err)

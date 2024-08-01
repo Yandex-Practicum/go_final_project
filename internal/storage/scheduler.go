@@ -18,7 +18,7 @@ func (s *Storage) AddTask(t *task.Task) (int, error) {
 	)
 
 	if err != nil {
-		log.Println("Не добавилась задача")
+		log.Println("Не добавилась задача",err)
 		return 0, err
 	}
 
@@ -58,7 +58,7 @@ func (s *Storage) GetList() ([]task.Task, error) {
 	}
 
 	if rows.Err() != nil {
-		log.Println("Не удалось получить задачи в запросе", err)
+		log.Println("Не удалось получить задачи в запросе", rows.Err())
 		return nil, rows.Err()
 	}
 
@@ -77,7 +77,7 @@ func (s *Storage) GetTask(id string) (task.Task, error) {
 		log.Println("Не удалось получить задачу по id:", id, err)
 
 		if errors.Is(err, sql.ErrNoRows) {
-			return task.Task{}, errors.New(" ")
+			return task.Task{}, errors.New("task not found")
 		}
 		return task.Task{}, err
 	}
@@ -108,7 +108,7 @@ func (s *Storage) DeleteTask(id string) error {
 
 	if err != nil {
 		log.Println("не удалось удалить задачу", err)
-		return errors.New("Задача не найденна")
+		return errors.New("Задача не найдена")
 	}
 
 	return nil

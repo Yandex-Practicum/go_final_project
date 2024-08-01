@@ -13,7 +13,7 @@ type Task struct {
 	Repeat  string `json:"repeat"`
 }
 
-func Check(t *Task) error {
+func Validate(t Task) error {
 	if t.Title == "" {
 		return fmt.Errorf("Заголовок пустой")
 	}

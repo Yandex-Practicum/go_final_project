@@ -25,9 +25,9 @@ func NextDate(now time.Time, date string, repeat string) (string, error) {
 
 	switch {
 	case rule == "d" && ruleLen:
-		res, err = everyDay(now, startDate, repeat[2:])
+		res = everyDay(now, startDate, repeat[2:])
 	case rule == "y":
-		res, err = everyYear(now, startDate)
+		res = everyYear(now, startDate)
 	default:
 		return "", fmt.Errorf("неподдерживаемый формат %v", err)
 	}
@@ -35,10 +35,10 @@ func NextDate(now time.Time, date string, repeat string) (string, error) {
 	return res, err
 }
 
-func everyDay(now time.Time, date time.Time, days string) (string, error) {
+func everyDay(now time.Time, date time.Time, days string) string {
 	day, err := strconv.Atoi(days)
 	if err != nil || day > 400 || day < 0 {
-		return "", fmt.Errorf("некорректное правило")
+		return ""
 	}
 
 	res := date.AddDate(0, 0, day)
@@ -47,10 +47,10 @@ func everyDay(now time.Time, date time.Time, days string) (string, error) {
 		res = res.AddDate(0, 0, day)
 	}
 
-	return res.Format(timeFormat), nil
+	return res.Format(timeFormat)
 }
 
-func everyYear(now time.Time, date time.Time) (string, error) {
+func everyYear(now time.Time, date time.Time) string {
 	if date.Before(now) {
 		for date.Before(now) {
 			date = date.AddDate(1, 0, 0)
@@ -59,5 +59,5 @@ func everyYear(now time.Time, date time.Time) (string, error) {
 		date = date.AddDate(1, 0, 0)
 	}
 
-	return date.Format(timeFormat), nil
+	return date.Format(timeFormat)
 }

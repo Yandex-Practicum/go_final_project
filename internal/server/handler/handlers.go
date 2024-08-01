@@ -18,7 +18,7 @@ func GetFront() http.Handler {
 }
 
 func NextDate(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
+	err := r.ParseForm()
 
 	now, err := time.Parse("20060102", r.FormValue("now"))
 	if err != nil {
@@ -54,9 +54,9 @@ func AddTask(db *storage.Storage) http.HandlerFunc {
 			return
 		}
 
-		err = task.Check(&t)
+		err = task.Validate(t)
 		if err != nil {
-			json.NewEncoder(w).Encode(map[string]string{"error": string(err.Error())})
+			json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
 			return
 		}
 
@@ -75,9 +75,14 @@ func AddTask(db *storage.Storage) http.HandlerFunc {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-
+		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-		w.Write(resp)
+		_, err = w.Write(resp)
+		if err != nil {
+			log.Fatalf("не удалось записать: %v", err)
+		} else {
+			log.Printf("Успешное добавление задачи")
+		}
 	}
 }
 
@@ -89,7 +94,8 @@ func GetTasks(db *storage.Storage) http.HandlerFunc {
 		tasks, err = db.GetList()
 
 		if err != nil {
-			log.Fatalf("Не удалось получить список задач %v", err)
+			log.Printf("Не удалось получить список задач %v", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 
 		if len(tasks) == 0 {
@@ -104,10 +110,10 @@ func GetTasks(db *storage.Storage) http.HandlerFunc {
 		if err != nil {
 			log.Printf("ошибка десериализации: %v\n", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(map[string]string{"error": string(err.Error())})
+			json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
 			return
 		}
-
+		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", "application/json")
 		_, err = w.Write(resp)
 		if err != nil {
@@ -131,7 +137,7 @@ func GetTask(db *storage.Storage) http.HandlerFunc {
 		_, err := strconv.Atoi(id)
 		if err != nil {
 			log.Println("Не корректный id, не является числом")
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			json.NewEncoder(w).Encode(map[string]string{"error": "Не корректный id"})
 			return
 		}
@@ -139,19 +145,19 @@ func GetTask(db *storage.Storage) http.HandlerFunc {
 		task, err := db.GetTask(id)
 		if err != nil {
 			log.Println("Не удалось получить задачу", err)
-			json.NewEncoder(w).Encode(map[string]string{"error": string(err.Error())})
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
 		res, err := json.Marshal(task)
 		if err != nil {
 			log.Println("Не удалось десерилиазивать задачу: ", err)
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			json.NewEncoder(w).Encode(map[string]string{"error": string(err.Error())})
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
 			return
 		}
-
+		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", "application/json")
 
 		_, err = w.Write(res)
@@ -171,27 +177,27 @@ func ChangeTask(db *storage.Storage) http.HandlerFunc {
 			return
 		}
 
-		err = task.Check(&t)
+		err = task.Validate(t)
 		if err != nil {
 			log.Println(err)
-			json.NewEncoder(w).Encode(map[string]string{"error": string(err.Error())})
+			json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
 			return
 		}
 
 		err = db.ChangeTask(t)
 		if err != nil {
 			log.Println(err)
-			json.NewEncoder(w).Encode(map[string]string{"error": string(err.Error())})
+			json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
 			return
 		}
 
 		t, err = db.GetTask(t.Id)
 		if err != nil {
 			log.Println(err)
-			json.NewEncoder(w).Encode(map[string]string{"error": string(err.Error())})
+			json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
 			return
 		}
-
+		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]string{})
 	}
@@ -225,13 +231,13 @@ func DoneTask(db *storage.Storage) http.HandlerFunc {
 		if t.Repeat != "" {
 			t.Date, err = task.NextDate(time.Now(), t.Date, t.Repeat)
 			if err != nil {
-				json.NewEncoder(w).Encode(map[string]string{"error": string(err.Error())})
+				json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
 				return
 			}
 
 			err = db.ChangeTask(t)
 			if err != nil {
-				json.NewEncoder(w).Encode(map[string]string{"error": string(err.Error())})
+				json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
 				return
 			}
 		}
@@ -259,10 +265,10 @@ func DeleteTask(db *storage.Storage) http.HandlerFunc {
 		err = db.DeleteTask(id)
 		if err != nil {
 			log.Println("Не удачное удаление задачи")
-			json.NewEncoder(w).Encode(map[string]string{"error": string(err.Error())})
+			json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
 			return
 		}
-
+		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 		err = json.NewEncoder(w).Encode(map[string]string{})
 		if err != nil {
