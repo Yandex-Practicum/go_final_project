@@ -19,7 +19,12 @@ func GetFront() http.Handler {
 
 func NextDate(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
-	//
+
+	if err != nil {
+		http.Error(w, "Некоректный запрос", http.StatusBadRequest)
+		return
+	}
+
 	now, err := time.Parse("20060102", r.FormValue("now"))
 	if err != nil {
 		http.Error(w, "Некоректная дата", http.StatusBadRequest)
