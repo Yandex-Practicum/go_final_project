@@ -47,11 +47,13 @@ func installDb(db *sql.DB) {
 	}
 }
 
+const HUNDRED = 100
+
 func getAllTasks() ([]Task, error) {
 
 	var tasks []Task
 
-	err := dbx.Select(&tasks, "SELECT * FROM scheduler ORDER BY date ASC LIMIT 100")
+	err := dbx.Select(&tasks, "SELECT * FROM scheduler ORDER BY date ASC LIMIT HUNDRED")
 	if err != nil {
 		return nil, err
 	}
@@ -112,4 +114,8 @@ func updateTask(id int, date string, title, comment, repeat string) error {
 	}
 
 	return nil
+}
+
+func closeDb() {
+	db.Close()
 }
