@@ -115,7 +115,3 @@ func updateTask(id int, date string, title, comment, repeat string) error {
 
 	return nil
 }
-
-func closeDb() {
-	db.Close()
-}
