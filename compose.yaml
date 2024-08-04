@@ -1,0 +1,16 @@
+version: '2.27'
+
+services:
+  todo-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "${TODO_PORT}:${TODO_PORT}"
+    env_file:
+      - .env
+    volumes:
+      - todo-data:/app
+
+volumes:
+  todo-data:

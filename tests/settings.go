@@ -1,7 +1,9 @@
 package tests
 
+import "go_final_project/config"
+
 var Port = 7540
-var DBFile = "../scheduler.db"
+var DBFile = "../" + config.DbPath()
 var FullNextDate = false
-var Search = false
+var Search = true
 var Token = ``
