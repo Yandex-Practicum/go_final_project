@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"go_final_project/internal/middleware"
 	"log"
 	"net/http"
 	"os"
@@ -33,14 +34,16 @@ func main() {
 	}
 	defer dbInstance.Close()
 
+	auth := middleware.NewAuth()
+
 	fs := http.FileServer(http.Dir(webDir))
 	http.Handle("/", fs)
 
 	http.HandleFunc("/api/signin", handlers.SignHandler())
 	http.HandleFunc("/api/nextdate", handlers.NextDateHandler)
-	http.HandleFunc("/api/tasks", auth(handlers.GetTaskHandler(dbInstance)))
-	http.HandleFunc("/api/task", auth(handlers.TaskHandler(dbInstance)))
-	http.HandleFunc("/api/task/done", auth(handlers.TaskDoneHandler(dbInstance)))
+	http.HandleFunc("/api/tasks", auth.Handle(handlers.GetTaskHandler(dbInstance)))
+	http.HandleFunc("/api/task", auth.Handle(handlers.TaskHandler(dbInstance)))
+	http.HandleFunc("/api/task/done", auth.Handle(handlers.TaskDoneHandler(dbInstance)))
 
 	log.Printf("Сервер запущен на порту %d\n", port)
 	log.Printf("Обслуживание файлов из каталога: %s\n", webDir)
@@ -49,23 +52,4 @@ func main() {
 	if err := http.ListenAndServe(listenAddr, nil); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}
-}
-
-func auth(next http.HandlerFunc) http.HandlerFunc {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		pass := os.Getenv("TODO_PASSWORD")
-		if len(pass) > 0 {
-			var jwt string
-			cookie, err := r.Cookie("token")
-			if err == nil {
-				jwt = cookie.Value
-			}
-
-			if !handlers.IsTokenValid(jwt) {
-				http.Error(w, "Authentification required", http.StatusUnauthorized)
-				return
-			}
-		}
-		next(w, r)
-	})
 }
