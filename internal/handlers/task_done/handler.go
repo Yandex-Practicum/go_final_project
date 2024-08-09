@@ -3,6 +3,8 @@ package task_done
 import (
 	"database/sql"
 	"net/http"
+
+	"go_final_project/internal/utils"
 )
 
 type Handler struct {
@@ -19,7 +21,7 @@ func (h *Handler) Handle() http.HandlerFunc {
 		case http.MethodPost:
 			h.handlePostTaskDone(w, r)
 		default:
-			http.Error(w, "Метод не поддерживается", http.StatusMethodNotAllowed)
+			http.Error(w, utils.ErrUnsupportedMethod, http.StatusMethodNotAllowed)
 		}
 	}
 }

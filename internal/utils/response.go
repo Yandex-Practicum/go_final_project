@@ -7,6 +7,10 @@ import (
 	"go_final_project/internal/models"
 )
 
+func SetJsonHeader(w http.ResponseWriter) {
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+}
+
 func RespondWithError(w http.ResponseWriter, message string) {
 	response := models.Response{Error: &message}
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")

@@ -22,12 +22,12 @@ type GetTaskResponseDTO struct {
 func (h *Handler) handleGetTask(w http.ResponseWriter, r *http.Request) {
 	stringId := r.URL.Query().Get("id")
 	if len(stringId) == 0 {
-		utils.RespondWithError(w, "Не указан идентификатор")
+		utils.RespondWithError(w, utils.ErrIDIsEmpty)
 		return
 	}
 	id, err := strconv.ParseInt(stringId, 10, 64)
 	if err != nil {
-		utils.RespondWithError(w, "Не указан идентификатор")
+		utils.RespondWithError(w, utils.ErrIDIsEmpty)
 		return
 	}
 
@@ -44,10 +44,10 @@ func (h *Handler) handleGetTask(w http.ResponseWriter, r *http.Request) {
 	err = row.Scan(&task.ID, &task.Date, &task.Title, &task.Comment, &task.Repeat)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			utils.RespondWithError(w, "Задача не найдена")
+			utils.RespondWithError(w, utils.ErrTaskNotFound)
 			return
 		}
-		utils.RespondWithError(w, "Ошибка разбора задач из базы данных")
+		utils.RespondWithError(w, utils.ErrTaskParse)
 		return
 	}
 	response := GetTaskResponseDTO{
@@ -58,6 +58,6 @@ func (h *Handler) handleGetTask(w http.ResponseWriter, r *http.Request) {
 		Repeat:  task.Repeat,
 	}
 
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	utils.SetJsonHeader(w)
 	json.NewEncoder(w).Encode(response)
 }

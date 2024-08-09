@@ -1,6 +1,10 @@
 package next_date
 
-import "net/http"
+import (
+	"net/http"
+
+	"go_final_project/internal/utils"
+)
 
 type Handler struct {
 }
@@ -15,7 +19,7 @@ func (h *Handler) Handle() http.HandlerFunc {
 		case http.MethodGet:
 			h.handleGet(w, r)
 		default:
-			http.Error(w, "Метод не поддерживается", http.StatusMethodNotAllowed)
+			http.Error(w, utils.ErrUnsupportedMethod, http.StatusMethodNotAllowed)
 		}
 	}
 }

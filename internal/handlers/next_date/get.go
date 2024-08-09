@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"go_final_project/internal/models"
+	"go_final_project/internal/utils"
 )
 
 func (h *Handler) handleGet(w http.ResponseWriter, r *http.Request) {
@@ -15,7 +16,7 @@ func (h *Handler) handleGet(w http.ResponseWriter, r *http.Request) {
 
 	now, err := time.Parse("20060102", nowStr)
 	if err != nil {
-		http.Error(w, "Invalid 'now' date format", http.StatusBadRequest)
+		http.Error(w, utils.ErrInvalidDateNowFormat, http.StatusBadRequest)
 		return
 	}
 

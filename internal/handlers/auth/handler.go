@@ -5,11 +5,6 @@ import (
 	"os"
 )
 
-const (
-	envPassword = "TODO_PASSWORD"
-	secret      = "kjgsdfi632riusvd732fikd2--2!"
-)
-
 type Handler struct {
 	password string
 }

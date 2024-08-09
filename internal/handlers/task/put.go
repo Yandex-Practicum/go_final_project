@@ -21,12 +21,12 @@ func (h *Handler) handlePutTask(w http.ResponseWriter, r *http.Request) {
 	var taskDTO TaskPutDTO
 	err := json.NewDecoder(r.Body).Decode(&taskDTO)
 	if err != nil {
-		utils.RespondWithError(w, "Ошибка десериализации JSON")
+		utils.RespondWithError(w, utils.ErrInvalidJson)
 		return
 	}
 	taskId, err := strconv.ParseInt(taskDTO.ID, 10, 64)
 	if err != nil {
-		utils.RespondWithError(w, "Неверный ID задачи")
+		utils.RespondWithError(w, utils.ErrGetTaskID)
 		return
 	}
 
@@ -53,16 +53,16 @@ func (h *Handler) handlePutTask(w http.ResponseWriter, r *http.Request) {
 			  WHERE id = ?`
 	updateResult, err := h.db.Exec(query, task.Date, task.Title, task.Comment, task.Repeat, task.ID)
 	if err != nil {
-		utils.RespondWithError(w, "Задача не найдена")
+		utils.RespondWithError(w, utils.ErrTaskNotFound)
 		return
 	}
 
 	rowsAffected, err := updateResult.RowsAffected()
 	if err != nil || rowsAffected == 0 {
-		utils.RespondWithError(w, "Задача не найдена")
+		utils.RespondWithError(w, utils.ErrTaskNotFound)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	utils.SetJsonHeader(w)
 	w.Write([]byte("{}"))
 }

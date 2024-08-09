@@ -25,7 +25,7 @@ func (h *Handler) handleGetTasks(w http.ResponseWriter, r *http.Request) {
 	if len(search) > 0 {
 		searchDate, err := time.Parse("01.02.2006", search)
 		if err == nil {
-			filterDate = searchDate.Format("20060201")
+			filterDate = searchDate.Format(utils.ParseDateFormat)
 		} else {
 			search = fmt.Sprintf("%%%s%%", search)
 		}
@@ -71,7 +71,7 @@ func (h *Handler) handleGetTasks(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if selectErr != nil {
-		utils.RespondWithError(w, "Ошибка чтения из базы данных")
+		utils.RespondWithError(w, utils.ErrTaskNotFound)
 		return
 	}
 
@@ -80,7 +80,7 @@ func (h *Handler) handleGetTasks(w http.ResponseWriter, r *http.Request) {
 		var selectTask models.Task
 		err := rows.Scan(&selectTask.ID, &selectTask.Date, &selectTask.Title, &selectTask.Comment, &selectTask.Repeat)
 		if err != nil {
-			utils.RespondWithError(w, "Ошибка разбора задач из базы данных")
+			utils.RespondWithError(w, utils.ErrTaskParse)
 			return
 		}
 		response.Tasks = append(response.Tasks, task.GetTaskResponseDTO{
@@ -92,6 +92,6 @@ func (h *Handler) handleGetTasks(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	utils.SetJsonHeader(w)
 	json.NewEncoder(w).Encode(response)
 }

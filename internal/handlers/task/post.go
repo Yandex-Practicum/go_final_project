@@ -13,7 +13,7 @@ func (h *Handler) handlePostTask(w http.ResponseWriter, r *http.Request) {
 	var taskDTO models.Task
 	err := json.NewDecoder(r.Body).Decode(&taskDTO)
 	if err != nil {
-		utils.RespondWithError(w, "Ошибка десериализации JSON")
+		utils.RespondWithError(w, utils.ErrInvalidJson)
 		return
 	}
 
@@ -26,13 +26,13 @@ func (h *Handler) handlePostTask(w http.ResponseWriter, r *http.Request) {
 	query := "INSERT INTO scheduler (date, title, comment, repeat) VALUES (?, ?, ?, ?)"
 	res, err := h.db.Exec(query, task.Date, task.Title, task.Comment, task.Repeat)
 	if err != nil {
-		utils.RespondWithError(w, "Ошибка вставки в базу данных")
+		utils.RespondWithError(w, utils.ErrDBInsert)
 		return
 	}
 
 	id, err := res.LastInsertId()
 	if err != nil {
-		utils.RespondWithError(w, "Ошибка получения ID задачи")
+		utils.RespondWithError(w, utils.ErrGetTaskID)
 		return
 	}
 
@@ -41,6 +41,6 @@ func (h *Handler) handlePostTask(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Задача добавлена: %+v\n", task)
 
 	response := models.Response{ID: &task.ID}
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	utils.SetJsonHeader(w)
 	json.NewEncoder(w).Encode(response)
 }

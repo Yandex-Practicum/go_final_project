@@ -2,8 +2,10 @@ package auth
 
 import (
 	"fmt"
-	"github.com/golang-jwt/jwt/v5"
 	"net/http"
+
+	"github.com/golang-jwt/jwt/v5"
+	"go_final_project/internal/utils"
 )
 
 func (h *Handler) Validate(next http.HandlerFunc) http.HandlerFunc {
@@ -29,7 +31,7 @@ func isTokenValid(tokenString string) bool {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
 		}
-		return []byte(secret), nil
+		return []byte(utils.AuthSecret), nil
 	})
 	return err == nil
 }

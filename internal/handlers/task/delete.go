@@ -10,12 +10,12 @@ import (
 func (h *Handler) handleDeleteTask(w http.ResponseWriter, r *http.Request) {
 	stringId := r.URL.Query().Get("id")
 	if len(stringId) == 0 {
-		utils.RespondWithError(w, "Не указан идентификатор")
+		utils.RespondWithError(w, utils.ErrIDIsEmpty)
 		return
 	}
 	id, err := strconv.ParseInt(stringId, 10, 64)
 	if err != nil {
-		utils.RespondWithError(w, "Не указан идентификатор")
+		utils.RespondWithError(w, utils.ErrIDIsEmpty)
 		return
 	}
 
@@ -26,6 +26,6 @@ func (h *Handler) handleDeleteTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	utils.SetJsonHeader(w)
 	w.Write([]byte("{}"))
 }

@@ -2,7 +2,7 @@ package task
 
 import (
 	"database/sql"
-	"errors"
+	"go_final_project/internal/utils"
 	"net/http"
 	"strings"
 	"time"
@@ -30,30 +30,30 @@ func (h *Handler) Handle() http.HandlerFunc {
 		case http.MethodDelete:
 			h.handleDeleteTask(w, r)
 		default:
-			http.Error(w, "Метод не поддерживается", http.StatusMethodNotAllowed)
+			http.Error(w, utils.ErrUnsupportedMethod, http.StatusMethodNotAllowed)
 		}
 	}
 }
 
 func validateTask(task *models.Task) (*models.Task, error) {
 	if task.Title == "" {
-		return nil, errors.New("Не указан заголовок задачи")
+		return nil, utils.ErrInvalidTaskTitle
 	}
 
 	now := time.Now()
-	today := now.Format("20060102")
+	today := now.Format(utils.ParseDateFormat)
 	if len(strings.TrimSpace(task.Date)) > 0 {
-		taskDate, err := time.Parse("20060102", task.Date)
+		taskDate, err := time.Parse(utils.ParseDateFormat, task.Date)
 		if err != nil {
-			return nil, errors.New("Не верно указана дата задачи")
+			return nil, utils.ErrInvalidTaskDate
 		}
-		if taskDate.Format("20060102") < today {
+		if taskDate.Format(utils.ParseDateFormat) < today {
 			if len(strings.TrimSpace(task.Repeat)) == 0 {
 				task.Date = today
 			} else {
 				nextDate, err := models.NextDate(now, task.Date, task.Repeat)
 				if err != nil {
-					return nil, errors.New("Не верно указана дата задачи и повтор")
+					return nil, utils.ErrInvalidTaskRepeat
 				}
 				task.Date = nextDate
 			}

@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"hash/fnv"
 	"net/http"
-	"os"
 	"strings"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -27,8 +26,7 @@ func (h *Handler) handleSign(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	password := os.Getenv(envPassword)
-	if strings.TrimSpace(signDTO.Password) != password {
+	if strings.TrimSpace(signDTO.Password) != h.password {
 		utils.RespondWithError(w, "Неверный пароль")
 	}
 
@@ -36,14 +34,14 @@ func (h *Handler) handleSign(w http.ResponseWriter, r *http.Request) {
 		"hash": hash(signDTO.Password),
 	})
 
-	tokenString, err := token.SignedString([]byte(secret))
+	tokenString, err := token.SignedString([]byte(utils.AuthSecret))
 	if err != nil {
 		utils.RespondWithError(w, "Ошибка генерации токена")
 		return
 	}
 
 	response := SignResponseDTO{Token: tokenString}
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	utils.SetJsonHeader(w)
 	json.NewEncoder(w).Encode(response)
 }
 
