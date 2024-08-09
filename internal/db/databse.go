@@ -25,10 +25,10 @@ func InitDatabase() (*sql.DB, error) {
 	createTableSQL := `
 	CREATE TABLE IF NOT EXISTS scheduler (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		date TEXT NOT NULL,
-		title TEXT NOT NULL,
-		comment TEXT,
-		repeat TEXT
+		date VARCHAR(8) NOT NULL,
+		title VARCHAR(128) NOT NULL,
+		comment VARCHAR(256),
+		repeat VARCHAR(32)
 	);
 	CREATE INDEX IF NOT EXISTS idx_date ON scheduler (date);
 	`

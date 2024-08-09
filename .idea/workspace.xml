@@ -4,14 +4,45 @@
     <option name="autoReloadType" value="ALL" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="01ec783d-81bb-4e55-afce-c79aeaf77733" name="Changes" comment="first commit">
-      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
+    <list default="true" id="01ec783d-81bb-4e55-afce-c79aeaf77733" name="Changes" comment="remove auth to middleware">
+      <change afterPath="$PROJECT_DIR$/internal/handlers/auth/handler.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/internal/handlers/auth/post.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/internal/handlers/auth/validate.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/internal/handlers/next_date/get.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/internal/handlers/next_date/handler.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/internal/handlers/task/delete.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/internal/handlers/task/get.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/internal/handlers/task/handler.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/internal/handlers/task/post.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/internal/handlers/task/put.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/internal/handlers/task_done/handler.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/internal/handlers/task_done/post.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/internal/handlers/tasks/get.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/internal/handlers/tasks/handler.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/internal/models/response.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/internal/utils/response.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmd/app/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/app/main.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/internal/db/databse.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/db/databse.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/internal/handlers/nextdate.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/internal/handlers/sign.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/internal/handlers/task.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/internal/handlers/task_done.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/internal/handlers/tasks.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/internal/middleware/auth.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/internal/models/task.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/models/task.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Go File" />
+      </list>
+    </option>
   </component>
   <component name="GOROOT" url="file://$USER_HOME$/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.22.3.darwin-amd64" />
   <component name="Git.Settings">
@@ -25,30 +56,46 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;Go Test.TestAddTask in go_final_project/tests.executor&quot;: &quot;Run&quot;,
-    &quot;Go Test.TestApp in go_final_project/tests.executor&quot;: &quot;Run&quot;,
-    &quot;Go Test.TestDB in go_final_project/tests.executor&quot;: &quot;Run&quot;,
-    &quot;Go Test.TestDelTask in go_final_project/tests.executor&quot;: &quot;Run&quot;,
-    &quot;Go Test.TestDone in go_final_project/tests.executor&quot;: &quot;Run&quot;,
-    &quot;Go Test.TestEditTask in go_final_project/tests.executor&quot;: &quot;Run&quot;,
-    &quot;Go Test.TestNextDate in go_final_project/tests.executor&quot;: &quot;Run&quot;,
-    &quot;Go Test.TestTask in go_final_project/tests.executor&quot;: &quot;Run&quot;,
-    &quot;Go Test.TestTasks in go_final_project/tests.executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.go.formatter.settings.were.checked&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.go.migrated.go.modules.settings&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.go.modules.automatic.dependencies.download&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.go.modules.go.list.on.any.changes.was.set&quot;: &quot;true&quot;,
-    &quot;go.import.settings.migrated&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;/Users/user&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "DefaultGoTemplateProperty": "Go File",
+    "Go Test.TestAddTask in go_final_project/tests.executor": "Run",
+    "Go Test.TestApp in go_final_project/tests.executor": "Run",
+    "Go Test.TestDB in go_final_project/tests.executor": "Run",
+    "Go Test.TestDelTask in go_final_project/tests.executor": "Run",
+    "Go Test.TestDone in go_final_project/tests.executor": "Run",
+    "Go Test.TestEditTask in go_final_project/tests.executor": "Run",
+    "Go Test.TestNextDate in go_final_project/tests.executor": "Run",
+    "Go Test.TestTask in go_final_project/tests.executor": "Run",
+    "Go Test.TestTasks in go_final_project/tests.executor": "Run",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.go.formatter.settings.were.checked": "true",
+    "RunOnceActivity.go.migrated.go.modules.settings": "true",
+    "RunOnceActivity.go.modules.automatic.dependencies.download": "true",
+    "RunOnceActivity.go.modules.go.list.on.any.changes.was.set": "true",
+    "git-widget-placeholder": "New__branch",
+    "go.import.settings.migrated": "true",
+    "last_opened_file_path": "W:/go_final_project/cmd/app",
+    "node.js.detected.package.eslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm"
+  },
+  "keyToStringList": {
+    "DatabaseDriversLRU": [
+      "sqlite"
+    ]
   }
-}</component>
-  <component name="RunManager" selected="Go Test.TestEditTask in go_final_project/tests">
+}]]></component>
+  <component name="RunManager" selected="Go Build.go build go_final_project/cmd/app">
+    <configuration name="go build go_final_project/cmd/app" type="GoApplicationRunConfiguration" factoryName="Go Application" nameIsGenerated="true">
+      <module name="123" />
+      <working_directory value="$PROJECT_DIR$" />
+      <kind value="DIRECTORY" />
+      <package value="go_final_project" />
+      <directory value="$PROJECT_DIR$/cmd/app" />
+      <filePath value="$PROJECT_DIR$" />
+      <method v="2" />
+    </configuration>
     <configuration name="TestDelTask in go_final_project/tests" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
       <module name="123" />
       <working_directory value="$PROJECT_DIR$/tests" />
@@ -109,6 +156,14 @@
       <pattern value="^\QTestTasks\E$" />
       <method v="2" />
     </configuration>
+    <list>
+      <item itemvalue="Go Build.go build go_final_project/cmd/app" />
+      <item itemvalue="Go Test.TestDelTask in go_final_project/tests" />
+      <item itemvalue="Go Test.TestDone in go_final_project/tests" />
+      <item itemvalue="Go Test.TestEditTask in go_final_project/tests" />
+      <item itemvalue="Go Test.TestTask in go_final_project/tests" />
+      <item itemvalue="Go Test.TestTasks in go_final_project/tests" />
+    </list>
     <recent_temporary>
       <list>
         <item itemvalue="Go Test.TestEditTask in go_final_project/tests" />
@@ -142,7 +197,7 @@
                   <entry key="branch">
                     <value>
                       <list>
-                        <option value="main" />
+                        <option value="New_branch" />
                       </list>
                     </value>
                   </entry>
@@ -156,7 +211,8 @@
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="first commit" />
-    <option name="LAST_COMMIT_MESSAGE" value="first commit" />
+    <MESSAGE value="remove auth to middleware" />
+    <option name="LAST_COMMIT_MESSAGE" value="remove auth to middleware" />
   </component>
   <component name="VgoProject">
     <settings-migrated>true</settings-migrated>

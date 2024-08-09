@@ -1,4 +1,4 @@
-package handlers
+package next_date
 
 import (
 	"fmt"
@@ -8,7 +8,7 @@ import (
 	"go_final_project/internal/models"
 )
 
-func NextDateHandler(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) handleGet(w http.ResponseWriter, r *http.Request) {
 	nowStr := r.FormValue("now")
 	dateStr := r.FormValue("date")
 	repeat := r.FormValue("repeat")

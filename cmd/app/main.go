@@ -3,14 +3,17 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	"go_final_project/internal/middleware"
+	"go_final_project/internal/handlers/auth"
+	"go_final_project/internal/handlers/next_date"
+	"go_final_project/internal/handlers/task"
+	"go_final_project/internal/handlers/task_done"
+	"go_final_project/internal/handlers/tasks"
 	"log"
 	"net/http"
 	"os"
 	"strconv"
 
 	"go_final_project/internal/db"
-	"go_final_project/internal/handlers"
 )
 
 var (
@@ -34,16 +37,20 @@ func main() {
 	}
 	defer dbInstance.Close()
 
-	auth := middleware.NewAuth()
+	authHandler := auth.NewHandler()
+	nextdateHandler := next_date.NewHandler()
+	taskHandler := task.NewHandler(dbInstance)
+	tasksHandler := tasks.NewTasksHandler(dbInstance)
+	taskDoneHandler := task_done.NewHandler(dbInstance)
 
 	fs := http.FileServer(http.Dir(webDir))
 	http.Handle("/", fs)
 
-	http.HandleFunc("/api/signin", handlers.SignHandler())
-	http.HandleFunc("/api/nextdate", handlers.NextDateHandler)
-	http.HandleFunc("/api/tasks", auth.Handle(handlers.GetTaskHandler(dbInstance)))
-	http.HandleFunc("/api/task", auth.Handle(handlers.TaskHandler(dbInstance)))
-	http.HandleFunc("/api/task/done", auth.Handle(handlers.TaskDoneHandler(dbInstance)))
+	http.HandleFunc("/api/signin", authHandler.Handle())
+	http.HandleFunc("/api/nextdate", nextdateHandler.Handle())
+	http.HandleFunc("/api/tasks", authHandler.Validate(tasksHandler.Handle()))
+	http.HandleFunc("/api/task", authHandler.Validate(taskHandler.Handle()))
+	http.HandleFunc("/api/task/done", authHandler.Validate(taskDoneHandler.Handle()))
 
 	log.Printf("Сервер запущен на порту %d\n", port)
 	log.Printf("Обслуживание файлов из каталога: %s\n", webDir)
