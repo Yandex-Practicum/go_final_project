@@ -49,7 +49,7 @@ func (h *Handler) handlePostTaskDone(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	} else {
-		task.Date, err = models.NextDate(time.Now(), task.Date, task.Repeat)
+		task.Date, err = utils.NextDate(time.Now(), task.Date, task.Repeat)
 		if err != nil {
 			utils.RespondWithError(w, err.Error())
 			return

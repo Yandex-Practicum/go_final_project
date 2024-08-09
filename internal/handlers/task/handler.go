@@ -2,12 +2,12 @@ package task
 
 import (
 	"database/sql"
-	"go_final_project/internal/utils"
 	"net/http"
 	"strings"
 	"time"
 
 	"go_final_project/internal/models"
+	"go_final_project/internal/utils"
 )
 
 type Handler struct {
@@ -51,7 +51,7 @@ func validateTask(task *models.Task) (*models.Task, error) {
 			if len(strings.TrimSpace(task.Repeat)) == 0 {
 				task.Date = today
 			} else {
-				nextDate, err := models.NextDate(now, task.Date, task.Repeat)
+				nextDate, err := utils.NextDate(now, task.Date, task.Repeat)
 				if err != nil {
 					return nil, utils.ErrInvalidTaskRepeat
 				}

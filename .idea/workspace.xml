@@ -4,24 +4,13 @@
     <option name="autoReloadType" value="ALL" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="01ec783d-81bb-4e55-afce-c79aeaf77733" name="Changes" comment="separate handlers">
-      <change afterPath="$PROJECT_DIR$/internal/utils/constants.go" afterDir="false" />
+    <list default="true" id="01ec783d-81bb-4e55-afce-c79aeaf77733" name="Changes" comment="move errors to consts">
+      <change afterPath="$PROJECT_DIR$/internal/utils/next_date.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/handlers/auth/handler.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/handlers/auth/handler.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/handlers/auth/post.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/handlers/auth/post.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/handlers/auth/validate.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/handlers/auth/validate.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/internal/handlers/next_date/get.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/handlers/next_date/get.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/handlers/next_date/handler.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/handlers/next_date/handler.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/handlers/task/delete.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/handlers/task/delete.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/handlers/task/get.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/handlers/task/get.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/internal/handlers/task/handler.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/handlers/task/handler.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/handlers/task/post.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/handlers/task/post.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/handlers/task/put.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/handlers/task/put.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/handlers/task_done/handler.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/handlers/task_done/handler.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/internal/handlers/task_done/post.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/handlers/task_done/post.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/handlers/tasks/get.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/handlers/tasks/get.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/handlers/tasks/handler.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/handlers/tasks/handler.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/utils/response.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/utils/response.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/internal/models/nextdate.go" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -210,7 +199,8 @@
     <MESSAGE value="first commit" />
     <MESSAGE value="remove auth to middleware" />
     <MESSAGE value="separate handlers" />
-    <option name="LAST_COMMIT_MESSAGE" value="separate handlers" />
+    <MESSAGE value="move errors to consts" />
+    <option name="LAST_COMMIT_MESSAGE" value="move errors to consts" />
   </component>
   <component name="VgoProject">
     <settings-migrated>true</settings-migrated>

@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"time"
 
-	"go_final_project/internal/models"
 	"go_final_project/internal/utils"
 )
 
@@ -20,7 +19,7 @@ func (h *Handler) handleGet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	nextDate, err := models.NextDate(now, dateStr, repeat)
+	nextDate, err := utils.NextDate(now, dateStr, repeat)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
