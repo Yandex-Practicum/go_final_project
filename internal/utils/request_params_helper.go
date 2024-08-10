@@ -1,8 +1,10 @@
 package utils
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 )
 
 func GetIDFromQuery(r *http.Request) (int64, error) {
@@ -15,4 +17,17 @@ func GetIDFromQuery(r *http.Request) (int64, error) {
 		return 0, ErrIDIsEmpty
 	}
 	return id, nil
+}
+
+func GetFilterTypeAndValue(r *http.Request) (int, string) {
+	search := r.URL.Query().Get("search")
+	if len(search) == 0 {
+		return FilterTypeNone, ""
+	}
+
+	searchDate, err := time.Parse("01.02.2006", search)
+	if err == nil {
+		return FilterTypeDate, searchDate.Format(ParseDateFormat)
+	}
+	return FilterTypeSearch, fmt.Sprintf("%%%s%%", search)
 }

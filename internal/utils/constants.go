@@ -3,7 +3,10 @@ package utils
 import "errors"
 
 const (
+	DefaultPort = 7540
 	EnvPassword = "TODO_PASSWORD"
+	EnvPort     = "TODO_PORT"
+	WebDir      = "./web"
 )
 
 const (
@@ -31,4 +34,10 @@ var (
 	ErrGetTaskID         = errors.New("ошибка получения ID задачи")
 	ErrInvalidPassword   = errors.New("не верный пароль")
 	ErrTokenCreate       = errors.New("ошибка генерации токена")
+)
+
+const (
+	FilterTypeNone   = iota
+	FilterTypeDate   = iota
+	FilterTypeSearch = iota
 )

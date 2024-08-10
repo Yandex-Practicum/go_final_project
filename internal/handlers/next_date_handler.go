@@ -1,4 +1,4 @@
-package next_date
+package handlers
 
 import (
 	"fmt"
@@ -8,7 +8,25 @@ import (
 	"go_final_project/internal/utils"
 )
 
-func (h *Handler) handleGet(w http.ResponseWriter, r *http.Request) {
+type NextDateHandler struct {
+}
+
+func NewNextDateHandler() *NextDateHandler {
+	return &NextDateHandler{}
+}
+
+func (h *NextDateHandler) Handle() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			h.handleGet(w, r)
+		default:
+			http.Error(w, utils.ErrUnsupportedMethod, http.StatusMethodNotAllowed)
+		}
+	}
+}
+
+func (h *NextDateHandler) handleGet(w http.ResponseWriter, r *http.Request) {
 	nowStr := r.FormValue("now")
 	dateStr := r.FormValue("date")
 	repeat := r.FormValue("repeat")
