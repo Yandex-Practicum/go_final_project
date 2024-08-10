@@ -1,8 +1,6 @@
 package tasks
 
 import (
-	"database/sql"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -13,7 +11,11 @@ import (
 	"go_final_project/internal/utils"
 )
 
-const getLimit = 50
+const (
+	FilterTypeNone   = iota
+	FilterTypeDate   = iota
+	FilterTypeSearch = iota
+)
 
 type GetTasksResponseDTO struct {
 	Tasks []task.GetTaskResponseDTO `json:"tasks"`
@@ -21,77 +23,45 @@ type GetTasksResponseDTO struct {
 
 func (h *Handler) handleGetTasks(w http.ResponseWriter, r *http.Request) {
 	search := r.URL.Query().Get("search")
-	filterDate := ""
+	filterType := FilterTypeNone
+	filterValue := ""
 	if len(search) > 0 {
 		searchDate, err := time.Parse("01.02.2006", search)
 		if err == nil {
-			filterDate = searchDate.Format(utils.ParseDateFormat)
+			filterType = FilterTypeDate
+			filterValue = searchDate.Format(utils.ParseDateFormat)
 		} else {
-			search = fmt.Sprintf("%%%s%%", search)
+			filterType = FilterTypeSearch
+			filterValue = fmt.Sprintf("%%%s%%", search)
 		}
 	}
 
-	var rows *sql.Rows
-	var selectErr error
-	if len(filterDate) > 0 {
-		query := `SELECT 
-    			id,
-    			date,
-    			title,
-    			comment,
-    			repeat
-			  FROM scheduler
-			  WHERE date = ?
-			  ORDER BY date
-			  LIMIT ?`
-		rows, selectErr = h.db.Query(query, filterDate, getLimit)
-	} else if len(search) > 0 {
-		query := `SELECT 
-    			id,
-    			date,
-    			title,
-    			comment,
-    			repeat
-			  FROM scheduler
-			  WHERE title LIKE ? OR comment LIKE ?
-			  ORDER BY date
-			  LIMIT ?`
-		rows, selectErr = h.db.Query(query, search, search, getLimit)
-	} else {
-		query := `SELECT 
-    			id,
-    			date,
-    			title,
-    			comment,
-    			repeat
-			  FROM scheduler
-			  ORDER BY date
-			  LIMIT ?`
-		rows, selectErr = h.db.Query(query, getLimit)
+	var tasks []*models.Task
+	var err error
+	switch filterType {
+	case FilterTypeDate:
+		tasks, err = h.repository.GetAllTasksFilterByDate(filterValue)
+	case FilterTypeSearch:
+		tasks, err = h.repository.GetAllTasksFilterByTitleOrComment(filterValue)
+	default:
+		tasks, err = h.repository.GetAllTasks()
 	}
 
-	if selectErr != nil {
-		utils.RespondWithError(w, utils.ErrTaskNotFound)
+	if err != nil {
+		utils.RespondWithError(w, err)
 		return
 	}
 
 	response := GetTasksResponseDTO{Tasks: make([]task.GetTaskResponseDTO, 0)}
-	for rows.Next() {
-		var selectTask models.Task
-		err := rows.Scan(&selectTask.ID, &selectTask.Date, &selectTask.Title, &selectTask.Comment, &selectTask.Repeat)
-		if err != nil {
-			utils.RespondWithError(w, utils.ErrTaskParse)
-			return
-		}
+	for _, t := range tasks {
 		response.Tasks = append(response.Tasks, task.GetTaskResponseDTO{
-			ID:      strconv.FormatInt(selectTask.ID, 10),
-			Date:    selectTask.Date,
-			Title:   selectTask.Title,
-			Comment: selectTask.Comment,
-			Repeat:  selectTask.Repeat,
+			ID:      strconv.FormatInt(t.ID, 10),
+			Date:    t.Date,
+			Title:   t.Title,
+			Comment: t.Comment,
+			Repeat:  t.Repeat,
 		})
 	}
 
-	utils.SetJsonHeader(w)
-	json.NewEncoder(w).Encode(response)
+	utils.Respond(w, response)
 }

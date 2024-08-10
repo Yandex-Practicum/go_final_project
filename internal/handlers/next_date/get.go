@@ -13,7 +13,7 @@ func (h *Handler) handleGet(w http.ResponseWriter, r *http.Request) {
 	dateStr := r.FormValue("date")
 	repeat := r.FormValue("repeat")
 
-	now, err := time.Parse("20060102", nowStr)
+	now, err := time.Parse(utils.ParseDateFormat, nowStr)
 	if err != nil {
 		http.Error(w, utils.ErrInvalidDateNowFormat, http.StatusBadRequest)
 		return

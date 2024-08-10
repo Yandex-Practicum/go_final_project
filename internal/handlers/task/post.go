@@ -19,28 +19,17 @@ func (h *Handler) handlePostTask(w http.ResponseWriter, r *http.Request) {
 
 	task, err := validateTask(&taskDTO)
 	if err != nil {
-		utils.RespondWithError(w, err.Error())
+		utils.RespondWithError(w, err)
 		return
 	}
 
-	query := "INSERT INTO scheduler (date, title, comment, repeat) VALUES (?, ?, ?, ?)"
-	res, err := h.db.Exec(query, task.Date, task.Title, task.Comment, task.Repeat)
+	task.ID, err = h.repository.CreateTask(task)
 	if err != nil {
-		utils.RespondWithError(w, utils.ErrDBInsert)
-		return
+		utils.RespondWithError(w, err)
 	}
-
-	id, err := res.LastInsertId()
-	if err != nil {
-		utils.RespondWithError(w, utils.ErrGetTaskID)
-		return
-	}
-
-	task.ID = id
 
 	log.Printf("Задача добавлена: %+v\n", task)
 
-	response := models.Response{ID: &task.ID}
-	utils.SetJsonHeader(w)
-	json.NewEncoder(w).Encode(response)
+	response := models.Response{ID: task.ID}
+	utils.Respond(w, response)
 }

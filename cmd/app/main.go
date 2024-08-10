@@ -8,6 +8,7 @@ import (
 	"go_final_project/internal/handlers/task"
 	"go_final_project/internal/handlers/task_done"
 	"go_final_project/internal/handlers/tasks"
+	"go_final_project/internal/repository"
 	"log"
 	"net/http"
 	"os"
@@ -37,11 +38,13 @@ func main() {
 	}
 	defer dbInstance.Close()
 
+	taskRepository := repository.NewTaskRepository(dbInstance)
+
 	authHandler := auth.NewHandler()
 	nextdateHandler := next_date.NewHandler()
-	taskHandler := task.NewHandler(dbInstance)
-	tasksHandler := tasks.NewTasksHandler(dbInstance)
-	taskDoneHandler := task_done.NewHandler(dbInstance)
+	taskHandler := task.NewHandler(taskRepository)
+	tasksHandler := tasks.NewTasksHandler(taskRepository)
+	taskDoneHandler := task_done.NewHandler(taskRepository)
 
 	fs := http.FileServer(http.Dir(webDir))
 	http.Handle("/", fs)

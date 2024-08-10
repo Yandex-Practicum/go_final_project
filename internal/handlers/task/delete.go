@@ -2,27 +2,20 @@ package task
 
 import (
 	"net/http"
-	"strconv"
 
 	"go_final_project/internal/utils"
 )
 
 func (h *Handler) handleDeleteTask(w http.ResponseWriter, r *http.Request) {
-	stringId := r.URL.Query().Get("id")
-	if len(stringId) == 0 {
-		utils.RespondWithError(w, utils.ErrIDIsEmpty)
-		return
-	}
-	id, err := strconv.ParseInt(stringId, 10, 64)
+	id, err := utils.GetIDFromQuery(r)
 	if err != nil {
-		utils.RespondWithError(w, utils.ErrIDIsEmpty)
+		utils.RespondWithError(w, err)
 		return
 	}
 
-	deleteQuery := `DELETE FROM scheduler WHERE id = ?`
-	_, deleteErr := h.db.Exec(deleteQuery, id)
-	if deleteErr != nil {
-		utils.RespondWithError(w, err.Error())
+	err = h.repository.DeleteTaskByID(id)
+	if err != nil {
+		utils.RespondWithError(w, err)
 		return
 	}
 

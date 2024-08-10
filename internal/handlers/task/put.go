@@ -40,26 +40,13 @@ func (h *Handler) handlePutTask(w http.ResponseWriter, r *http.Request) {
 
 	task, err := validateTask(&taskRequest)
 	if err != nil {
-		utils.RespondWithError(w, err.Error())
+		utils.RespondWithError(w, err)
 		return
 	}
 
-	query := `UPDATE scheduler
-    		  SET
-    			date = ?,
-    			title = ?,
-    			comment = ?,
-    			repeat = ?
-			  WHERE id = ?`
-	updateResult, err := h.db.Exec(query, task.Date, task.Title, task.Comment, task.Repeat, task.ID)
+	err = h.repository.UpdateTask(task)
 	if err != nil {
-		utils.RespondWithError(w, utils.ErrTaskNotFound)
-		return
-	}
-
-	rowsAffected, err := updateResult.RowsAffected()
-	if err != nil || rowsAffected == 0 {
-		utils.RespondWithError(w, utils.ErrTaskNotFound)
+		utils.RespondWithError(w, err)
 		return
 	}
 

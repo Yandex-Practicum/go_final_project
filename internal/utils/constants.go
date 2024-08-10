@@ -12,13 +12,7 @@ const (
 
 const (
 	ErrUnsupportedMethod    = "Метод не поддерживается"
-	ErrInvalidJson          = "Ошибка десериализации JSON"
 	ErrInvalidDateNowFormat = "Invalid 'now' date format"
-	ErrIDIsEmpty            = "Не указан идентификатор"
-	ErrTaskNotFound         = "Задача не найдена"
-	ErrTaskParse            = "Ошибка разбора задач из базы данных"
-	ErrDBInsert             = "Ошибка вставки в базу данных"
-	ErrGetTaskID            = "Ошибка получения ID задачи"
 )
 
 const (
@@ -26,7 +20,15 @@ const (
 )
 
 var (
+	ErrIDIsEmpty         = errors.New("не указан идентификатор")
 	ErrInvalidTaskTitle  = errors.New("не указан заголовок задачи")
+	ErrInvalidJson       = errors.New("ошибка десериализации JSON")
 	ErrInvalidTaskDate   = errors.New("неверно указана дата задачи")
 	ErrInvalidTaskRepeat = errors.New("неверно указана дата задачи и повтор")
+	ErrTaskParse         = errors.New("ошибка разбора задач из базы данных")
+	ErrTaskNotFound      = errors.New("задача не найдена")
+	ErrDBInsert          = errors.New("ошибка вставки в базу данных")
+	ErrGetTaskID         = errors.New("ошибка получения ID задачи")
+	ErrInvalidPassword   = errors.New("не верный пароль")
+	ErrTokenCreate       = errors.New("ошибка генерации токена")
 )

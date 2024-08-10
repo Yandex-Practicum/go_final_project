@@ -1,18 +1,24 @@
 package task_done
 
 import (
-	"database/sql"
 	"net/http"
 
+	"go_final_project/internal/models"
 	"go_final_project/internal/utils"
 )
 
-type Handler struct {
-	db *sql.DB
+type TaskRepository interface {
+	GetTaskByID(ID int64) (*models.Task, error)
+	UpdateTaskDate(taskID int64, date string) error
+	DeleteTaskByID(ID int64) error
 }
 
-func NewHandler(db *sql.DB) *Handler {
-	return &Handler{db: db}
+type Handler struct {
+	repository TaskRepository
+}
+
+func NewHandler(repository TaskRepository) *Handler {
+	return &Handler{repository: repository}
 }
 
 func (h *Handler) Handle() http.HandlerFunc {

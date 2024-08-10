@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"go_final_project/internal/utils"
 	"net/http"
 	"os"
 )
@@ -10,7 +11,7 @@ type Handler struct {
 }
 
 func NewHandler() *Handler {
-	pass := os.Getenv("TODO_PASSWORD")
+	pass := os.Getenv(utils.EnvPassword)
 	return &Handler{password: pass}
 }
 

@@ -22,12 +22,13 @@ func (h *Handler) handleSign(w http.ResponseWriter, r *http.Request) {
 	var signDTO SignDTO
 	err := json.NewDecoder(r.Body).Decode(&signDTO)
 	if err != nil {
-		utils.RespondWithError(w, "Ошибка десериализации JSON")
+		utils.RespondWithError(w, utils.ErrInvalidJson)
 		return
 	}
 
 	if strings.TrimSpace(signDTO.Password) != h.password {
-		utils.RespondWithError(w, "Неверный пароль")
+		utils.RespondWithError(w, utils.ErrInvalidPassword)
+		return
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
@@ -36,13 +37,12 @@ func (h *Handler) handleSign(w http.ResponseWriter, r *http.Request) {
 
 	tokenString, err := token.SignedString([]byte(utils.AuthSecret))
 	if err != nil {
-		utils.RespondWithError(w, "Ошибка генерации токена")
+		utils.RespondWithError(w, utils.ErrTokenCreate)
 		return
 	}
 
 	response := SignResponseDTO{Token: tokenString}
-	utils.SetJsonHeader(w)
-	json.NewEncoder(w).Encode(response)
+	utils.Respond(w, response)
 }
 
 func hash(s string) uint32 {

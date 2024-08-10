@@ -11,8 +11,13 @@ func SetJsonHeader(w http.ResponseWriter) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 }
 
-func RespondWithError(w http.ResponseWriter, message string) {
-	response := models.Response{Error: &message}
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+func Respond(w http.ResponseWriter, v any) {
+	SetJsonHeader(w)
+	json.NewEncoder(w).Encode(v)
+}
+
+func RespondWithError(w http.ResponseWriter, err error) {
+	response := models.Response{Error: err.Error()}
+	SetJsonHeader(w)
 	json.NewEncoder(w).Encode(response)
 }
