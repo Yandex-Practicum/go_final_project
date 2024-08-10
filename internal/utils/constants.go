@@ -32,7 +32,7 @@ var (
 	ErrTaskNotFound      = errors.New("задача не найдена")
 	ErrDBInsert          = errors.New("ошибка вставки в базу данных")
 	ErrGetTaskID         = errors.New("ошибка получения ID задачи")
-	ErrInvalidPassword   = errors.New("не верный пароль")
+	ErrInvalidPassword   = errors.New("неверный пароль")
 	ErrTokenCreate       = errors.New("ошибка генерации токена")
 )
 

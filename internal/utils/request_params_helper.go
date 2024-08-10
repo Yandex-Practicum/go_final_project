@@ -25,7 +25,7 @@ func GetFilterTypeAndValue(r *http.Request) (int, string) {
 		return FilterTypeNone, ""
 	}
 
-	searchDate, err := time.Parse("01.02.2006", search)
+	searchDate, err := time.Parse("02.01.2006", search)
 	if err == nil {
 		return FilterTypeDate, searchDate.Format(ParseDateFormat)
 	}
