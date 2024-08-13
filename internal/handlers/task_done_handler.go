@@ -1,8 +1,10 @@
 package handlers
 
 import (
-	"go_final_project/internal/utils"
 	"net/http"
+
+	"go_final_project/internal/constants"
+	"go_final_project/internal/handlers/common"
 )
 
 type TaskDoneHandler struct {
@@ -19,24 +21,24 @@ func (h *TaskDoneHandler) Handle() http.HandlerFunc {
 		case http.MethodPost:
 			h.handlePostTaskDone(w, r)
 		default:
-			http.Error(w, utils.ErrUnsupportedMethod, http.StatusMethodNotAllowed)
+			http.Error(w, constants.ErrUnsupportedMethod, http.StatusMethodNotAllowed)
 		}
 	}
 }
 
 func (h *TaskDoneHandler) handlePostTaskDone(w http.ResponseWriter, r *http.Request) {
-	id, err := utils.GetIDFromQuery(r)
+	id, err := common.GetIdFromQuery(r)
 	if err != nil {
-		utils.RespondWithError(w, err)
+		common.RespondWithError(w, err)
 		return
 	}
 
 	err = h.svc.SetTaskDone(id)
 	if err != nil {
-		utils.RespondWithError(w, err)
+		common.RespondWithError(w, err)
 		return
 	}
 
-	utils.SetJsonHeader(w)
+	common.SetJsonHeader(w)
 	w.Write([]byte("{}"))
 }

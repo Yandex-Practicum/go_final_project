@@ -2,9 +2,11 @@ package handlers
 
 import (
 	"encoding/json"
-	"go_final_project/internal/models"
-	"go_final_project/internal/utils"
 	"net/http"
+
+	"go_final_project/internal/constants"
+	"go_final_project/internal/handlers/common"
+	"go_final_project/internal/models"
 )
 
 type AuthService interface {
@@ -54,16 +56,16 @@ func (h *AuthHandler) handleSign(w http.ResponseWriter, r *http.Request) {
 	var signDTO models.SignDTO
 	err := json.NewDecoder(r.Body).Decode(&signDTO)
 	if err != nil {
-		utils.RespondWithError(w, utils.ErrInvalidJson)
+		common.RespondWithError(w, constants.ErrInvalidJson)
 		return
 	}
 
 	token, err := h.svc.SignIn(signDTO.Password)
 	if err != nil {
-		utils.RespondWithError(w, err)
+		common.RespondWithError(w, err)
 		return
 	}
 
 	response := models.SignResponseDTO{Token: token}
-	utils.Respond(w, response)
+	common.Respond(w, response)
 }

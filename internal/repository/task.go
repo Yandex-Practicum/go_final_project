@@ -3,8 +3,9 @@ package repository
 import (
 	"database/sql"
 	"errors"
+
+	"go_final_project/internal/constants"
 	"go_final_project/internal/models"
-	"go_final_project/internal/utils"
 )
 
 const getLimit = 50
@@ -21,17 +22,17 @@ func (r *TaskRepository) CreateTask(task *models.Task) (int64, error) {
 	query := "INSERT INTO scheduler (date, title, comment, repeat) VALUES (?, ?, ?, ?)"
 	res, err := r.db.Exec(query, task.Date, task.Title, task.Comment, task.Repeat)
 	if err != nil {
-		return 0, errors.Join(utils.ErrDBInsert, err)
+		return 0, errors.Join(constants.ErrDBInsert, err)
 	}
 
 	id, err := res.LastInsertId()
 	if err != nil {
-		return 0, errors.Join(utils.ErrGetTaskID, err)
+		return 0, errors.Join(constants.ErrGetTaskId, err)
 	}
 	return id, nil
 }
 
-func (r *TaskRepository) GetTaskByID(ID int64) (*models.Task, error) {
+func (r *TaskRepository) Get(id int64) (*models.Task, error) {
 	query := `SELECT 
     			id,
     			date,
@@ -40,14 +41,14 @@ func (r *TaskRepository) GetTaskByID(ID int64) (*models.Task, error) {
     			repeat
 			  FROM scheduler
 			  WHERE id = ?`
-	row := r.db.QueryRow(query, ID)
+	row := r.db.QueryRow(query, id)
 	var task models.Task
-	err := row.Scan(&task.ID, &task.Date, &task.Title, &task.Comment, &task.Repeat)
+	err := row.Scan(&task.Id, &task.Date, &task.Title, &task.Comment, &task.Repeat)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, utils.ErrTaskNotFound
+			return nil, constants.ErrTaskNotFound
 		}
-		return nil, errors.Join(utils.ErrTaskParse, err)
+		return nil, errors.Join(constants.ErrTaskParse, err)
 	}
 	return &task, nil
 }
@@ -60,28 +61,28 @@ func (r *TaskRepository) UpdateTask(task *models.Task) error {
     			comment = ?,
     			repeat = ?
 			  WHERE id = ?`
-	updateResult, err := r.db.Exec(query, task.Date, task.Title, task.Comment, task.Repeat, task.ID)
+	updateResult, err := r.db.Exec(query, task.Date, task.Title, task.Comment, task.Repeat, task.Id)
 	if err != nil {
-		return utils.ErrTaskNotFound
+		return constants.ErrTaskNotFound
 	}
 
 	rowsAffected, err := updateResult.RowsAffected()
 	if err != nil || rowsAffected == 0 {
-		return utils.ErrTaskNotFound
+		return constants.ErrTaskNotFound
 	}
 
 	return nil
 }
 
-func (r *TaskRepository) UpdateTaskDate(taskID int64, date string) error {
+func (r *TaskRepository) UpdateTaskDate(id int64, date string) error {
 	query := `UPDATE scheduler SET date = ? WHERE id = ?`
-	_, err := r.db.Exec(query, date, taskID)
+	_, err := r.db.Exec(query, date, id)
 	return err
 }
 
-func (r *TaskRepository) DeleteTaskByID(ID int64) error {
+func (r *TaskRepository) DeleteTaskById(Id int64) error {
 	deleteQuery := `DELETE FROM scheduler WHERE id = ?`
-	_, deleteErr := r.db.Exec(deleteQuery, ID)
+	_, deleteErr := r.db.Exec(deleteQuery, Id)
 	return deleteErr
 }
 
@@ -143,9 +144,9 @@ func (r *TaskRepository) parseTasks(rows *sql.Rows) ([]*models.Task, error) {
 	result := make([]*models.Task, 0)
 	for rows.Next() {
 		var selectTask models.Task
-		err := rows.Scan(&selectTask.ID, &selectTask.Date, &selectTask.Title, &selectTask.Comment, &selectTask.Repeat)
+		err := rows.Scan(&selectTask.Id, &selectTask.Date, &selectTask.Title, &selectTask.Comment, &selectTask.Repeat)
 		if err != nil {
-			return result, errors.Join(utils.ErrTaskParse, err)
+			return result, errors.Join(constants.ErrTaskParse, err)
 		}
 		result = append(result, &selectTask)
 	}

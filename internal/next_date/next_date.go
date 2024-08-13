@@ -1,4 +1,4 @@
-package utils
+package next_date
 
 import (
 	"errors"
@@ -6,10 +6,12 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"go_final_project/internal/constants"
 )
 
 func NextDate(now time.Time, dateStr string, repeat string) (string, error) {
-	date, err := time.Parse(ParseDateFormat, dateStr)
+	date, err := time.Parse(constants.ParseDateFormat, dateStr)
 	if err != nil {
 		return "", errors.New("неверный формат даты")
 	}
@@ -86,7 +88,7 @@ func NextDate(now time.Time, dateStr string, repeat string) (string, error) {
 				}
 				if isSliceHas(allowDaysInMonth, date.Day()) &&
 					date.After(now) {
-					return date.Format(ParseDateFormat), nil
+					return date.Format(constants.ParseDateFormat), nil
 				}
 				date = date.AddDate(0, 0, 1)
 			}
@@ -96,7 +98,7 @@ func NextDate(now time.Time, dateStr string, repeat string) (string, error) {
 		return "", errors.New("неверный формат повтора")
 	}
 
-	return date.Format(ParseDateFormat), nil
+	return date.Format(constants.ParseDateFormat), nil
 }
 
 func parseDays(format []string) ([]int, error) {

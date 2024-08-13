@@ -5,17 +5,18 @@ import (
 	"net/http"
 	"strconv"
 
+	"go_final_project/internal/constants"
+	"go_final_project/internal/handlers/common"
 	"go_final_project/internal/models"
-	"go_final_project/internal/utils"
 )
 
 type TaskService interface {
-	GetTask(ID int64) (*models.Task, error)
+	GetTask(id int64) (*models.Task, error)
 	GetTasksWithFilter(filterType int, filterValue string) ([]*models.Task, error)
 	CreateTask(task *models.Task) (int64, error)
 	UpdateTask(task *models.Task) error
-	SetTaskDone(taskID int64) error
-	DeleteTask(ID int64) error
+	SetTaskDone(taskId int64) error
+	DeleteTask(Id int64) error
 }
 
 type TaskHandler struct {
@@ -38,68 +39,68 @@ func (h *TaskHandler) Handle() http.HandlerFunc {
 		case http.MethodDelete:
 			h.handleDeleteTask(w, r)
 		default:
-			http.Error(w, utils.ErrUnsupportedMethod, http.StatusMethodNotAllowed)
+			http.Error(w, constants.ErrUnsupportedMethod, http.StatusMethodNotAllowed)
 		}
 	}
 }
 
 func (h *TaskHandler) handleGetTask(w http.ResponseWriter, r *http.Request) {
-	id, err := utils.GetIDFromQuery(r)
+	id, err := common.GetIdFromQuery(r)
 	if err != nil {
-		utils.RespondWithError(w, err)
+		common.RespondWithError(w, err)
 		return
 	}
 
 	task, err := h.svc.GetTask(id)
 	if err != nil {
-		utils.RespondWithError(w, err)
+		common.RespondWithError(w, err)
 		return
 	}
 
 	response := models.GetTaskResponseDTO{
-		ID:      strconv.FormatInt(task.ID, 10),
+		Id:      strconv.FormatInt(task.Id, 10),
 		Date:    task.Date,
 		Title:   task.Title,
 		Comment: task.Comment,
 		Repeat:  task.Repeat,
 	}
 
-	utils.Respond(w, response)
+	common.Respond(w, response)
 }
 
 func (h *TaskHandler) handlePostTask(w http.ResponseWriter, r *http.Request) {
 	var taskDTO models.Task
 	err := json.NewDecoder(r.Body).Decode(&taskDTO)
 	if err != nil {
-		utils.RespondWithError(w, utils.ErrInvalidJson)
+		common.RespondWithError(w, constants.ErrInvalidJson)
 		return
 	}
 
-	taskID, err := h.svc.CreateTask(&taskDTO)
+	taskId, err := h.svc.CreateTask(&taskDTO)
 	if err != nil {
-		utils.RespondWithError(w, err)
+		common.RespondWithError(w, err)
 		return
 	}
 
-	response := models.Response{ID: taskID}
-	utils.Respond(w, response)
+	response := models.Response{Id: taskId}
+	common.Respond(w, response)
 }
 
 func (h *TaskHandler) handlePutTask(w http.ResponseWriter, r *http.Request) {
 	var taskDTO models.TaskPutDTO
 	err := json.NewDecoder(r.Body).Decode(&taskDTO)
 	if err != nil {
-		utils.RespondWithError(w, utils.ErrInvalidJson)
+		common.RespondWithError(w, constants.ErrInvalidJson)
 		return
 	}
-	taskId, err := strconv.ParseInt(taskDTO.ID, 10, 64)
+	taskId, err := strconv.ParseInt(taskDTO.Id, 10, 64)
 	if err != nil {
-		utils.RespondWithError(w, utils.ErrGetTaskID)
+		common.RespondWithError(w, constants.ErrGetTaskId)
 		return
 	}
 
 	taskRequest := &models.Task{
-		ID:      taskId,
+		Id:      taskId,
 		Date:    taskDTO.Date,
 		Title:   taskDTO.Title,
 		Comment: taskDTO.Comment,
@@ -107,27 +108,27 @@ func (h *TaskHandler) handlePutTask(w http.ResponseWriter, r *http.Request) {
 	}
 	err = h.svc.UpdateTask(taskRequest)
 	if err != nil {
-		utils.RespondWithError(w, err)
+		common.RespondWithError(w, err)
 		return
 	}
 
-	utils.SetJsonHeader(w)
+	common.SetJsonHeader(w)
 	w.Write([]byte("{}"))
 }
 
 func (h *TaskHandler) handleDeleteTask(w http.ResponseWriter, r *http.Request) {
-	id, err := utils.GetIDFromQuery(r)
+	id, err := common.GetIdFromQuery(r)
 	if err != nil {
-		utils.RespondWithError(w, err)
+		common.RespondWithError(w, err)
 		return
 	}
 
 	err = h.svc.DeleteTask(id)
 	if err != nil {
-		utils.RespondWithError(w, err)
+		common.RespondWithError(w, err)
 		return
 	}
 
-	utils.SetJsonHeader(w)
+	common.SetJsonHeader(w)
 	w.Write([]byte("{}"))
 }

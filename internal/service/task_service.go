@@ -4,16 +4,17 @@ import (
 	"strings"
 	"time"
 
+	"go_final_project/internal/constants"
 	"go_final_project/internal/models"
-	"go_final_project/internal/utils"
+	"go_final_project/internal/next_date"
 )
 
 type TaskRepository interface {
 	CreateTask(task *models.Task) (int64, error)
-	GetTaskByID(ID int64) (*models.Task, error)
+	Get(id int64) (*models.Task, error)
 	UpdateTask(task *models.Task) error
-	UpdateTaskDate(taskID int64, date string) error
-	DeleteTaskByID(ID int64) error
+	UpdateTaskDate(taskId int64, date string) error
+	DeleteTaskById(Id int64) error
 	GetAllTasks() ([]*models.Task, error)
 	GetAllTasksFilterByDate(date string) ([]*models.Task, error)
 	GetAllTasksFilterByTitleOrComment(search string) ([]*models.Task, error)
@@ -27,17 +28,17 @@ func NewTaskService(repository TaskRepository) *TaskService {
 	return &TaskService{repository: repository}
 }
 
-func (s *TaskService) GetTask(ID int64) (*models.Task, error) {
-	return s.repository.GetTaskByID(ID)
+func (s *TaskService) GetTask(id int64) (*models.Task, error) {
+	return s.repository.Get(id)
 }
 
 func (s *TaskService) GetTasksWithFilter(filterType int, filterValue string) ([]*models.Task, error) {
 	var tasks []*models.Task
 	var err error
 	switch filterType {
-	case utils.FilterTypeDate:
+	case constants.FilterTypeDate:
 		tasks, err = s.repository.GetAllTasksFilterByDate(filterValue)
-	case utils.FilterTypeSearch:
+	case constants.FilterTypeSearch:
 		tasks, err = s.repository.GetAllTasksFilterByTitleOrComment(filterValue)
 	default:
 		tasks, err = s.repository.GetAllTasks()
@@ -51,12 +52,12 @@ func (s *TaskService) CreateTask(task *models.Task) (int64, error) {
 		return 0, err
 	}
 
-	validTask.ID, err = s.repository.CreateTask(validTask)
+	validTask.Id, err = s.repository.CreateTask(validTask)
 	if err != nil {
 		return 0, err
 	}
 
-	return validTask.ID, nil
+	return validTask.Id, nil
 }
 
 func (s *TaskService) UpdateTask(task *models.Task) error {
@@ -68,52 +69,52 @@ func (s *TaskService) UpdateTask(task *models.Task) error {
 	return s.repository.UpdateTask(task)
 }
 
-func (s *TaskService) DeleteTask(ID int64) error {
-	return s.repository.DeleteTaskByID(ID)
+func (s *TaskService) DeleteTask(id int64) error {
+	return s.repository.DeleteTaskById(id)
 }
 
-func (s *TaskService) SetTaskDone(taskID int64) error {
-	task, err := s.repository.GetTaskByID(taskID)
+func (s *TaskService) SetTaskDone(id int64) error {
+	task, err := s.repository.Get(id)
 	if err != nil {
 		return err
 	}
 
 	if len(task.Repeat) == 0 {
-		return s.repository.DeleteTaskByID(task.ID)
+		return s.repository.DeleteTaskById(task.Id)
 	}
 
-	task.Date, err = utils.NextDate(time.Now(), task.Date, task.Repeat)
+	task.Date, err = next_date.NextDate(time.Now(), task.Date, task.Repeat)
 	if err != nil {
 		return err
 	}
 
-	return s.repository.UpdateTaskDate(task.ID, task.Date)
+	return s.repository.UpdateTaskDate(task.Id, task.Date)
 }
 
 func validateTask(task *models.Task) (*models.Task, error) {
 	if task.Title == "" {
-		return nil, utils.ErrInvalidTaskTitle
+		return nil, constants.ErrInvalidTaskTitle
 	}
 
 	now := time.Now()
-	today := now.Format(utils.ParseDateFormat)
+	today := now.Format(constants.ParseDateFormat)
 	if len(strings.TrimSpace(task.Date)) == 0 {
 		task.Date = today
 		return task, nil
 	}
 
-	taskDate, err := time.Parse(utils.ParseDateFormat, task.Date)
+	taskDate, err := time.Parse(constants.ParseDateFormat, task.Date)
 	if err != nil {
-		return nil, utils.ErrInvalidTaskDate
+		return nil, constants.ErrInvalidTaskDate
 	}
 
-	if taskDate.Format(utils.ParseDateFormat) < today {
+	if taskDate.Format(constants.ParseDateFormat) < today {
 		if len(strings.TrimSpace(task.Repeat)) == 0 {
 			task.Date = today
 		} else {
-			nextDate, err := utils.NextDate(now, task.Date, task.Repeat)
+			nextDate, err := next_date.NextDate(now, task.Date, task.Repeat)
 			if err != nil {
-				return nil, utils.ErrInvalidTaskRepeat
+				return nil, constants.ErrInvalidTaskRepeat
 			}
 			task.Date = nextDate
 		}

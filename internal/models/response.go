@@ -1,12 +1,12 @@
 package models
 
 type Response struct {
-	ID    int64  `json:"id,omitempty"`
+	Id    int64  `json:"id,omitempty"`
 	Error string `json:"error,omitempty"`
 }
 
 type GetTaskResponseDTO struct {
-	ID      string `json:"id"`
+	Id      string `json:"id"`
 	Date    string `json:"date"`
 	Title   string `json:"title"`
 	Comment string `json:"comment"`

@@ -1,4 +1,4 @@
-package utils
+package constants
 
 import "errors"
 
@@ -6,11 +6,8 @@ const (
 	DefaultPort = 7540
 	EnvPassword = "TODO_PASSWORD"
 	EnvPort     = "TODO_PORT"
+	EnvSecret   = "AUTH_SECRET"
 	WebDir      = "./web"
-)
-
-const (
-	AuthSecret = "kyusugfi7b6234udb7o38268bd5bgk23uk"
 )
 
 const (
@@ -23,7 +20,7 @@ const (
 )
 
 var (
-	ErrIDIsEmpty         = errors.New("не указан идентификатор")
+	ErrIdIsEmpty         = errors.New("не указан идентификатор")
 	ErrInvalidTaskTitle  = errors.New("не указан заголовок задачи")
 	ErrInvalidJson       = errors.New("ошибка десериализации JSON")
 	ErrInvalidTaskDate   = errors.New("неверно указана дата задачи")
@@ -31,7 +28,7 @@ var (
 	ErrTaskParse         = errors.New("ошибка разбора задач из базы данных")
 	ErrTaskNotFound      = errors.New("задача не найдена")
 	ErrDBInsert          = errors.New("ошибка вставки в базу данных")
-	ErrGetTaskID         = errors.New("ошибка получения ID задачи")
+	ErrGetTaskId         = errors.New("ошибка получения Id задачи")
 	ErrInvalidPassword   = errors.New("неверный пароль")
 	ErrTokenCreate       = errors.New("ошибка генерации токена")
 )

@@ -2,11 +2,12 @@ package main
 
 import (
 	"fmt"
-	"go_final_project/internal/utils"
 	"log"
 	"net/http"
 	"os"
 	"strconv"
+
+	"go_final_project/internal/constants"
 
 	"go_final_project/internal/db"
 	"go_final_project/internal/handlers"
@@ -15,8 +16,8 @@ import (
 )
 
 func main() {
-	port := utils.DefaultPort
-	if portStr := os.Getenv(utils.EnvPort); portStr != "" {
+	port := constants.DefaultPort
+	if portStr := os.Getenv(constants.EnvPort); portStr != "" {
 		if p, err := strconv.Atoi(portStr); err == nil {
 			port = p
 		}
@@ -38,7 +39,7 @@ func main() {
 	tasksHandler := handlers.NewTasksHandler(taskService)
 	taskDoneHandler := handlers.NewTaskDoneHandler(taskService)
 
-	fs := http.FileServer(http.Dir(utils.WebDir))
+	fs := http.FileServer(http.Dir(constants.WebDir))
 	http.Handle("/", fs)
 
 	http.HandleFunc("/api/signin", authHandler.Handle())
@@ -48,7 +49,7 @@ func main() {
 	http.HandleFunc("/api/task/done", authHandler.Validate(taskDoneHandler.Handle()))
 
 	log.Printf("Сервер запущен на порту %d\n", port)
-	log.Printf("Обслуживание файлов из каталога: %s\n", utils.WebDir)
+	log.Printf("Обслуживание файлов из каталога: %s\n", constants.WebDir)
 	listenAddr := fmt.Sprintf("localhost:%d", port)
 	log.Printf("Запуск сервера на %s\n", listenAddr)
 	if err := http.ListenAndServe(listenAddr, nil); err != nil {
