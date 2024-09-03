@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	_ "modernc.org/sqlite"
 )
 
 type nextDate struct {
