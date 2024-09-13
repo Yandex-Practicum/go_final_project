@@ -5,13 +5,16 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"strings"
+
+	chiFileServer "todo-list/internal/lib/chi-FileServer"
+	"todo-list/internal/lib/logger"
+	"todo-list/internal/storage/sqlite"
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/v5/middleware"
 )
 
-//const indexPath = "./../web"
+const webPath = "../web"
 
 func main() {
 
@@ -22,14 +25,24 @@ func main() {
 	log.Info("Starting TODO-list app.")
 
 	//TODO init database
+	storage, err := sqlite.NewStorage(log)
+	if err != nil {
+		log.Error("Failed to initialize database", logger.Err(err))
+		return
+	}
+	_ = storage
 
 	router := chi.NewRouter()
 	router.Use(middleware.Logger)
-	router.Handle("/", http.FileServer(http.Dir("../web")))
+	router.Handle("/", http.FileServer(http.Dir(webPath)))
 
+	log.Info("Configure fileserver.")
 	workDir, _ := os.Getwd()
-	filesDir := http.Dir(filepath.Join(workDir, "../web"))
-	FileServer(router, "/", filesDir)
+	filesDir := http.Dir(filepath.Join(workDir, webPath))
+	err = chiFileServer.FileServer(router, "/", filesDir)
+	if err != nil {
+		log.Error("Failed to сonfigure th fileserveer", logger.Err(err))
+	}
 
 	server := http.Server{
 		Addr:    "localhost:7540",
@@ -45,21 +58,3 @@ func main() {
 }
 
 // TODO Refactor this
-func FileServer(r chi.Router, path string, root http.FileSystem) {
-	if strings.ContainsAny(path, "{}*") {
-		panic("FileServer does not permit any URL parameters.")
-	}
-
-	if path != "/" && path[len(path)-1] != '/' {
-		r.Get(path, http.RedirectHandler(path+"/", 301).ServeHTTP)
-		path += "/"
-	}
-	path += "*"
-
-	r.Get(path, func(w http.ResponseWriter, r *http.Request) {
-		rctx := chi.RouteContext(r.Context())
-		pathPrefix := strings.TrimSuffix(rctx.RoutePattern(), "/*")
-		fs := http.StripPrefix(pathPrefix, http.FileServer(root))
-		fs.ServeHTTP(w, r)
-	})
-}
