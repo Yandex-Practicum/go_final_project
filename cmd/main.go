@@ -19,6 +19,8 @@ const webPath = "../web"
 func main() {
 
 	//TODO init config
+	//databasePath
+	//http-server port
 
 	//TODO init logger
 	log := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{AddSource: true, Level: slog.LevelDebug}))

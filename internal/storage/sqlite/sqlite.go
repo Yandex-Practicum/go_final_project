@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"path/filepath"
+	"todo-list/internal/storage"
 
-	_ "github.com/mattn/go-sqlite3"
+	_ "modernc.org/sqlite"
 )
+
+const dbFilePath = "internal/storage/sqlite/scheduler.db"
 
 type Storage struct {
 	db *sql.DB
@@ -16,30 +18,28 @@ type Storage struct {
 
 func NewStorage(log *slog.Logger) (*Storage, error) {
 
-	appPath, err := os.Executable()
+	dbPath, err := storage.DBFilePath(dbFilePath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to perform os.Executable(): %w", err)
+		return nil, fmt.Errorf("failed to get database file path:%w", err)
 	}
-
-	dbFile := filepath.Join(filepath.Dir(appPath), "scheduler.db")
-	_, err = os.Stat(dbFile)
 
 	var install bool
+	_, err = os.Stat(dbPath)
 	if err != nil {
 		install = true
-		log.Info("Getting ready for creating database")
+		log.Debug("Getting ready for creating database")
 	} else {
-		log.Info("Database file is found")
+		log.Debug("Database file is found")
 	}
 
-	db, err := sql.Open("sqlite3", dbFile)
+	db, err := sql.Open("sqlite", dbPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open connection with SQLite database: %w", err)
 	}
 
 	if install {
-		stmt, err := db.Prepare(`CREATE TABLE IF NOT EXISTS scheduler(
-			id INTEGER PRIMARY KEY AOUTOENCREMENT,)
+		stmt, err := db.Prepare(`CREATE TABLE scheduler(
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			date CHAR(8),
 			title VARCHAR(256),
 			comment VARCHAR(512),
@@ -53,6 +53,8 @@ func NewStorage(log *slog.Logger) (*Storage, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to create table in database: %w", err)
 		}
+
+		log.Debug("Database file is created")
 	}
 
 	return &Storage{db: db}, nil
