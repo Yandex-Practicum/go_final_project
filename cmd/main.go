@@ -27,6 +27,21 @@ func main() {
 	log := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{AddSource: true, Level: slog.LevelDebug}))
 	log.Info("Starting TODO-list app.")
 
+	//TEMP
+	/*fmt.Println("true: ", tasks.ValidRepeatY("y"))
+	fmt.Println("true: ", tasks.ValidRepeatY("y "))
+	fmt.Println("true: ", tasks.ValidRepeatY(" y "))
+	fmt.Println("false: ", tasks.ValidRepeatY(`y\ny`))
+	fmt.Println("false: ", tasks.ValidRepeatY("y1"))
+	fmt.Println("false: ", tasks.ValidRepeatY("y 1"))
+	fmt.Println("?: ", tasks.ValidRepeatY(`y\n`))
+	fmt.Println("false: ", tasks.ValidRepeatY("d 400  "))
+	fmt.Println("false: ", tasks.ValidRepeatY("d 400 "))
+	fmt.Println("false: ", tasks.ValidRepeatY("dd 000"))
+	fmt.Println("false: ", tasks.ValidRepeatY("f 1"))
+	fmt.Println("false: ", tasks.ValidRepeatY("0 1"))*/
+	return
+
 	//TODO init database
 	storage, err := sqlite.NewStorage(log)
 	if err != nil {
@@ -59,5 +74,3 @@ func main() {
 
 	log.Error("Server stopped")
 }
-
-// TODO Refactor this
