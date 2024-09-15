@@ -7,7 +7,7 @@ import (
 	"os"
 	"todo-list/internal/storage"
 
-	_ "modernc.org/sqlite"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 const dbFilePath = "internal/storage/sqlite/scheduler.db"
@@ -32,7 +32,7 @@ func NewStorage(log *slog.Logger) (*Storage, error) {
 		log.Debug("Database file is found")
 	}
 
-	db, err := sql.Open("sqlite", dbPath)
+	db, err := sql.Open("sqlite3", dbPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open connection with SQLite database: %w", err)
 	}
