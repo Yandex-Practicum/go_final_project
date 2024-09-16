@@ -18,14 +18,11 @@ func NextDate(now time.Time, sourceDate, repeat string) (string, error) {
 	if strings.Contains(repeat, "d") {
 		return nextDateWithD(now, date, repeat)
 	} else if strings.Contains(repeat, "y") {
-		if !validRepeatY(repeat) {
-			return "", errWrongRepeatFormat("y", repeat)
-		}
+		return nextDateWithY(now, date, repeat)
 	} else {
 		return "", fmt.Errorf("repeat rule is undefined. The rule: \"%s\"", repeat)
 	}
 
-	return "", nil
 }
 
 func errWrongRepeatFormat(ruleType, repeatRule string) error {
@@ -33,14 +30,18 @@ func errWrongRepeatFormat(ruleType, repeatRule string) error {
 }
 
 func nextDateWithD(now, date time.Time, repeat string) (string, error) {
+
 	if !validRepeatD(repeat) {
 		return "", errWrongRepeatFormat("d", repeat)
 	}
 
 	days, _ := strconv.Atoi(repeat[2:])
-	_ = days
+	date = date.Add(time.Hour * time.Duration(days*24))
+	for date.Before(now) {
+		date = date.Add(time.Hour * time.Duration(days*24))
+	}
 
-	return "", nil
+	return date.Format("20060101"), nil
 }
 
 func validRepeatD(rule string) bool {
@@ -56,6 +57,20 @@ func validRepeatD(rule string) bool {
 	}
 
 	return true
+}
+
+func nextDateWithY(now, date time.Time, repeat string) (string, error) {
+
+	if !validRepeatY(repeat) {
+		return "", errWrongRepeatFormat("y", repeat)
+	}
+
+	date = date.AddDate(1, 0, 0)
+	for date.Before(now) {
+		date = date.AddDate(1, 0, 0)
+	}
+
+	return date.Format("20060101"), nil
 }
 
 func validRepeatY(rule string) bool {

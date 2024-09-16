@@ -40,7 +40,7 @@ func main() {
 	fmt.Println("false: ", tasks.ValidRepeatY("dd 000"))
 	fmt.Println("false: ", tasks.ValidRepeatY("f 1"))
 	fmt.Println("false: ", tasks.ValidRepeatY("0 1"))*/
-	return
+	//return
 
 	//TODO init database
 	storage, err := sqlite.NewStorage(log)
@@ -53,8 +53,9 @@ func main() {
 	router := chi.NewRouter()
 	router.Use(middleware.Logger)
 	router.Handle("/", http.FileServer(http.Dir(webPath)))
+	//TODO router.Get("api/nextdate")
 
-	log.Info("Configure fileserver.")
+	log.Debug("Configure fileserver.")
 	workDir, _ := os.Getwd()
 	filesDir := http.Dir(filepath.Join(workDir, webPath))
 	err = chiFileServer.FileServer(router, "/", filesDir)
