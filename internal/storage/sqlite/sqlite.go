@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 	"todo-list/internal/storage"
+	"todo-list/internal/tasks"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -58,4 +59,25 @@ func NewStorage(log *slog.Logger) (*Storage, error) {
 	}
 
 	return &Storage{db: db}, nil
+}
+
+func (storage Storage) AddTask(task tasks.Task) (int, error) {
+
+	query := `INSERT INTO scheduler (date, title, comment, repeat)
+		VALUES (:date, :title, :comment, :repeat)`
+
+	result, err := storage.db.Exec(query, sql.Named("date", task.Date),
+		sql.Named("title", task.Title),
+		sql.Named("comment", task.Comment),
+		sql.Named("repeat", task.Repeat))
+	if err != nil {
+		return 0, fmt.Errorf("failed to insert into scheduler: %w", err)
+	}
+
+	ind, err := result.LastInsertId()
+	if err != nil {
+		return 0, fmt.Errorf("failed to get last id inserted into scheduler: %w", err)
+	}
+
+	return int(ind), nil
 }

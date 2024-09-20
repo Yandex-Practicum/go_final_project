@@ -8,6 +8,52 @@ import (
 	"time"
 )
 
+type Task struct {
+	Date    string `json:"date,omitempty"`
+	Title   string `json:"title"`
+	Comment string `json:"comment,omitempty"`
+	Repeat  string `json:"repeat"`
+}
+
+func (task *Task) Validate() error {
+
+	var errs []string
+
+	if task.Title == "" {
+		errs = append(errs, "the Title is blank")
+	}
+
+	currentTime := time.Now().Truncate(24 * time.Hour)
+	if task.Date == "" {
+		task.Date = currentTime.Format("20060102")
+	}
+
+	if task.Repeat == "" {
+		checkedDate, err := time.Parse("20060102", task.Date)
+		if err != nil {
+			errs = append(errs, "wrong format of the Date")
+		} else {
+			if checkedDate.Before(currentTime) {
+				task.Date = currentTime.Format("20060102")
+			}
+		}
+	} else {
+		nextDate, err := NextDate(currentTime, task.Date, task.Repeat)
+		if err != nil {
+			errs = append(errs, err.Error())
+		} else {
+			task.Date = nextDate
+		}
+	}
+
+	if len(errs) > 0 {
+		errDescription := strings.Join(errs, "; ")
+		return fmt.Errorf("failed to validate task.Task: %s", errDescription)
+	}
+
+	return nil
+}
+
 func NextDate(now time.Time, sourceDate, repeat string) (string, error) {
 
 	date, err := time.Parse("20060102", sourceDate)
@@ -36,12 +82,11 @@ func nextDateWithD(now, date time.Time, repeat string) (string, error) {
 	}
 
 	days, _ := strconv.Atoi(repeat[2:])
-	date = date.Add(time.Hour * time.Duration(days*24))
 	for date.Before(now) {
 		date = date.Add(time.Hour * time.Duration(days*24))
 	}
 
-	return date.Format("20060101"), nil
+	return date.Format("20060102"), nil
 }
 
 func validRepeatD(rule string) bool {
@@ -65,12 +110,11 @@ func nextDateWithY(now, date time.Time, repeat string) (string, error) {
 		return "", errWrongRepeatFormat("y", repeat)
 	}
 
-	date = date.AddDate(1, 0, 0)
 	for date.Before(now) {
 		date = date.AddDate(1, 0, 0)
 	}
 
-	return date.Format("20060101"), nil
+	return date.Format("20060102"), nil
 }
 
 func validRepeatY(rule string) bool {
