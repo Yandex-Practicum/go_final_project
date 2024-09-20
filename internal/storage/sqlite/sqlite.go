@@ -81,3 +81,30 @@ func (storage Storage) AddTask(task tasks.Task) (int, error) {
 
 	return int(ind), nil
 }
+
+func (storage Storage) GetTasks() ([]tasks.Task, error) {
+
+	result := make([]tasks.Task, 0)
+	_ = result
+
+	query := "SELECT id, date, title, comment, repeat FROM scheduler ORDER BY scheduler.date LIMIT 30"
+	rows, err := storage.db.Query(query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get tasks list from scheduler: %w", err)
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		task := tasks.Task{}
+
+		err = rows.Scan(&task.Id, &task.Date, &task.Title, &task.Comment, &task.Repeat)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert row result from scheduler to task.Task: %w", err)
+		}
+
+		result = append(result, task)
+	}
+
+	return result, nil
+}

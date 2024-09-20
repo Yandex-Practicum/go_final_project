@@ -14,6 +14,7 @@ import (
 
 type taskStorage interface {
 	AddTask(t tasks.Task) (int, error)
+	GetTasks() ([]tasks.Task, error)
 }
 
 func GetNextDate(log *slog.Logger) http.HandlerFunc {
@@ -90,5 +91,22 @@ func PostTask(log *slog.Logger, storage taskStorage) http.HandlerFunc {
 
 		render.JSON(w, r, api.NewPostSucceedResponse(insertId))
 	}
+}
 
+func GetTasks(log *slog.Logger, storage taskStorage) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		log := log.With(slog.Attr{Key: "request_id", Value: slog.StringValue(middleware.GetReqID(r.Context()))})
+
+		result := api.TasksResponse{}
+		tasksList, err := storage.GetTasks()
+		if err != nil {
+			log.Error("failed to get tasks list from storage", logger.Err(err))
+			render.JSON(w, r, api.NewErrResponse("Failed to get tasks list."))
+			return
+		}
+
+		result.TaskList = tasksList
+		render.JSON(w, r, result)
+	}
 }

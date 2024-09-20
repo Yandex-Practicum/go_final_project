@@ -48,6 +48,7 @@ func main() {
 
 	router.Get("/api/nextdate", handlers.GetNextDate(log))
 	router.Post("/api/task", handlers.PostTask(log, storage))
+	router.Get("/api/tasks", handlers.GetTasks(log, storage))
 
 	server := http.Server{
 		Addr:    "localhost:7540",
