@@ -13,8 +13,10 @@ import (
 )
 
 type taskStorage interface {
-	AddTask(t tasks.Task) (int, error)
+	AddTask(t *tasks.Task) (int, error)
 	GetTasks() ([]tasks.Task, error)
+	GetTask(taskId string) (*tasks.Task, error)
+	UpdateTask(t *tasks.Task) error
 }
 
 func GetNextDate(log *slog.Logger) http.HandlerFunc {
@@ -76,14 +78,14 @@ func PostTask(log *slog.Logger, storage taskStorage) http.HandlerFunc {
 			return
 		}
 
-		err = task.Validate()
+		err = task.Validate(false)
 		if err != nil {
 			log.Error("failed to validate task", logger.Err(err))
 			render.JSON(w, r, api.NewErrResponse("Failed to validate request`s body data"))
 			return
 		}
 
-		insertId, err := storage.AddTask(task)
+		insertId, err := storage.AddTask(&task)
 		if err != nil {
 			log.Error("failed to add task into storage", logger.Err(err))
 			render.JSON(w, r, api.NewErrResponse("Failed to add task. Server internal error."))
@@ -108,5 +110,59 @@ func GetTasks(log *slog.Logger, storage taskStorage) http.HandlerFunc {
 
 		result.TaskList = tasksList
 		render.JSON(w, r, result)
+	}
+}
+
+func GetTask(log *slog.Logger, storage taskStorage) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		log := log.With(slog.Attr{Key: "request_id", Value: slog.StringValue(middleware.GetReqID(r.Context()))})
+
+		paramId := r.FormValue("id")
+		if paramId == "" {
+			log.Error("Id parameter is empty. Cannot get the task from db.")
+			render.JSON(w, r, api.NewErrResponse("Cannot get the task data: id is empty"))
+			return
+		}
+
+		task, err := storage.GetTask(paramId)
+		if err != nil {
+			log.Error("failed to get task from storage", logger.Err(err))
+			render.JSON(w, r, api.NewErrResponse("Failed to get task from database: internal server error"))
+			return
+		}
+
+		render.JSON(w, r, task)
+
+	}
+}
+
+func PutTask(log *slog.Logger, storage taskStorage) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		log := log.With(slog.Attr{Key: "request_id", Value: slog.StringValue(middleware.GetReqID(r.Context()))})
+
+		task := tasks.Task{}
+		err := render.DecodeJSON(r.Body, &task)
+		if err != nil {
+			log.Error("failed to decode requests body", logger.Err(err))
+			render.JSON(w, r, api.NewErrResponse("Failed to read request`s body."))
+			return
+		}
+
+		err = task.Validate(true)
+		if err != nil {
+			log.Error("task info is invalid", logger.Err(err))
+			render.JSON(w, r, api.NewErrResponse("Task info is invalid."))
+			return
+		}
+
+		err = storage.UpdateTask(&task)
+		if err != nil {
+			log.Error("failed to update task in storage", logger.Err(err))
+			render.JSON(w, r, api.NewErrResponse("Failed to update the task. Internal server error."))
+			return
+		}
+
+		render.JSON(w, r, struct{}{})
+
 	}
 }

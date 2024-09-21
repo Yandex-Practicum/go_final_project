@@ -16,9 +16,24 @@ type Task struct {
 	Repeat  string `json:"repeat"`
 }
 
-func (task *Task) Validate() error {
+func (task *Task) Validate(checkWithId bool) error {
 
 	var errs []string
+
+	if checkWithId {
+		if task.Id == "" {
+			errs = append(errs, "the Id is blank")
+		} else {
+			taskId, err := strconv.Atoi(task.Id)
+			if err != nil {
+				errs = append(errs, "wrong format of Id")
+			} else {
+				if taskId <= 0 {
+					errs = append(errs, "wrong Id: Id must be > 0")
+				}
+			}
+		}
+	}
 
 	if task.Title == "" {
 		errs = append(errs, "the Title is blank")

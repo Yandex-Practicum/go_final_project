@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"strconv"
 	"todo-list/internal/storage"
 	"todo-list/internal/tasks"
 
@@ -61,7 +62,7 @@ func NewStorage(log *slog.Logger) (*Storage, error) {
 	return &Storage{db: db}, nil
 }
 
-func (storage Storage) AddTask(task tasks.Task) (int, error) {
+func (storage Storage) AddTask(task *tasks.Task) (int, error) {
 
 	query := `INSERT INTO scheduler (date, title, comment, repeat)
 		VALUES (:date, :title, :comment, :repeat)`
@@ -107,4 +108,54 @@ func (storage Storage) GetTasks() ([]tasks.Task, error) {
 	}
 
 	return result, nil
+}
+
+func (storage Storage) GetTask(taskId string) (*tasks.Task, error) {
+
+	id, err := strconv.Atoi(taskId)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert taskId to int: %w", err)
+	}
+
+	query := "SELECT id, date, title, comment, repeat FROM scheduler WHERE id = :id"
+	row := storage.db.QueryRow(query, sql.Named("id", id))
+
+	result := tasks.Task{}
+	err = row.Scan(&result.Id, &result.Date, &result.Title, &result.Comment, &result.Repeat)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read task from query result: %w", err)
+	}
+
+	return &result, nil
+}
+
+func (storage Storage) UpdateTask(task *tasks.Task) error {
+
+	query := "UPDATE scheduler SET date = :date, title = :title, comment = :comment, repeat = :repeat WHERE id = :id"
+
+	taskId, err := strconv.Atoi(task.Id)
+	if err != nil {
+		return fmt.Errorf("failed convert task.id to int: %w", err)
+	}
+
+	res, err := storage.db.Exec(query,
+		sql.Named("date", task.Date),
+		sql.Named("title", task.Title),
+		sql.Named("comment", task.Comment),
+		sql.Named("repeat", task.Repeat),
+		sql.Named("id", taskId))
+	if err != nil {
+		return fmt.Errorf("failed to update task in database: %w", err)
+	}
+
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to read database response: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("task with id \"%d\" is not found", taskId)
+	}
+
+	return nil
 }
