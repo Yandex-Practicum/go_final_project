@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 	"strconv"
+	"time"
 	"todo-list/internal/storage"
 	"todo-list/internal/tasks"
 
@@ -155,6 +156,59 @@ func (storage Storage) UpdateTask(task *tasks.Task) error {
 
 	if rowsAffected == 0 {
 		return fmt.Errorf("task with id \"%d\" is not found", taskId)
+	}
+
+	return nil
+}
+
+func (storage Storage) MarkAsDone(taskId string) error {
+
+	task, err := storage.GetTask(taskId)
+	if err != nil {
+		return fmt.Errorf("failed to get task by id: %w", err)
+	}
+
+	if task.Repeat == "" {
+		err = storage.DeleteTask(taskId)
+		if err != nil {
+			return fmt.Errorf("failed to delete task by id: %w", err)
+		}
+	} else {
+		now := time.Now()
+		nextDate, err := tasks.NextDate(now, task.Date, task.Repeat)
+		if err != nil {
+			return fmt.Errorf("failed to get the next task date: %w", err)
+		}
+		task.Date = nextDate
+		err = storage.UpdateTask(task)
+		if err != nil {
+			return fmt.Errorf("failed to update task with new date: %w", err)
+		}
+	}
+
+	return nil
+}
+
+func (storage Storage) DeleteTask(taskId string) error {
+
+	id, err := strconv.Atoi(taskId)
+	if err != nil {
+		return fmt.Errorf("failed to convert task id to int: %w", err)
+	}
+
+	query := "DELETE FROM scheduler WHERE id = :id"
+	res, err := storage.db.Exec(query, sql.Named("id", id))
+	if err != nil {
+		return fmt.Errorf("failed to delete task by id from database: %w", err)
+	}
+
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to read query result: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("task by id \"%d\" is not found", id)
 	}
 
 	return nil

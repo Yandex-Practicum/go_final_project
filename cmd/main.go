@@ -51,6 +51,8 @@ func main() {
 	router.Get("/api/tasks", handlers.GetTasks(log, storage))
 	router.Get("/api/task", handlers.GetTask(log, storage))
 	router.Put("/api/task", handlers.PutTask(log, storage))
+	router.Post("/api/task/done", handlers.MarkAsDone(log, storage))
+	router.Delete("/api/task", handlers.DelTask(log, storage))
 
 	server := http.Server{
 		Addr:    "localhost:7540",

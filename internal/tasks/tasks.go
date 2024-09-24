@@ -57,7 +57,7 @@ func (task *Task) Validate(checkWithId bool) error {
 		nextDate, err := NextDate(currentTime, task.Date, task.Repeat)
 		if err != nil {
 			errs = append(errs, err.Error())
-		} else {
+		} else if taskDate, _ := time.Parse("20060102", task.Date); taskDate.Before(currentTime) {
 			task.Date = nextDate
 		}
 	}
@@ -98,7 +98,11 @@ func nextDateWithD(now, date time.Time, repeat string) (string, error) {
 	}
 
 	days, _ := strconv.Atoi(repeat[2:])
-	for date.Before(now) {
+	if date.Before(now) {
+		for date.Before(now) {
+			date = date.Add(time.Hour * time.Duration(days*24))
+		}
+	} else {
 		date = date.Add(time.Hour * time.Duration(days*24))
 	}
 
@@ -126,7 +130,11 @@ func nextDateWithY(now, date time.Time, repeat string) (string, error) {
 		return "", errWrongRepeatFormat("y", repeat)
 	}
 
-	for date.Before(now) {
+	if date.Before(now) {
+		for date.Before(now) {
+			date = date.AddDate(1, 0, 0)
+		}
+	} else {
 		date = date.AddDate(1, 0, 0)
 	}
 

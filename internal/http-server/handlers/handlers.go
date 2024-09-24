@@ -3,6 +3,7 @@ package handlers
 import (
 	"log/slog"
 	"net/http"
+	"strconv"
 	"time"
 	"todo-list/internal/http-server/api"
 	"todo-list/internal/lib/logger"
@@ -17,12 +18,14 @@ type taskStorage interface {
 	GetTasks() ([]tasks.Task, error)
 	GetTask(taskId string) (*tasks.Task, error)
 	UpdateTask(t *tasks.Task) error
+	MarkAsDone(taskId string) error
+	DeleteTask(taskid string) error
 }
 
 func GetNextDate(log *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		log := log.With("request_id", middleware.GetReqID(r.Context()))
+		log := log.With(logger.ReqId, middleware.GetReqID(r.Context()))
 
 		paramNow := r.FormValue("now")
 		if paramNow == "" {
@@ -68,7 +71,7 @@ func PostTask(log *slog.Logger, storage taskStorage) http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		log := log.With(slog.Attr{Key: "request_id", Value: slog.StringValue(middleware.GetReqID(r.Context()))})
+		log := log.With(slog.Attr{Key: logger.ReqId, Value: slog.StringValue(middleware.GetReqID(r.Context()))})
 
 		var task tasks.Task
 		err := render.DecodeJSON(r.Body, &task)
@@ -98,7 +101,7 @@ func PostTask(log *slog.Logger, storage taskStorage) http.HandlerFunc {
 func GetTasks(log *slog.Logger, storage taskStorage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		log := log.With(slog.Attr{Key: "request_id", Value: slog.StringValue(middleware.GetReqID(r.Context()))})
+		log := log.With(slog.Attr{Key: logger.ReqId, Value: slog.StringValue(middleware.GetReqID(r.Context()))})
 
 		result := api.TasksResponse{}
 		tasksList, err := storage.GetTasks()
@@ -115,12 +118,19 @@ func GetTasks(log *slog.Logger, storage taskStorage) http.HandlerFunc {
 
 func GetTask(log *slog.Logger, storage taskStorage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		log := log.With(slog.Attr{Key: "request_id", Value: slog.StringValue(middleware.GetReqID(r.Context()))})
+		log := log.With(slog.Attr{Key: logger.ReqId, Value: slog.StringValue(middleware.GetReqID(r.Context()))})
 
 		paramId := r.FormValue("id")
 		if paramId == "" {
 			log.Error("Id parameter is empty. Cannot get the task from db.")
 			render.JSON(w, r, api.NewErrResponse("Cannot get the task data: id is empty"))
+			return
+		}
+
+		_, err := strconv.Atoi(paramId)
+		if err != nil {
+			log.Error("cannot get the task info: wrong task id format")
+			render.JSON(w, r, api.NewErrResponse("Failed to get task from database: wrong task id."))
 			return
 		}
 
@@ -138,7 +148,7 @@ func GetTask(log *slog.Logger, storage taskStorage) http.HandlerFunc {
 
 func PutTask(log *slog.Logger, storage taskStorage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		log := log.With(slog.Attr{Key: "request_id", Value: slog.StringValue(middleware.GetReqID(r.Context()))})
+		log := log.With(slog.Attr{Key: logger.ReqId, Value: slog.StringValue(middleware.GetReqID(r.Context()))})
 
 		task := tasks.Task{}
 		err := render.DecodeJSON(r.Body, &task)
@@ -164,5 +174,63 @@ func PutTask(log *slog.Logger, storage taskStorage) http.HandlerFunc {
 
 		render.JSON(w, r, struct{}{})
 
+	}
+}
+
+func MarkAsDone(log *slog.Logger, storage taskStorage) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		log := log.With(slog.Attr{Key: logger.ReqId, Value: slog.StringValue(middleware.GetReqID(r.Context()))})
+
+		taskId := r.FormValue("id")
+		if taskId == "" {
+			log.Error("failed to mark the task: id is empty")
+			render.JSON(w, r, api.NewErrResponse("Cannot to mark the task: bad request"))
+			return
+		}
+
+		_, err := strconv.Atoi(taskId)
+		if err != nil {
+			log.Error("cannot mark the task: wrong task id format")
+			render.JSON(w, r, api.NewErrResponse("Cannot mark the task: wrong task id."))
+			return
+		}
+
+		err = storage.MarkAsDone(taskId)
+		if err != nil {
+			log.Error("failed to mark the task in db", logger.Err(err))
+			render.JSON(w, r, api.NewErrResponse("failed to mark the task. Internal server error."))
+			return
+		}
+
+		render.JSON(w, r, struct{}{})
+	}
+}
+
+func DelTask(log *slog.Logger, storage taskStorage) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		log := log.With(slog.Attr{Key: logger.ReqId, Value: slog.StringValue(middleware.GetReqID(r.Context()))})
+
+		taskId := r.FormValue("id")
+		if taskId == "" {
+			log.Error("cannot delete task - id is empty")
+			render.JSON(w, r, api.NewErrResponse("Cannot delete the task: id is empty."))
+			return
+		}
+
+		_, err := strconv.Atoi(taskId)
+		if err != nil {
+			log.Error("cannot delete the task: wrong id format", logger.Err(err))
+			render.JSON(w, r, api.NewErrResponse("Cannot delete the task: wrong task id format."))
+			return
+		}
+
+		err = storage.DeleteTask(taskId)
+		if err != nil {
+			log.Error("failed to delete task from db", logger.Err(err))
+			render.JSON(w, r, api.NewErrResponse("Failed to delete the task. Internal server error."))
+			return
+		}
+
+		render.JSON(w, r, struct{}{})
 	}
 }
