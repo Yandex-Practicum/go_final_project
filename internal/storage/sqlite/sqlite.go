@@ -13,7 +13,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-const dbFilePath = "internal/storage/sqlite/scheduler.db"
+const dbFilePath = "scheduler.db"
 
 type Storage struct {
 	db *sql.DB

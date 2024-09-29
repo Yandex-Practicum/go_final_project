@@ -2,11 +2,16 @@ package chiFileServer
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
+	"path/filepath"
 	"strings"
+	"todo-list/internal/lib/common"
 
 	"github.com/go-chi/chi"
 )
+
+const webPath = "./web"
 
 func FileServer(r chi.Router, path string, root http.FileSystem) error {
 	if strings.ContainsAny(path, "{}*") {
@@ -27,4 +32,14 @@ func FileServer(r chi.Router, path string, root http.FileSystem) error {
 	})
 
 	return nil
+}
+
+func FileServerPath() (string, error) {
+
+	appPath, err := common.ProjectRootPath()
+	if err != nil {
+		return "", fmt.Errorf("failed to get file server path: %w", err)
+	}
+
+	return filepath.Join(appPath, webPath), nil
 }

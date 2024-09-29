@@ -2,30 +2,15 @@ package storage
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
+	"todo-list/internal/lib/common"
 )
-
-const rootFolder = "todo-list"
 
 func DBFilePath(localPath string) (string, error) {
 
-	appPath, err := os.Executable()
+	appPath, err := common.ProjectRootPath()
 	if err != nil {
-		return "", fmt.Errorf("failed to perform os.Executable(): %w", err)
-	}
-
-	var rootAppPath string
-	for _, f := filepath.Split(appPath); f != ""; {
-		if f == rootFolder {
-			rootAppPath = appPath
-			break
-		}
-		appPath = filepath.Dir(appPath)
-		_, f = filepath.Split(appPath)
-	}
-	if rootAppPath == "" {
-		return "", fmt.Errorf("failed to get root path \"%s\" of the app", rootFolder)
+		return "", fmt.Errorf("failed to get project root path: %w", err)
 	}
 
 	return filepath.Join(appPath, localPath), nil

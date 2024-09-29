@@ -1,10 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
-	"path/filepath"
 
 	"todo-list/internal/http-server/handlers"
 	chiFileServer "todo-list/internal/lib/chi-FileServer"
@@ -15,14 +15,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 )
 
-const webPath = "../web"
-
 func main() {
-
-	//TODO init config
-	// - databasePath
-	// - http-server port
-	// - project root folder
 
 	log := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{AddSource: true, Level: slog.LevelDebug}))
 	log.Info("Starting TODO-list app.")
@@ -36,11 +29,17 @@ func main() {
 	router := chi.NewRouter()
 	router.Use(middleware.Logger)
 	router.Use(middleware.RequestID)
-	router.Handle("/", http.FileServer(http.Dir(webPath)))
 
 	log.Debug("Configure fileserver.")
-	workDir, _ := os.Getwd()
-	filesDir := http.Dir(filepath.Join(workDir, webPath))
+	fileServerPath, err := chiFileServer.FileServerPath()
+	if err != nil {
+		log.Error("failed to get fileServer path", logger.Err(err))
+		return
+	}
+	filesDir := http.Dir(fileServerPath)
+	fmt.Println("filesDir is :", filesDir)
+	fmt.Println("fileServerPath is :", fileServerPath)
+	router.Handle("/", http.FileServer(filesDir))
 	err = chiFileServer.FileServer(router, "/", filesDir)
 	if err != nil {
 		log.Error("Failed to сonfigure th fileserveer", logger.Err(err))
@@ -55,7 +54,7 @@ func main() {
 	router.Delete("/api/task", handlers.DelTask(log, storage))
 
 	server := http.Server{
-		Addr:    "localhost:7540",
+		Addr:    "0.0.0.0:7540",
 		Handler: router,
 	}
 
