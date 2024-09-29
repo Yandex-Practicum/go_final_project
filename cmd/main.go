@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -37,8 +36,6 @@ func main() {
 		return
 	}
 	filesDir := http.Dir(fileServerPath)
-	fmt.Println("filesDir is :", filesDir)
-	fmt.Println("fileServerPath is :", fileServerPath)
 	router.Handle("/", http.FileServer(filesDir))
 	err = chiFileServer.FileServer(router, "/", filesDir)
 	if err != nil {

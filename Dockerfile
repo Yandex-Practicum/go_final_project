@@ -11,6 +11,6 @@ COPY web ./web
 
 COPY ./builds/todo_app ./cmd/
 
-RUN apt install -y curl
+RUN mkdir database
 
-CMD ["cmd/todo_app"]
+#CMD ["cmd/todo_app"]
