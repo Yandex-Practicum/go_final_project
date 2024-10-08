@@ -1,45 +1,43 @@
 package main
 
 import (
+	"database/sql"
+	"encoding/json"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
 )
 
+var jwtKey = []byte("my_secret_key")
+var appPassword = os.Getenv("TODO_PASSWORD")
+
+type Claims struct {
+	Username string `json:"username"`
+	jwt.StandardClaims
+}
+
 // middleware
-func authMiddleware(next http.HandlerFunc) http.HandlerFunc {
+func authMidW(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if appPassword != "" {
-			cookie, err := r.Cookie("token")
-			if err != nil {
-				if err == http.ErrNoCookie {
-					http.Error(w, "Неавторизован", http.StatusUnauthorized)
-					return
-				}
-				http.Error(w, "Bad req", http.StatusBadRequest)
-				return
-			}
+		if appPassword == "" {
+			next(w, r)
+			return
+		}
+		cookie, err := r.Cookie("token")
+		if err != nil {
+			http.Error(w, "Неавторизован", http.StatusUnauthorized)
+			return
+		}
+		tokenStr := cookie.Value
+		claims := &Claims{}
 
-			tokenStr := cookie.Value
-			claims := &Claims{}
-
-			tkn, err := jwt.ParseWithClaims(tokenStr, claims, func(token *jwt.Token) (interface{}, error) {
-				return jwtKey, nil
-			})
-
-			if err != nil {
-				if err == jwt.ErrSignatureInvalid {
-					http.Error(w, "Неавторизован", http.StatusUnauthorized)
-					return
-				}
-				http.Error(w, "Bad req", http.StatusBadRequest)
-				return
-			}
-			if !tkn.Valid {
-				http.Error(w, "Неавторизован", http.StatusUnauthorized)
-				return
-			}
+		if _, err := jwt.ParseWithClaims(tokenStr, claims, func(token *jwt.Token) (interface{}, error) {
+			return jwtKey, nil
+		}); err != nil {
+			http.Error(w, "Неавторизован", http.StatusUnauthorized)
+			return
 		}
 		next(w, r)
 	}
@@ -55,4 +53,32 @@ func generateToken() (string, error) {
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString(jwtKey)
+}
+
+// Обработчик для /api/signin
+func signInHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+
+	if r.Method != http.MethodPost {
+		http.Error(w, "", http.StatusMethodNotAllowed)
+		return
+	}
+	var creds struct {
+		Password string `json:"password"`
+	}
+	err := json.NewDecoder(r.Body).Decode(&creds)
+	if err != nil {
+		http.Error(w, `{"error":"Ошибка декодирования JSON"}`, http.StatusBadRequest)
+		return
+	}
+	if appPassword == "" || creds.Password != appPassword {
+		http.Error(w, `{"error":"Неверный пароль"}`, http.StatusUnauthorized)
+		return
+	}
+	tokenString, err := generateToken()
+	if err != nil {
+		http.Error(w, `{"error":"Ошибка генерации токена"}`, http.StatusInternalServerError)
+		return
+	}
+	json.NewEncoder(w).Encode(map[string]string{"token": tokenString})
 }

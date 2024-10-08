@@ -5,7 +5,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"path/filepath"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -15,15 +14,11 @@ func main() {
 	if port == "" {
 		port = "7540"
 	}
-	dbPath := getDbPath()
-	db, err := sql.Open("sqlite3", dbPath)
+	db, err := setupDB()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Ошибка настройки БД: %v", err)
 	}
 	defer db.Close()
-	if err := initDb(db); err != nil {
-		log.Fatalf("Ошибка инициализации БД: %v", err)
-	}
 
 	webDir := "./web"
 	fileServer := http.FileServer(http.Dir(webDir))
@@ -31,9 +26,9 @@ func main() {
 
 	// API рабы с аутентификацией
 	http.HandleFunc("/api/nextdate", nextDateHandler)
-	http.HandleFunc("/api/task", authMiddleware(makeHandler(taskHandler, db)))
-	http.HandleFunc("/api/tasks", authMiddleware(makeHandler(tasksHandler, db)))
-	http.HandleFunc("/api/task/done", authMiddleware(makeHandler(taskDoneHandler, db)))
+	http.HandleFunc("/api/task", authMidW(makeHandler(taskHandler, db)))
+	http.HandleFunc("/api/tasks", authMidW(makeHandler(tasksHandler, db)))
+	http.HandleFunc("/api/task/done", authMidW(makeHandler(taskDoneHandler, db)))
 	http.HandleFunc("/api/signin", makeHandler(signInHandler, db))
 
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
@@ -47,48 +42,12 @@ func taskHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	case http.MethodPost:
 		addTaskHandler(w, r, db)
 	case http.MethodGet:
-		getTaskHandler(w, r, db)
+		tasksHandler(w, r, db)
 	case http.MethodPut:
 		editTaskHandler(w, r, db)
 	case http.MethodDelete:
 		deleteTaskHandler(w, r, db)
 	default:
-		http.Error(w, "", http.StatusMethodNotAllowed)
+		http.Error(w, "Метод не поддерживается", http.StatusMethodNotAllowed)
 	}
-}
-
-func getDbPath() string {
-	dbPath := os.Getenv("TODO_DBFILE")
-	if dbPath == "" {
-		cwd, err := os.Getwd()
-		if err != nil {
-			log.Fatal(err)
-		}
-		dbPath = filepath.Join(cwd, "scheduler.db")
-	}
-	return dbPath
-}
-func initDb(db *sql.DB) error {
-	_, err := os.Stat(getDbPath())
-	install := false
-	if os.IsNotExist(err) {
-		install = true
-	}
-	if install {
-		createTableQuery := `
-		CREATE TABLE scheduler (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			date TEXT NOT NULL,
-			title TEXT NOT NULL,
-			comment TEXT,
-			repeat TEXT(128)
-		);
-		CREATE INDEX idx_date ON scheduler(date);
-		`
-		_, err := db.Exec(createTableQuery)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
 }
