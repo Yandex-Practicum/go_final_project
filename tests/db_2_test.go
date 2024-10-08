@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/jmoiron/sqlx"
-	_ "github.com/mattn/go-sqlite3"
 	"github.com/stretchr/testify/assert"
+	_ "modernc.org/sqlite"
 )
 
 type Task struct {
@@ -29,7 +29,7 @@ func openDB(t *testing.T) *sqlx.DB {
 	if len(envFile) > 0 {
 		dbfile = envFile
 	}
-	db, err := sqlx.Connect("sqlite3", dbfile)
+	db, err := sqlx.Connect("sqlite", dbfile)
 	assert.NoError(t, err)
 	return db
 }
