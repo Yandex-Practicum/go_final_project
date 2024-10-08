@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-// DateFormat — это постоянный формат для дат, используемый в приложении
+// DateFormat — это постоянный формат для дат
 const DateFormat = "20060102"
 
 // NextDate вычисляет следующую дату для задачи на основе правила повторения
@@ -18,156 +18,136 @@ func NextDate(now time.Time, date string, repeat string) (string, error) {
 		return "", errors.New("поле пустое")
 	}
 
-	// Разбираем начальную дату задачи с использованием постоянного формата DateFormat
 	taskDate, err := time.Parse(DateFormat, date)
 	if err != nil {
 		return "", fmt.Errorf("неверный формат: %v", err)
 	}
 
-	// Начинаем расчет с taskDate или now, в зависимости от того, что больше
-	startDate := now
-	if taskDate.After(now) {
-		startDate = taskDate
-	}
+	startDate := maxTime(now, taskDate)
 
 	switch {
-	case strings.HasPrefix(repeat, "d "): // Обрабатываем правило ежедневного повторения "d <число>"
-
-		daysStr := strings.TrimSpace(repeat[2:])
-		days, err := strconv.Atoi(daysStr)
+	case strings.HasPrefix(repeat, "d "): // Ежедневное повторение
+		days, err := strconv.Atoi(strings.TrimSpace(repeat[2:]))
 		if err != nil || days <= 0 || days > 400 {
 			return "", fmt.Errorf("неверный формат 'd': %v", err)
 		}
+		return findNextDailyDate(taskDate, now, days), nil
 
-		taskDate = taskDate.AddDate(0, 0, days)
+	case repeat == "y": // Ежегодное повторение
+		return findNextYearlyDate(taskDate, startDate), nil
 
-		for taskDate.Before(now) {
-			taskDate = taskDate.AddDate(0, 0, days)
-		}
+	case strings.HasPrefix(repeat, "w "): // Еженедельное повторение
+		daysOfWeek := parseDays(strings.TrimSpace(repeat[2:]), 1, 7)
+		return findNextValidDay(taskDate, now, daysOfWeek, 7), nil
 
-		return taskDate.Format(DateFormat), nil
-
-		case repeat == "y": // Ежегодное повторение
-		for !taskDate.After(startDate) {
-			year := taskDate.Year() + 1
-			month := taskDate.Month()
-			day := taskDate.Day()
-			newDate := time.Date(year, month, day, 0, 0, 0, 0, taskDate.Location())
-			if newDate.Month() != month || newDate.Day() != day {
-				newDate = time.Date(year, time.March, 1, 0, 0, 0, 0, taskDate.Location())
-			}
-			taskDate = newDate
-		}
-		return taskDate.Format(DateFormat), nil
-
-	case strings.HasPrefix(repeat, "w "): // Обрабатываем правило еженедельного повторения "w <дни>"
-		daysStr := strings.TrimSpace(repeat[2:])
-		days := strings.Split(daysStr, ",")
-		if len(days) == 0 {
-			return "", fmt.Errorf("неверный формат")
-		}
-
-		var daysOfWeek []int
-		for _, dayStr := range days {
-			day, err := strconv.Atoi(dayStr)
-			if err != nil || day < 1 || day > 7 {
-				return "", fmt.Errorf("неверный день '%s'", dayStr)
-			}
-			if day == 7 {
-				day = 0
-			}
-			daysOfWeek = append(daysOfWeek, day)
-		}
-		sort.Ints(daysOfWeek)
-
-		startDate = taskDate
-		if now.After(taskDate) {
-			startDate = now
-		}
-
-		initialDate := taskDate
-
-		// Выполняем цикл, пока день недели не совпадет с одним из daysOfWeek
-		for !containsInt(daysOfWeek, int(startDate.Weekday())) || !(startDate.YearDay() > initialDate.YearDay()) {
-			startDate = startDate.AddDate(0, 0, 1)
-		}
-		return startDate.Format(DateFormat), nil
-
-	case strings.HasPrefix(repeat, "m "): // Обрабатываем месячные
+	case strings.HasPrefix(repeat, "m "): // Ежемесячное повторение
 		parts := strings.Split(strings.TrimSpace(repeat[2:]), " ")
-
-		if len(parts) == 0 {
-			return "", fmt.Errorf("не указаны дни")
-		}
-
-		dayParts := strings.Split(parts[0], ",")
-		var daysOfMonth []int
-		for _, dayStr := range dayParts {
-			day, err := strconv.Atoi(dayStr)
-			if err != nil || day == 0 || day < -2 || day > 31 {
-				return "", fmt.Errorf("неверный день")
-			}
-			daysOfMonth = append(daysOfMonth, day)
-		}
-
+		daysOfMonth := parseDays(parts[0], -2, 31)
 		var months []int
 		if len(parts) > 1 {
-			monthParts := strings.Split(parts[1], ",")
-			for _, monthStr := range monthParts {
-				month, err := strconv.Atoi(monthStr)
-				if err != nil || month < 1 || month > 12 {
-					return "", fmt.Errorf("Неверный месяц '%s'", monthStr)
-				}
-				months = append(months, month)
-			}
+			months = parseDays(parts[1], 1, 12)
+		}
+		return findNextValidMonth(taskDate, now, daysOfMonth, months)
+
+	default:
+		return "", fmt.Errorf("Неверный формат")
+	}
+}
+
+func maxTime(t1, t2 time.Time) time.Time {
+	if t1.After(t2) {
+		return t1
+	}
+	return t2
+}
+
+func findNextDailyDate(taskDate, now time.Time, days int) string {
+	for taskDate.Before(now) {
+		taskDate = taskDate.AddDate(0, 0, days)
+	}
+	return taskDate.Format(DateFormat)
+}
+
+func findNextYearlyDate(taskDate, startDate time.Time) string {
+	for !taskDate.After(startDate) {
+		taskDate = adjustYearlyDate(taskDate)
+	}
+	return taskDate.Format(DateFormat)
+}
+
+func adjustYearlyDate(taskDate time.Time) time.Time {
+	year, month, day := taskDate.Date()
+	newDate := time.Date(year+1, month, day, 0, 0, 0, 0, taskDate.Location())
+	if newDate.Month() != month || newDate.Day() != day {
+		newDate = time.Date(year+1, time.March, 1, 0, 0, 0, 0, taskDate.Location())
+	}
+	return newDate
+}
+
+func parseDays(dayStr string, min, max int) []int {
+	parts := strings.Split(dayStr, ",")
+	var days []int
+	for _, part := range parts {
+		day, err := strconv.Atoi(part)
+		if err == nil && day >= min && day <= max {
+			days = append(days, day)
+		}
+	}
+	sort.Ints(days)
+	return days
+}
+
+func findNextValidDay(taskDate, now time.Time, validDays []int, dayInterval int) string {
+	startDate := maxTime(now, taskDate)
+	for !containsInt(validDays, int(startDate.Weekday())) {
+		startDate = startDate.AddDate(0, 0, 1)
+	}
+	return startDate.Format(DateFormat)
+}
+
+func findNextValidMonth(taskDate, now time.Time, daysOfMonth, months []int) (string, error) {
+	for {
+		currentYear, currentMonth := taskDate.Year(), taskDate.Month()
+
+		if len(months) > 0 && !containsInt(months, int(currentMonth)) {
+			nextMonth := findNextMonth(int(currentMonth), months)
+			taskDate = adjustMonth(taskDate, currentYear, nextMonth)
+			continue
 		}
 
-		sort.Ints(daysOfMonth)
-		sort.Ints(months)
+		nextValidDate := findNextValidDayInMonth(taskDate, daysOfMonth, currentYear, currentMonth)
+		if nextValidDate.After(now) {
+			return nextValidDate.Format(DateFormat), nil
+		}
 
-		for {
-			currentYear, currentMonth := taskDate.Year(), taskDate.Month()
+		taskDate = taskDate.AddDate(0, 1, 0)
+	}
+}
 
-			if len(months) > 0 && !containsInt(months, int(currentMonth)) {
-				nextMonth := findNextMonth(int(currentMonth), months)
-				if nextMonth <= int(currentMonth) {
-					taskDate = time.Date(currentYear+1, time.Month(nextMonth), 1, 0, 0, 0, 0, taskDate.Location())
-				} else {
-					taskDate = time.Date(currentYear, time.Month(nextMonth), 1, 0, 0, 0, 0, taskDate.Location())
-				}
-				continue
+func findNextValidDayInMonth(taskDate time.Time, daysOfMonth []int, year int, month time.Month) time.Time {
+	lastDay := lastDayOfMonth(year, month)
+	for _, day := range daysOfMonth {
+		if day > 0 && day <= lastDay || day < 0 && -day <= lastDay {
+			nextDay := taskDate.AddDate(0, 0, day)
+			if nextDay.After(taskDate) {
+				return nextDay
 			}
-
-			// Находим ближайшую допустимую дату в текущем месяце
-var nextValidDate time.Time
-lastDay := lastDayOfMonth(currentYear, currentMonth)
-
-for _, day := range daysOfMonth {
-    var closestD time.Time
-
-    if day > 0 && day <= lastDay {
-        closestD = time.Date(currentYear, currentMonth, day, 0, 0, 0, 0, taskDate.Location())
-    } else if day < 0 && -day <= lastDay {
-        closestD = time.Date(currentYear, currentMonth, lastDay+day+1, 0, 0, 0, 0, taskDate.Location())
-    }
-
-    if !closestD.IsZero() && closestD.After(startDate) && (nextValidDate.IsZero() || closestD.Before(nextValidDate)) {
-        nextValidDate = closestD
-    }
+		}
+	}
+	return time.Time{}
 }
 
-if !nextValidDate.IsZero() {
-    return nextValidDate.Format(DateFormat), nil
+func adjustMonth(taskDate time.Time, year, month int) time.Time {
+	if month < int(taskDate.Month()) {
+		return time.Date(year+1, time.Month(month), 1, 0, 0, 0, 0, taskDate.Location())
+	}
+	return time.Date(year, time.Month(month), 1, 0, 0, 0, 0, taskDate.Location())
 }
 
-// Если не найдено допустимой даты в текущем месяце, переходим к следующему месяцу
-taskDate = taskDate.AddDate(0, 1, 0)
-taskDate = time.Date(taskDate.Year(), taskDate.Month(), 1, 0, 0, 0, 0, taskDate.Location())
+func lastDayOfMonth(year int, month time.Month) int {
+	return time.Date(year, month+1, 0, 0, 0, 0, 0, time.UTC).Day()
+}
 
-
-
-
-// containsInt проверяет, содержит ли срез определённое целое число
 func containsInt(slice []int, value int) bool {
 	for _, v := range slice {
 		if v == value {
@@ -177,4 +157,11 @@ func containsInt(slice []int, value int) bool {
 	return false
 }
 
-
+func findNextMonth(currentMonth int, months []int) int {
+	for _, month := range months {
+		if month >= currentMonth {
+			return month
+		}
+	}
+	return months[0]
+}

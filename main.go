@@ -30,7 +30,7 @@ func main() {
 	defer db.Close()
 
 	// Инициализируем базу данных
-	if err := initializeDatabase(db); err != nil {
+	if err := initDatabase(db); err != nil {
 		log.Fatalf("Ошибка при инициализации базы данных: %v", err)
 	}
 
@@ -49,28 +49,27 @@ func main() {
 	http.HandleFunc("/api/signin", makeHandler(signInHandler, db))
 
 	// Запуск сервера на указанном порту
-	log.Printf("Запуск сервера на порту %s...\n", port)
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
 		log.Fatal(err)
 	}
 }
 
 // getDatabasePath возвращает путь к файлу базы данных
+// getDatabasePath возвращает путь к файлу базы данных
 func getDatabasePath() string {
 	dbPath := os.Getenv("TODO_DBFILE")
 	if dbPath == "" {
-		appPath, err := os.Executable()
+		cwd, err := os.Getwd() // Получаем текущую рабочую директорию
 		if err != nil {
 			log.Fatal(err)
 		}
-		dbPath = filepath.Join(filepath.Dir(appPath), "scheduler.db")
+		dbPath = filepath.Join(cwd, "scheduler.db") // Создаем путь в рабочей директории
 	}
-	log.Println("Путь к базе данных:", dbPath)
 	return dbPath
 }
 
 // initializeDatabase инициализирует базу данных и создает таблицы, если необходимо
-func initializeDatabase(db *sql.DB) error {
+func initDatabase(db *sql.DB) error {
 	// Проверяем существование файла базы данных
 	_, err := os.Stat(getDatabasePath())
 	install := false
@@ -94,7 +93,6 @@ func initializeDatabase(db *sql.DB) error {
 		if err != nil {
 			return err
 		}
-		log.Println("База данных и таблица созданы.")
 	}
 
 	return nil
