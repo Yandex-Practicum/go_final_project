@@ -8,19 +8,12 @@ import (
 	"github.com/dgrijalva/jwt-go"
 )
 
-// Claims структура для JWT
 type Claims struct {
 	Username string `json:"username"`
 	jwt.StandardClaims
 }
 
-var appPassword string // Глобальная переменная для хранения пароля
-
-// init инициализирует глобальные переменные
-func init() {
-	// Получаем значение пароля из переменной окружения один раз при старте приложения
-	appPassword = os.Getenv("TODO_PASSWORD")
-}
+var appPassword = os.Getenv("TODO_PASSWORD")
 
 // authMiddleware — middleware для проверки JWT токена
 func authMiddleware(next http.HandlerFunc) http.HandlerFunc {
@@ -29,10 +22,10 @@ func authMiddleware(next http.HandlerFunc) http.HandlerFunc {
 			cookie, err := r.Cookie("token")
 			if err != nil {
 				if err == http.ErrNoCookie {
-					http.Error(w, "Authentication required", http.StatusUnauthorized)
+					http.Error(w, "Неавторизован", http.StatusUnauthorized)
 					return
 				}
-				http.Error(w, "Bad request", http.StatusBadRequest)
+				http.Error(w, "Bad req", http.StatusBadRequest)
 				return
 			}
 
@@ -46,25 +39,22 @@ func authMiddleware(next http.HandlerFunc) http.HandlerFunc {
 
 			if err != nil {
 				if err == jwt.ErrSignatureInvalid {
-					http.Error(w, "Unauthorized", http.StatusUnauthorized)
+					http.Error(w, "Неавторизован", http.StatusUnauthorized)
 					return
 				}
-				http.Error(w, "Bad request", http.StatusBadRequest)
+				http.Error(w, "Bad req", http.StatusBadRequest)
 				return
 			}
-
 			if !tkn.Valid {
-				http.Error(w, "Unauthorized", http.StatusUnauthorized)
+				http.Error(w, "Неавторизован", http.StatusUnauthorized)
 				return
 			}
 		}
-
-		// Если пароль не установлен, продолжаем без проверки
 		next(w, r)
 	}
 }
 
-// generateToken создает новый JWT токен
+// создаем новый токен
 func generateToken() (string, error) {
 	expirationTime := time.Now().Add(8 * time.Hour)
 	claims := &Claims{
@@ -73,8 +63,6 @@ func generateToken() (string, error) {
 			ExpiresAt: expirationTime.Unix(),
 		},
 	}
-
-	// Здесь предполагается, что jwtKey уже определён где-то в другом месте кода
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString(jwtKey)
 }

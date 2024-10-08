@@ -10,7 +10,6 @@ import (
 	"time"
 )
 
-// Структура задачи для обработки JSON-запросов
 type Task struct {
 	ID      string `json:"id"`
 	Date    string `json:"date"`
@@ -19,14 +18,9 @@ type Task struct {
 	Repeat  string `json:"repeat"`
 }
 
-// Определяем глобальную константу для формата даты
 const dateFormat = "20060102"
 
-// init инициализирует глобальные переменные
-func init() {
-	// Получаем значение пароля из переменной окружения один раз при старте приложения
-	appPassword = os.Getenv("TODO_PASSWORD")
-}
+var appPassword = os.Getenv("TODO_PASSWORD")
 
 func compareDates(t1, t2 time.Time) (time.Time, time.Time) {
 	// Обнуляем время, оставляем только дату
@@ -126,9 +120,9 @@ func addTaskHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	}
 
 	now := time.Now()
-	taskDate, _ := time.Parse(dateFormat, task.Date)
-	taskDate_fix, now_fix := compareDates(taskDate, now)
-	if taskDate_fix.Before(now_fix) {
+	tDate, _ := time.Parse(dateFormat, task.Date)
+	tDate, now_fix := compareDates(tDate, now)
+	if tDate.Before(now_fix) {
 		if task.Repeat == "" {
 			task.Date = now.Format(dateFormat)
 		} else {
@@ -220,8 +214,8 @@ func editTaskHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	}
 
 	now := time.Now()
-	taskDate, _ := time.Parse(dateFormat, task.Date)
-	if taskDate.Before(now) {
+	tDate, _ := time.Parse(dateFormat, task.Date)
+	if tDate.Before(now) {
 		if task.Repeat == "" {
 			task.Date = now.Format(dateFormat)
 		} else {
@@ -389,7 +383,7 @@ func taskDoneHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	query = `UPDATE scheduler SET date = ? WHERE id = ?`
 	_, err = db.Exec(query, nextDate, id)
 	if err != nil {
-		http.Error(w, fmt.Sprintf(`{"error":"Ошибка обновления даты задачи в БД: %s"}`, err.Error()), http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf(`{"error":"Ошибка обновления даты: %s"}`, err.Error()), http.StatusInternalServerError)
 		return
 	}
 	w.WriteHeader(http.StatusOK)

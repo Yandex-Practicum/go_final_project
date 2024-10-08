@@ -13,71 +13,52 @@ import (
 var jwtKey = []byte("my_secret_key")
 
 func main() {
-	// Получаем порт из переменной окружения TODO_PORT
 	port := os.Getenv("TODO_PORT")
 	if port == "" {
-		port = "7540" // Устанавливаем порт по умолчанию, если переменная не задана
+		port = "7540"
 	}
-
-	// Определяем путь к базе данных
-	dbPath := getDatabasePath()
-
-	// Подключаемся к базе данных
+	dbPath := getDbPath()
 	db, err := sql.Open("sqlite3", dbPath)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer db.Close()
-
-	// Инициализируем базу данных
-	if err := initDatabase(db); err != nil {
+	if err := initDb(db); err != nil {
 		log.Fatalf("Ошибка при инициализации базы данных: %v", err)
 	}
 
-	// Директория с файлами фронтенда
 	webDir := "./web"
-
-	// Настраиваем файловый сервер для обслуживания статических файлов
 	fileServer := http.FileServer(http.Dir(webDir))
 	http.Handle("/", fileServer)
 
-	// Настраиваем API-обработчики с аутентификацией
+	// API рабы с аутентификацией
 	http.HandleFunc("/api/nextdate", nextDateHandler)
 	http.HandleFunc("/api/task", authMiddleware(makeHandler(taskHandler, db)))
 	http.HandleFunc("/api/tasks", authMiddleware(makeHandler(tasksHandler, db)))
 	http.HandleFunc("/api/task/done", authMiddleware(makeHandler(taskDoneHandler, db)))
 	http.HandleFunc("/api/signin", makeHandler(signInHandler, db))
 
-	// Запуск сервера на указанном порту
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
 		log.Fatal(err)
 	}
 }
-
-// getDatabasePath возвращает путь к файлу базы данных
-// getDatabasePath возвращает путь к файлу базы данных
-func getDatabasePath() string {
+func getDbPath() string {
 	dbPath := os.Getenv("TODO_DBFILE")
 	if dbPath == "" {
-		cwd, err := os.Getwd() // Получаем текущую рабочую директорию
+		cwd, err := os.Getwd()
 		if err != nil {
 			log.Fatal(err)
 		}
-		dbPath = filepath.Join(cwd, "scheduler.db") // Создаем путь в рабочей директории
+		dbPath = filepath.Join(cwd, "scheduler.db")
 	}
 	return dbPath
 }
-
-// initializeDatabase инициализирует базу данных и создает таблицы, если необходимо
-func initDatabase(db *sql.DB) error {
-	// Проверяем существование файла базы данных
-	_, err := os.Stat(getDatabasePath())
+func initDb(db *sql.DB) error {
+	_, err := os.Stat(getDbPath())
 	install := false
 	if os.IsNotExist(err) {
 		install = true
 	}
-
-	// Если базы данных нет, создаем таблицу scheduler
 	if install {
 		createTableQuery := `
 		CREATE TABLE scheduler (
@@ -94,11 +75,8 @@ func initDatabase(db *sql.DB) error {
 			return err
 		}
 	}
-
 	return nil
 }
-
-// makeHandler оборачивает обработчик и передает ему базу данных
 func makeHandler(fn func(http.ResponseWriter, *http.Request, *sql.DB), db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		fn(w, r, db)
