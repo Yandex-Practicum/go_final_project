@@ -2,23 +2,15 @@ package main
 
 import (
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
 )
 
-type Claims struct {
-	Username string `json:"username"`
-	jwt.StandardClaims
-}
-
-var appPassword = os.Getenv("TODO_PASSWORD")
-
-// authMiddleware — middleware для проверки JWT токена
+// middleware
 func authMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if appPassword != "" { // Если пароль установлен, проверяем аутентификацию
+		if appPassword != "" {
 			cookie, err := r.Cookie("token")
 			if err != nil {
 				if err == http.ErrNoCookie {
@@ -32,7 +24,6 @@ func authMiddleware(next http.HandlerFunc) http.HandlerFunc {
 			tokenStr := cookie.Value
 			claims := &Claims{}
 
-			// Здесь предполагается, что jwtKey уже определён где-то в другом месте кода
 			tkn, err := jwt.ParseWithClaims(tokenStr, claims, func(token *jwt.Token) (interface{}, error) {
 				return jwtKey, nil
 			})
@@ -54,7 +45,6 @@ func authMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-// создаем новый токен
 func generateToken() (string, error) {
 	expirationTime := time.Now().Add(8 * time.Hour)
 	claims := &Claims{

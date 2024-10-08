@@ -10,8 +10,6 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-var jwtKey = []byte("my_secret_key")
-
 func main() {
 	port := os.Getenv("TODO_PORT")
 	if port == "" {
@@ -24,7 +22,7 @@ func main() {
 	}
 	defer db.Close()
 	if err := initDb(db); err != nil {
-		log.Fatalf("Ошибка при инициализации базы данных: %v", err)
+		log.Fatalf("Ошибка инициализации БД: %v", err)
 	}
 
 	webDir := "./web"
@@ -42,6 +40,23 @@ func main() {
 		log.Fatal(err)
 	}
 }
+
+// Обработчик для /api/task
+func taskHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
+	switch r.Method {
+	case http.MethodPost:
+		addTaskHandler(w, r, db)
+	case http.MethodGet:
+		getTaskHandler(w, r, db)
+	case http.MethodPut:
+		editTaskHandler(w, r, db)
+	case http.MethodDelete:
+		deleteTaskHandler(w, r, db)
+	default:
+		http.Error(w, "", http.StatusMethodNotAllowed)
+	}
+}
+
 func getDbPath() string {
 	dbPath := os.Getenv("TODO_DBFILE")
 	if dbPath == "" {
@@ -76,9 +91,4 @@ func initDb(db *sql.DB) error {
 		}
 	}
 	return nil
-}
-func makeHandler(fn func(http.ResponseWriter, *http.Request, *sql.DB), db *sql.DB) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		fn(w, r, db)
-	}
 }
