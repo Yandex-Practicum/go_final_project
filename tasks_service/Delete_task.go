@@ -1,4 +1,4 @@
-package tasks
+package tasks_service
 
 import (
 	"database/sql"
