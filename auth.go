@@ -7,15 +7,15 @@ import (
 	"os"
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
+	"github.com/golang-jwt/jwt/v5"
 )
 
-var jwtKey = []byte("my_secret_key")
+var jwtKey = []byte("password")
 var appPassword = os.Getenv("TODO_PASSWORD")
 
 type Claims struct {
 	Username string `json:"username"`
-	jwt.StandardClaims
+	jwt.RegisteredClaims
 }
 
 // middleware
@@ -47,8 +47,8 @@ func generateToken() (string, error) {
 	expirationTime := time.Now().Add(8 * time.Hour)
 	claims := &Claims{
 		Username: "user",
-		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: expirationTime.Unix(),
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(expirationTime),
 		},
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -75,6 +75,7 @@ func signInHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		http.Error(w, `{"error":"Неверный пароль"}`, http.StatusUnauthorized)
 		return
 	}
+
 	tokenString, err := generateToken()
 	if err != nil {
 		http.Error(w, `{"error":"Ошибка генерации токена"}`, http.StatusInternalServerError)

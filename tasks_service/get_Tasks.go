@@ -10,7 +10,7 @@ import (
 )
 
 // ПОЛУЧЕНИЕ всех ЗАДАЧ
-func tasksHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
+func TasksHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 
 	id := r.URL.Query().Get("id")

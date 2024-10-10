@@ -1,9 +1,9 @@
-module go.mod
+module github.com/LTVgreater5CPi/go_final_project
 
 go 1.22.5
 
 require (
-	github.com/dgrijalva/jwt-go v3.2.0+incompatible
+	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/mattn/go-sqlite3 v1.14.24
 	github.com/stretchr/testify v1.9.0

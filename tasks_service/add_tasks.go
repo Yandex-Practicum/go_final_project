@@ -10,7 +10,7 @@ import (
 )
 
 // Обработчик добавления задачи
-func addTaskHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
+func AddTaskHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 
 	var task Task

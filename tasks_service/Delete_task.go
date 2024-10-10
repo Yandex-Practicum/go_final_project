@@ -7,7 +7,7 @@ import (
 )
 
 // УДАЛЕНИЕ ЗАДАЧ
-func deleteTaskHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
+func DeleteTaskHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 
 	id := r.URL.Query().Get("id")
