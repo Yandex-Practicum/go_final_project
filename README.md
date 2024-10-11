@@ -44,19 +44,17 @@ m 1,15,25 — задача назначается на 1-е, 15-е и 25-е чи
 m -1 — задача назначается на последний день месяца;
 
 6) updete_task.go - Отчечает за обновление данных существующей задачи
-go test -run ^TestDB$ ./tests
-go test -run ^TestNextDate$ ./tests
-go test -run ^TestAddTask$ ./tests
-go test -run ^TestTasks$ ./tests
-go test -run ^TestEditTask$ ./tests
-go test -run ^TestDone$ ./tests
-go test -run ^TestDelTask$ ./tests
-go test ./tests
 
 
+Пример проверки работы авторизации: 
 $ export TODO_PASSWORD="123"
 $ go run .
 $ curl -X POST http://localhost:7540/api/signin \
      -H "Content-Type: application/json" \
-ype: application/json"      -d '{"password":"123"}'
+ype: application/json"      -d '{"password":"1234"}'
 {"token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InVzZXIiLCJleHAiOjE3Mjg2MTc0MTd9.ZkCib0eTSAxkX80CuL28eAsHmAwRZ4b3bSDkYdVwZn4"}
+
+Сборка и запуск докера:
+1)docker build --tag my_app:v1 . 
+2)docker run -d -p 7540:7540 my_app:v1
+3)Пароль для фронта - 1234 (Выбран как эталон кибербезопасности)

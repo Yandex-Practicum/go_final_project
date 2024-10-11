@@ -1,18 +1,24 @@
 FROM golang:1.22 AS builder
+
 WORKDIR /app
-COPY . .
+
+COPY go.mod go.sum ./
 RUN go mod download
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /my_app
+
+COPY . .
+
+RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -o ./my_app 
 
 FROM ubuntu:latest
 
-ENV TODO_PORT=7540
-ENV TODO_DBFILE=/app/scheduler.db
-ENV TODO_PASSWORD=123
-
 WORKDIR /app
-COPY --from=builder /my_app /app/my_app
+
+COPY --from=builder /app/my_app /app/my_app
+COPY . .
+
+ENV TODO_PORT=7540
+ENV TODO_DBFILE=scheduler.db
+ENV TODO_PASSWORD=1234
 
 EXPOSE ${TODO_PORT}
-
 CMD ["/app/my_app"]
