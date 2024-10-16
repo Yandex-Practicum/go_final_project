@@ -2,12 +2,16 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
-	"github.com/jmoiron/sqlx"
-	"go_final_project-main/internal/model"
 	"net/http"
 	"time"
+
+	"go_final_project-main/internal/model"
+	"go_final_project-main/internal/nextdate"
+
+	"github.com/jmoiron/sqlx"
 )
+
+const orderByLimit = `50`
 
 func GetTasksHandler(db *sqlx.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -16,15 +20,16 @@ func GetTasksHandler(db *sqlx.DB) http.HandlerFunc {
 		var err error
 
 		// Начинаем формировать SQL-запрос
-		query := `SELECT * FROM scheduler`
+		query := `SELECT id, date, title, comment, repeat FROM scheduler`
 		var args []interface{}
 
+		const SearchDateFormat = "02.01.2006"
 		// Проверка наличия параметра поиска
 		if search != "" {
-			if _, err := time.Parse("02.01.2006", search); err == nil {
+			if _, err := time.Parse(SearchDateFormat, search); err == nil {
 				// Форматируем дату для SQL
-				parsedDate, _ := time.Parse("02.01.2006", search)
-				date := parsedDate.Format("20060102")
+				parsedDate, _ := time.Parse(SearchDateFormat, search)
+				date := parsedDate.Format(nextdate.DateFormat)
 
 				// Запрос для выборки по дате
 				query += ` WHERE date = ?`
@@ -36,7 +41,7 @@ func GetTasksHandler(db *sqlx.DB) http.HandlerFunc {
 			}
 		}
 
-		query += ` ORDER BY date LIMIT 50`
+		query += ` ORDER BY date LIMIT ` + orderByLimit
 
 		// Выполняем запрос
 		err = db.Select(&tasks, query, args...)
@@ -52,12 +57,12 @@ func GetTasksHandler(db *sqlx.DB) http.HandlerFunc {
 
 		// Формируем ответ
 		response := model.TasksResponse{
-			Tasks: make([]model.TaskResponse, len(tasks)),
+			Tasks: make([]model.Task, len(tasks)),
 		}
 
 		for i, task := range tasks {
-			response.Tasks[i] = model.TaskResponse{
-				ID:      fmt.Sprint(task.ID), // Преобразуем ID в строку
+			response.Tasks[i] = model.Task{
+				ID:      task.ID,
 				Date:    task.Date,
 				Title:   task.Title,
 				Comment: task.Comment,

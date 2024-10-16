@@ -1,10 +1,10 @@
 package handlers
 
 import (
-	"fmt"
-	"go_final_project-main/internal/utils"
 	"net/http"
 	"time"
+
+	"go_final_project-main/internal/nextdate"
 )
 
 func NextDateHandler(w http.ResponseWriter, r *http.Request) {
@@ -12,17 +12,17 @@ func NextDateHandler(w http.ResponseWriter, r *http.Request) {
 	dateStr := r.FormValue("date")
 	repeat := r.FormValue("repeat")
 
-	now, err := time.Parse("20060102", nowStr)
+	now, err := time.Parse(nextdate.DateFormat, nowStr)
 	if err != nil {
 		http.Error(w, "некорректная дата 'now'", http.StatusBadRequest)
 		return
 	}
 
-	nextDate, err := utils.NextDate(now, dateStr, repeat)
+	nextDate, err := nextdate.NextDate(now, dateStr, repeat)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	fmt.Fprintln(w, nextDate)
+	w.Write([]byte(nextDate))
 }

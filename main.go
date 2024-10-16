@@ -1,14 +1,13 @@
 package main
 
 import (
+	"github.com/jmoiron/sqlx"
+	_ "github.com/mattn/go-sqlite3"
 	"go_final_project-main/internal/config"
 	"go_final_project-main/internal/database"
 	"go_final_project-main/internal/handlers"
 	"log"
 	"net/http"
-
-	"github.com/jmoiron/sqlx"
-	_ "github.com/mattn/go-sqlite3"
 )
 
 func main() {

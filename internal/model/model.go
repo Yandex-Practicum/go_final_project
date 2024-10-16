@@ -1,29 +1,29 @@
 package model
 
+import (
+	"encoding/json"
+	"strconv"
+)
+
+type Int64String int64
+
+// Метод для получения значения в формате int64
+func (i *Int64String) Int64() int64 {
+	return int64(*i)
+}
+
+func (i Int64String) MarshalJSON() ([]byte, error) {
+	return json.Marshal(strconv.FormatInt(int64(i), 10))
+}
+
 type Task struct {
-	ID      int64  `db:"id"`
-	Date    string `db:"date"`
-	Title   string `db:"title"`
-	Comment string `db:"comment"`
-	Repeat  string `db:"repeat"`
-}
-
-type AddTaskRequest struct {
-	ID      string `json:"id"`
-	Date    string `json:"date"`
-	Title   string `json:"title"`
-	Comment string `json:"comment,omitempty"`
-	Repeat  string `json:"repeat,omitempty"`
-}
-
-type TaskResponse struct {
-	ID      string `json:"id"`
-	Date    string `json:"date"`
-	Title   string `json:"title"`
-	Comment string `json:"comment"`
-	Repeat  string `json:"repeat"`
+	ID      Int64String `db:"id" json:"id,omitempty"`
+	Date    string      `db:"date" json:"date"`
+	Title   string      `db:"title" json:"title"`
+	Comment string      `db:"comment" json:"comment,omitempty"`
+	Repeat  string      `db:"repeat" json:"repeat,omitempty"`
 }
 
 type TasksResponse struct {
-	Tasks []TaskResponse `json:"tasks"`
+	Tasks []Task `json:"tasks"`
 }

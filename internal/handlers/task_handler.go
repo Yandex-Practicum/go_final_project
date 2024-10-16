@@ -3,12 +3,14 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/jmoiron/sqlx"
-	"go_final_project-main/internal/model"
-	"go_final_project-main/internal/utils"
 	"net/http"
 	"strconv"
 	"time"
+
+	"go_final_project-main/internal/model"
+	"go_final_project-main/internal/nextdate"
+
+	"github.com/jmoiron/sqlx"
 )
 
 func AddTaskHandler(db *sqlx.DB) http.HandlerFunc {
@@ -18,7 +20,7 @@ func AddTaskHandler(db *sqlx.DB) http.HandlerFunc {
 			return
 		}
 
-		var req model.AddTaskRequest
+		var req model.Task
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			http.Error(w, "Ошибка десериализации JSON", http.StatusBadRequest)
 			return
@@ -32,21 +34,21 @@ func AddTaskHandler(db *sqlx.DB) http.HandlerFunc {
 
 		// Установка текущей даты, если дата не указана
 		if req.Date == "" {
-			req.Date = time.Now().Format("20060102")
+			req.Date = time.Now().Format(nextdate.DateFormat)
 		}
 
 		// Проверка формата даты
-		if _, err := time.Parse("20060102", req.Date); err != nil {
+		if _, err := time.Parse(nextdate.DateFormat, req.Date); err != nil {
 			http.Error(w, `{"error":"Некорректный формат даты"}`, http.StatusBadRequest)
 			return
 		}
 
-		now := time.Now().Format("20060102")
+		now := time.Now().Format(nextdate.DateFormat)
 		if req.Date < now {
 			if req.Repeat == "" {
 				req.Date = now
 			} else {
-				nextDate, err := utils.NextDate(time.Now(), req.Date, req.Repeat)
+				nextDate, err := nextdate.NextDate(time.Now(), req.Date, req.Repeat)
 				if err != nil {
 					http.Error(w, fmt.Sprintf(`{"error":"%s"}`, err.Error()), http.StatusBadRequest)
 					return
@@ -83,7 +85,14 @@ func EditTaskHandler(db *sqlx.DB) http.HandlerFunc {
 			return
 		}
 
-		var req model.AddTaskRequest
+		var req struct {
+			ID      string `json:"id"`
+			Date    string `json:"date"`
+			Title   string `json:"title"`
+			Comment string `json:"comment,omitempty"`
+			Repeat  string `json:"repeat,omitempty"`
+		}
+
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			http.Error(w, "Ошибка десериализации JSON", http.StatusBadRequest)
 			return
@@ -100,19 +109,18 @@ func EditTaskHandler(db *sqlx.DB) http.HandlerFunc {
 		}
 
 		// Проверка формата даты
-		if _, err := time.Parse("20060102", req.Date); err != nil {
+		if _, err := time.Parse(nextdate.DateFormat, req.Date); err != nil {
 			http.Error(w, `{"error":"Некорректный формат даты"}`, http.StatusBadRequest)
 			return
 		}
 
-		// Преобразование ID из строки в int64
+		// Проверяем, существует ли задача
 		id, err := strconv.ParseInt(req.ID, 10, 64)
 		if err != nil {
-			http.Error(w, `{"error":"Некорректный идентификатор"}`, http.StatusBadRequest)
+			http.Error(w, `{"error":"Некорректный формат id"}`, http.StatusBadRequest)
 			return
 		}
 
-		// Проверяем, существует ли задача
 		var existingTask model.Task
 		err = db.Get(&existingTask, `SELECT * FROM scheduler WHERE id = ?`, id)
 		if err != nil {
@@ -120,12 +128,12 @@ func EditTaskHandler(db *sqlx.DB) http.HandlerFunc {
 			return
 		}
 
-		now := time.Now().Format("20060102")
+		now := time.Now().Format(nextdate.DateFormat)
 		if req.Date < now {
 			if req.Repeat == "" {
 				req.Date = now
 			} else {
-				nextDate, err := utils.NextDate(time.Now(), req.Date, req.Repeat)
+				nextDate, err := nextdate.NextDate(time.Now(), req.Date, req.Repeat)
 				if err != nil {
 					http.Error(w, fmt.Sprintf(`{"error":"%s"}`, err.Error()), http.StatusBadRequest)
 					return
@@ -168,15 +176,21 @@ func GetTaskHandler(db *sqlx.DB) http.HandlerFunc {
 			return
 		}
 
+		dbReqId, err := strconv.Atoi(id)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
 		var task model.Task
-		err := db.Get(&task, `SELECT id, date, title, comment, repeat FROM scheduler WHERE id = ?`, id)
+		err = db.Get(&task, `SELECT id, date, title, comment, repeat FROM scheduler WHERE id = ?`, dbReqId)
 		if err != nil {
 			http.Error(w, `{"error": "Задача не найдена"}`, http.StatusNotFound)
 			return
 		}
 
-		response := model.TaskResponse{
-			ID:      fmt.Sprint(task.ID), // Преобразуем ID в строку
+		response := model.Task{
+			ID:      task.ID,
 			Date:    task.Date,
 			Title:   task.Title,
 			Comment: task.Comment,

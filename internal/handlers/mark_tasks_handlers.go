@@ -3,12 +3,14 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/jmoiron/sqlx"
-	"go_final_project-main/internal/model"
-	"go_final_project-main/internal/utils"
 	"net/http"
 	"strconv"
 	"time"
+
+	"go_final_project-main/internal/model"
+	"go_final_project-main/internal/nextdate"
+
+	"github.com/jmoiron/sqlx"
 )
 
 func MarkTaskDoneHandler(db *sqlx.DB) http.HandlerFunc {
@@ -54,7 +56,7 @@ func MarkTaskDoneHandler(db *sqlx.DB) http.HandlerFunc {
 		}
 
 		// Если задача периодическая, рассчитываем следующую дату
-		nextDate, err := utils.NextDate(time.Now(), task.Date, task.Repeat)
+		nextDate, err := nextdate.NextDate(time.Now(), task.Date, task.Repeat)
 		if err != nil {
 			http.Error(w, fmt.Sprintf(`{"error":"%s"}`, err.Error()), http.StatusBadRequest)
 			return

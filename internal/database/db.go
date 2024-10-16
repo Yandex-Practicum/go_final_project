@@ -2,11 +2,13 @@ package database
 
 import (
 	"fmt"
-	"github.com/jmoiron/sqlx"
-	"go_final_project-main/internal/config"
 	"log"
 	"os"
 	"path/filepath"
+
+	"go_final_project-main/internal/config"
+
+	"github.com/jmoiron/sqlx"
 )
 
 func CheckDb(db *sqlx.DB, config *config.Config) error {
