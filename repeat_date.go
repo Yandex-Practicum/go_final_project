@@ -8,7 +8,6 @@ import (
 	"time"
 )
 
-const formatDate = "20060102"
 
 func ApiNextDate(w http.ResponseWriter, r *http.Request) {
 	nowStr := r.URL.Query().Get("now")

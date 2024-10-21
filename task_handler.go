@@ -1,11 +1,10 @@
 package main
 
 import (
-	//"database/sql"
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"log"
+	//"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -13,7 +12,7 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-const dateFormat = "20060102"
+
 const limit int8 = 50
 
 type Task struct {
@@ -59,22 +58,22 @@ func AddTask(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if task.Date == "" {
-		task.Date = time.Now().Format(dateFormat)
+		task.Date = time.Now().Format(formatDate)
 	} else {
-		_, err := time.Parse(dateFormat, task.Date)
+		_, err := time.Parse(formatDate, task.Date)
 		if err != nil {
 			http.Error(w, `{"error":"Invalid date format, should be YYYYMMDD"}`, http.StatusBadRequest)
 			return
 		}
 	}
 
-	now := time.Now().Format(dateFormat)
+	now := time.Now().Format(formatDate)
 	if task.Date < now && task.Repeat == "" {
 		task.Date = now
 	}
 
 	if task.Repeat != "" {
-		parsedDate, err := time.Parse(dateFormat, task.Date)
+		parsedDate, err := time.Parse(formatDate, task.Date)
 		if err != nil {
 			http.Error(w, `{"error":"Invalid date format, should be YYYYMMDD"}`, http.StatusBadRequest)
 			return
@@ -157,7 +156,7 @@ func GetTasks(w http.ResponseWriter, r *http.Request) {
 
 		if parsedDate, err := time.Parse("02.01.2006", search); err == nil {
 			query += ` WHERE date = ?`
-			args = append(args, parsedDate.Format(dateFormat))
+			args = append(args, parsedDate.Format(formatDate))
 		} else {
 
 			query += ` WHERE title LIKE ? OR comment LIKE ?`
@@ -246,7 +245,7 @@ func EditTask(w http.ResponseWriter, r *http.Request) {
 	if task.Date == "" {
 		task.Date = trueTask.Date
 	} else {
-		_, err := time.Parse(dateFormat, task.Date)
+		_, err := time.Parse(formatDate, task.Date)
 		if err != nil {
 			http.Error(w, `{"error":"Invalid date format, should be YYYYMMDD"}`, http.StatusBadRequest)
 			return
@@ -272,7 +271,7 @@ func EditTask(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 	if _, err := w.Write([]byte(`{}`)); err != nil {
-		log.Printf("Error writing response: %v", err)
+		fmt.Printf("Error writing response: %v", err)
 	}
 }
 

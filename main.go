@@ -12,10 +12,11 @@ import (
 const webDir = "./web"
 
 var DB *sql.DB
+const formatDate = "20060102"
 
 func main() {
 
-	// DB
+
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatalf("Error loading .env file: %v", err)
@@ -38,7 +39,7 @@ func main() {
 	} else {
 		log.Println("Database already exists")
 	}
-	// server
+
 	port := os.Getenv("TODO_PORT")
 	if port == "" {
 		port = "7540"
@@ -62,15 +63,4 @@ func main() {
 
 }
 
-//Test
-/*
-	1. go test -run ^TestApp$ ./tests
-	2. go test -run ^TestDB$ ./tests
-	3. go test -run ^TestNextDate$ ./tests
-	4. go test -run ^TestAddTask$ ./tests
-	5. go test -run ^TestTasks$ ./tests
-	6. go test -run ^TestEditTask$ ./tests
-	7.1 go test -run ^TestDone$ ./tests
-	7.2 go test -run ^TestDelTask$ ./tests
-	7.3 go test ./tests
-*/
+
