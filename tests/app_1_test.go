@@ -21,7 +21,7 @@ func getURL(path string) string {
 			port = int(eport)
 		}
 	}
-	path = strings.TrimPrefix(strings.ReplaceAll(path, `\`, `/`), `../web/`)
+	path = strings.ReplaceAll(strings.TrimPrefix(path, `../web/`), `\`, `/`)
 	return fmt.Sprintf("http://localhost:%d/%s", port, path)
 }
 
@@ -31,6 +31,7 @@ func getBody(path string) ([]byte, error) {
 		return nil, err
 	}
 	defer resp.Body.Close()
+	fmt.Println(path)
 	body, err := io.ReadAll(resp.Body)
 	return body, err
 }
