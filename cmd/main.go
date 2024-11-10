@@ -8,6 +8,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"pwd/handlers"
+
 	"github.com/go-chi/chi/v5"
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -57,7 +59,7 @@ func main() {
 
 	r := chi.NewRouter()
 	r.Handle("/", http.FileServer(http.Dir(webDir)))
-
+	r.Get("/api/nextdate", handlers.NextDateHandler)
 	err = http.ListenAndServe(":7540", r)
 	if err != nil {
 		log.Fatal(err)
