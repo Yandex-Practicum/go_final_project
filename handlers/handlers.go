@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"encoding/json"
+	"fmt"
 	"net/http"
 	"pwd/services"
 	"time"
@@ -30,7 +30,5 @@ func NextDateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := map[string]string{"next_date": nextDate}
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	fmt.Fprintln(w, nextDate)
 }

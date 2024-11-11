@@ -1,45 +1,52 @@
 package services
 
 import (
+	"errors"
 	"strconv"
-	"strings"
 	"time"
 )
 
 func NextDate(now time.Time, date string, repeat string) (string, error) {
 
-	var nextDate time.Time
+	if len(date) == 0 || len(repeat) == 0 {
+		return "", errors.New("все параметры функции обязательны")
+	}
 
-	dateStr, err := time.Parse("20060102", date)
-	if err != nil || dateStr.Before(now) {
+	timeDate, err := time.Parse("20060102", date)
+	//если не удалось разобрать date
+	if err != nil {
 		return "", err
 	}
 
-	var days string
-	symbDay := strings.HasPrefix(repeat, "d ")
-	daysStr := strings.TrimPrefix(repeat, "d ")
-	daysInt, err := strconv.Atoi(daysStr)
+	var handler func()
 
-	switch {
-	case symbDay:
-		if err == nil && daysInt >= 1 && daysInt <= 400 {
-			days = strconv.Itoa(daysInt)
-			return days, nil
+	invalidRepeatErr := errors.New("не удалось разобрать repeat")
+
+	if repeat[0] == 'y' {
+		handler = func() { timeDate = timeDate.AddDate(1, 0, 0) }
+	} else if repeat[0] == 'd' {
+
+		if len(repeat) <= 2 || repeat[1] != ' ' {
+			return "", invalidRepeatErr
 		}
-		return "", err
 
-	case repeat == "y":
-		nextDate = dateStr.AddDate(1, 0, 0)
-		return nextDate.Format("20060102"), nil
+		i, err := strconv.ParseInt(repeat[2:], 10, 32)
+		if err != nil || i > 400 {
+			return "", invalidRepeatErr
+		}
+
+		handler = func() { timeDate = timeDate.AddDate(0, 0, int(i)) }
+
+	} else {
+		return "", invalidRepeatErr
 	}
 
-	nextDate = dateStr
 	for {
-		nextDate = nextDate.AddDate(0, 0, daysInt)
-		if nextDate.After(now) {
+		handler()
+		if timeDate.After(now) {
 			break
 		}
 	}
 
-	return nextDate.Format("20060102"), nil
+	return timeDate.Format("20060102"), nil
 }
