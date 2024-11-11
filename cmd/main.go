@@ -11,7 +11,7 @@ import (
 	"pwd/handlers"
 
 	"github.com/go-chi/chi/v5"
-	_ "github.com/mattn/go-sqlite3"
+	_ "modernc.org/sqlite"
 )
 
 func main() {
@@ -33,7 +33,7 @@ func main() {
 	// sql-запрос с CREATE TABLE и CREATE INDEX
 	if install {
 
-		db, err := sql.Open("sqlite3", dbFile)
+		db, err := sql.Open("sqlite", dbFile)
 		if err != nil {
 			fmt.Printf("Ошибка при попытке соединения с базой данный: %s\n", err.Error())
 			return
