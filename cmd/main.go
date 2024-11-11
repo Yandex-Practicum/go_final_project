@@ -58,9 +58,9 @@ func main() {
 	}
 
 	r := chi.NewRouter()
-	r.Handle("/", http.FileServer(http.Dir(webDir)))
+	http.Handle("/", http.FileServer(http.Dir(webDir)))
 	r.Get("/api/nextdate", handlers.NextDateHandler)
-	err = http.ListenAndServe(":7540", r)
+	err = http.ListenAndServe(":7540", nil)
 	if err != nil {
 		log.Fatal(err)
 	}
