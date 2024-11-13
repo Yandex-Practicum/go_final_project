@@ -1,4 +1,4 @@
-package services
+package nextdate
 
 import (
 	"errors"
@@ -48,5 +48,5 @@ func NextDate(now time.Time, date string, repeat string) (string, error) {
 		}
 	}
 
-	return timeDate.Format("20060102"), nil
+	return timeDate.Format("20060102"), nil  //допилить до строки
 }

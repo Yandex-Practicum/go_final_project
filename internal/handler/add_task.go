@@ -1,4 +1,4 @@
-package services
+package handler
 
 type Task struct {
 	Date    string `json:"date"`
@@ -6,3 +6,5 @@ type Task struct {
 	Comment string `json:"comment,omitempty"`
 	Repeat  string `json:"repeat,omitempty"`
 }
+
+

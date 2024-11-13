@@ -1,4 +1,4 @@
-package handlers
+package worker
 
 import (
 	"encoding/json"
@@ -7,7 +7,8 @@ import (
 	"time"
 
 	"pwd/database"
-	"pwd/services"
+	"pwd/internal/handler"
+	"pwd/internal/nextdate"
 )
 
 func NextDateHandler(w http.ResponseWriter, r *http.Request) {
@@ -27,7 +28,7 @@ func NextDateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	nextDate, err := services.NextDate(now, dateStr, repeat)
+	nextDate, err := nextdate.NextDate(now, dateStr, repeat)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -52,7 +53,7 @@ func TaskHandler(w http.ResponseWriter, r *http.Request) {
 
 // хэндлер на запрос добавления задачи
 func PostTaskHandler(w http.ResponseWriter, r *http.Request) {
-	var task services.Task // экзмпляр структуры со значениями
+	var task handler.Task // экзмпляр структуры со значениями
 
 	if err := json.NewDecoder(r.Body).Decode(&task); err != nil {
 		http.Error(w, "ошибка десериализации json", http.StatusBadRequest)
@@ -84,7 +85,7 @@ func PostTaskHandler(w http.ResponseWriter, r *http.Request) {
 			task.Date = now.Format("20060102") // Устанавливаем сегодняшнюю дату
 		} else {
 			// вычисляем следующую дату NextDate
-			nextDate, err := services.NextDate(now, task.Date, task.Repeat)
+			nextDate, err := nextdate.NextDate(now, task.Date, task.Repeat)
 			if err != nil {
 				http.Error(w, "Ошибка вычисления следующей даты", http.StatusInternalServerError)
 				return

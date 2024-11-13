@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"pwd/services"
+	"pwd/internal/handler"
 
 	_ "modernc.org/sqlite"
 )
@@ -43,6 +43,10 @@ func ConnectDb() {
 		}
 		defer DB.Close()
 
+		if err := DB.Ping(); err != nil {
+			fmt.Println(err)
+		}
+
 		createDb := `CREATE TABLE scheduler (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     date CHAR(8) NOT NULL DEFAULT "",
@@ -62,7 +66,7 @@ func ConnectDb() {
 }
 
 // добавляем задачу в базу данных
-func AddTask(task services.Task) (int64, error) {
+func AddTask(task handler.Task) (int64, error) {
 	res, err := DB.Db.Exec("INSERT INTO tasks (date, title, comment, repeat) VALUES (:date, :title, :comment, :repeat)",
 		sql.Named("date", task.Date),
 		sql.Named("title", task.Title),
