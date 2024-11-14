@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"time"
 
-	"pwd/database"
 	"pwd/internal/handler"
 	"pwd/internal/nextdate"
 )
@@ -43,9 +42,9 @@ func TaskHandler(w http.ResponseWriter, r *http.Request) {
 	case http.MethodPost:
 		PostTaskHandler(w, r)
 	case http.MethodGet:
-		GetTaskHandler(w, r)
+
 	case http.MethodDelete:
-		DeleteTaskHandler(w, r)
+
 	default:
 		http.Error(w, "Метод не разрешен", http.StatusMethodNotAllowed)
 	}
@@ -93,9 +92,13 @@ func PostTaskHandler(w http.ResponseWriter, r *http.Request) {
 			task.Date = nextDate
 		}
 	}
+}
 
-	// добавляем задачу в базу данных
-	id, err := database.AddTask(task)
+// добавляем задачу в базу данных
+/*var dbElement sql.DB
+
+	parceQuery, err := db.AddTask
+
 	if err != nil {
 		http.Error(w, "Ошибка при добавлении задачи в базу данных", http.StatusInternalServerError)
 		return
@@ -113,4 +116,4 @@ func GetTaskHandler(w http.ResponseWriter, r *http.Request) {
 
 func DeleteTaskHandler(w http.ResponseWriter, r *http.Request) {
 
-}
+}*/

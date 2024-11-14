@@ -32,6 +32,7 @@ func main() {
 }
 
 func migration(rep *repository.Repository) {
+
 	appPath, err := os.Executable()
 	if err != nil {
 		log.Fatal(err)

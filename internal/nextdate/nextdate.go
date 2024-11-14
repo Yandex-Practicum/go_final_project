@@ -48,5 +48,6 @@ func NextDate(now time.Time, date string, repeat string) (string, error) {
 		}
 	}
 
-	return timeDate.Format("20060102"), nil  //допилить до строки
+	resulstDate := timeDate.String()
+	return resulstDate, nil //допилить до строки
 }

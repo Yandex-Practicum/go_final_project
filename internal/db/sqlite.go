@@ -2,7 +2,10 @@ package db
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
+
+	"pwd/internal/handler"
 
 	_ "modernc.org/sqlite"
 )
@@ -21,21 +24,16 @@ func New() *sql.DB {
 }
 
 // добавляем задачу в базу данных
-/*func AddTask(task handler.Task) (int64, error) {
-	// добавляем задачу в базу данных
-	var t Task
-
-	if err := json.NewDecoder(r.Body).Decode(&t); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-	}
-
-	res, err := db.Exec("INSERT INTO tasks (date, title, comment, repeat) VALUES (:date, :title, :comment, :repeat)",
-		sql.Named("date", task.Date),
-		sql.Named("title", task.Title),
-		sql.Named("comment", task.Comment),
-		sql.Named("repeat", task.Repeat))
+func AddTask(db *sql.DB, task *handler.Task) (int, error) {
+	query := "INSERT INTO tasks (date, title, comment, repeat) VALUES (?, ?, ?, ?)"
+	res, err := db.Exec(query, task.Date, task.Title, task.Comment, task.Repeat)
 	if err != nil {
 		return 0, err
 	}
-	return res.LastInsertId()
-}*/
+	id, err := res.LastInsertId()
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	return int(id), nil
+}
