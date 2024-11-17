@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"pwd/pkg/db"
+	"strconv"
 	"time"
 
 	"pwd/internal/controller"
@@ -54,17 +55,17 @@ func (c *TaskController) PostTaskHandler(w http.ResponseWriter, r *http.Request)
 	var buf bytes.Buffer
 	_, err := buf.ReadFrom(r.Body)
 	if err != nil {
-		http.Error(w, "ошибка десериализации json", http.StatusBadRequest)
+		controller.ResponseError(w, "некорректный запрос")
 		return
 	}
 
 	err = json.Unmarshal(buf.Bytes(), &task)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		controller.ResponseError(w, "ошибка десериализации json")
 	}
 
 	if task.Title == "" {
-		http.Error(w, "Поле title обязательно", http.StatusBadRequest)
+		controller.ResponseError(w, "поле title обязательно")
 		return
 	}
 
@@ -76,13 +77,13 @@ func (c *TaskController) PostTaskHandler(w http.ResponseWriter, r *http.Request)
 	}
 	date, err = time.Parse("20060102", task.Date)
 	if err != nil {
-		http.Error(w, "некорректный формат даты", http.StatusBadRequest)
+		controller.ResponseError(w, "некорректный формат времени")
 		return
 	}
 
 	now := time.Now()
-
 	//  если дата меньше сегодняшней
+
 	if date.Before(now) {
 		if task.Repeat == "" {
 			task.Date = now.Format("20060102") // Устанавливаем сегодняшнюю дату
@@ -90,23 +91,26 @@ func (c *TaskController) PostTaskHandler(w http.ResponseWriter, r *http.Request)
 			// вычисляем следующую дату NextDate
 			nextDate, err := nextdate.NextDate(now, task.Date, task.Repeat)
 			if err != nil {
-				http.Error(w, "Ошибка вычисления следующей даты", http.StatusInternalServerError)
+				controller.ResponseError(w, "ошибка вычисления следующей даты")
 				return
 			}
 			task.Date = nextDate
 		}
 	}
 
-	respId, err := db.AddTask(c.db, task)
+	id, err := db.AddTask(c.db, task)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		controller.ResponseError(w, "ошибка при добавлении задачи")
+		log.Println(err)
+		return
 	}
+	taskId := strconv.Itoa(id)
 
-	response := map[string]string{"id": fmt.Sprintf("%d", respId)}
-
+	// Формируем ответ
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(response)
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"id": taskId})
+
 }
 
 func (c *TaskController) NextDateHandler(w http.ResponseWriter, r *http.Request) {
