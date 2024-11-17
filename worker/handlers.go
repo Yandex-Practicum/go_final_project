@@ -1,62 +1,66 @@
 package worker
 
 import (
+	"bytes"
+	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
+	"pwd/pkg/db"
 	"time"
 
-	"pwd/internal/handler"
+	"pwd/internal/controller"
 	"pwd/internal/nextdate"
 )
 
-func NextDateHandler(w http.ResponseWriter, r *http.Request) {
+func DeleteTaskHandler(w http.ResponseWriter, r *http.Request) {
 
-	nowStr := r.URL.Query().Get("now")
-	dateStr := r.URL.Query().Get("date")
-	repeat := r.URL.Query().Get("repeat")
+}
 
-	if nowStr == "" || dateStr == "" || repeat == "" {
-		http.Error(w, "недостаточно значений", http.StatusBadRequest)
-		return
-	}
+type TaskController struct {
+	db *sql.DB
+}
 
-	now, err := time.Parse("20060102", nowStr)
+func NewTaskController(db *sql.DB) *TaskController {
+	return &TaskController{db: db}
+}
+
+func (c *TaskController) GetTaskHandler(w http.ResponseWriter, r *http.Request) {
+	tasks, err := db.GetTasks(c.db)
 	if err != nil {
-		http.Error(w, "недопустимый формат даты", http.StatusBadRequest)
+		log.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	nextDate, err := nextdate.NextDate(now, dateStr, repeat)
+	type response struct {
+		Tasks []controller.Task `json:"tasks"`
+	}
+
+	resp := response{Tasks: tasks}
+	jsonResp, err := json.Marshal(resp)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	fmt.Fprintln(w, nextDate)
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(jsonResp)
 }
 
-// обрабатывает запросы для задач по методу запроса
-func TaskHandler(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case http.MethodPost:
-		PostTaskHandler(w, r)
-	case http.MethodGet:
-
-	case http.MethodDelete:
-
-	default:
-		http.Error(w, "Метод не разрешен", http.StatusMethodNotAllowed)
-	}
-}
-
-// хэндлер на запрос добавления задачи
-func PostTaskHandler(w http.ResponseWriter, r *http.Request) {
-	var task handler.Task // экзмпляр структуры со значениями
-
-	if err := json.NewDecoder(r.Body).Decode(&task); err != nil {
+func (c *TaskController) PostTaskHandler(w http.ResponseWriter, r *http.Request) {
+	var task controller.Task // экзмпляр структуры со значениями
+	var buf bytes.Buffer
+	_, err := buf.ReadFrom(r.Body)
+	if err != nil {
 		http.Error(w, "ошибка десериализации json", http.StatusBadRequest)
 		return
+	}
+
+	err = json.Unmarshal(buf.Bytes(), &task)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 	}
 
 	if task.Title == "" {
@@ -66,7 +70,7 @@ func PostTaskHandler(w http.ResponseWriter, r *http.Request) {
 
 	// проверяем дату
 	var date time.Time
-	var err error
+
 	if task.Date == "" {
 		task.Date = time.Now().Format("20060102") // указзываем сегодняшнюю дату
 	}
@@ -92,28 +96,41 @@ func PostTaskHandler(w http.ResponseWriter, r *http.Request) {
 			task.Date = nextDate
 		}
 	}
+
+	respId, err := db.AddTask(c.db, task)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+	response := map[string]string{"id": fmt.Sprintf("%d", respId)}
+
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(response)
 }
 
-// добавляем задачу в базу данных
-/*var dbElement sql.DB
+func (c *TaskController) NextDateHandler(w http.ResponseWriter, r *http.Request) {
 
-	parceQuery, err := db.AddTask
+	nowStr := r.URL.Query().Get("now")
+	dateStr := r.URL.Query().Get("date")
+	repeat := r.URL.Query().Get("repeat")
 
-	if err != nil {
-		http.Error(w, "Ошибка при добавлении задачи в базу данных", http.StatusInternalServerError)
+	if nowStr == "" || dateStr == "" || repeat == "" {
+		http.Error(w, "недостаточно значений", http.StatusBadRequest)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(id)
+	now, err := time.Parse("20060102", nowStr)
+	if err != nil {
+		http.Error(w, "недопустимый формат даты", http.StatusBadRequest)
+		return
+	}
 
+	nextDate, err := nextdate.NextDate(now, dateStr, repeat)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	fmt.Fprintln(w, nextDate)
 }
-
-func GetTaskHandler(w http.ResponseWriter, r *http.Request) {
-
-}
-
-func DeleteTaskHandler(w http.ResponseWriter, r *http.Request) {
-
-}*/
