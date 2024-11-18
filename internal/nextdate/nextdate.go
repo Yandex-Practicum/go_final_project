@@ -30,6 +30,10 @@ func NextDate(now time.Time, date string, repeat string) (string, error) {
 			return "", invalidRepeatErr
 		}
 
+		if repeat == "d 1" && !timeDate.After(now) {
+			return now.Format("20060102"), nil
+		}
+
 		i, err := strconv.ParseInt(repeat[2:], 10, 32)
 		if err != nil || i > 400 {
 			return "", invalidRepeatErr

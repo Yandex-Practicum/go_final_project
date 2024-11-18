@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"database/sql"
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"pwd/pkg/db"
@@ -82,13 +81,13 @@ func (c *TaskController) PostTaskHandler(w http.ResponseWriter, r *http.Request)
 	}
 
 	now := time.Now()
-	//  если дата меньше сегодняшней
+	// если дата меньше сегодняшней
 
 	if date.Before(now) {
 		if task.Repeat == "" {
-			task.Date = now.Format("20060102") // Устанавливаем сегодняшнюю дату
+			task.Date = now.Format("20060102") // устанавливаем сегодняшнюю дату
 		} else {
-			// вычисляем следующую дату NextDate
+			// вычисляем следующую дату
 			nextDate, err := nextdate.NextDate(now, task.Date, task.Repeat)
 			if err != nil {
 				controller.ResponseError(w, "ошибка вычисления следующей даты")
@@ -136,5 +135,5 @@ func (c *TaskController) NextDateHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	fmt.Fprintln(w, nextDate)
+	w.Write([]byte(nextDate))
 }
