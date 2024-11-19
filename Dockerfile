@@ -1,21 +1,16 @@
-FROM ubuntu:latest
+FROM debian:latest
 
 WORKDIR /app
 
 COPY ./web ./web
-COPY final_project ./
-
-
-RUN apt-get update -y
-RUN apt-get install sqlite3 -y
-RUN apt-get install golang -y
-
+COPY final .
+COPY scheduler.db .
 
 ENV TODO_PORT=7540
-ENV TODO_DBFILE=./app/scheduler.db
+ENV TODO_DBFILE=/app/scheduler.db
 ENV TODO_PASSWORD=852369_qeT
 
-EXPOSE 7540
+EXPOSE $TODO_PORT
 
-CMD [ "./final_project" ]
+CMD [ "./final" ]
 

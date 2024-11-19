@@ -4,6 +4,21 @@
 
 Директория `web` содержит файлы фронтенда.
 
+Директория `cmd/services содержит` содержит файлы необходимые для запуска приложения на сервере
+
+Директория `internal/authentification` содержит пакет необхоимый для аутентификации
+
+Директория `internal/сommon` содержит пакет со структурами и переменными, встречающимися в разных частях программы
+
+Директория `internal/db` пакет для создания и соединения с БД
+
+Директория `internal/handlers` пакет хэндлеров
+
+Директория `internal/migration` пакет для управления пакетом `internal/db`
+
+Директория `internal/repository` пакет-слой для взаимодействия хэндлеров и БД
+
+final - исполняемый файл под linux, x86_64
 # Тема работы
 
 Данная программа реализует API планировщика задач со следюущими функциями:
@@ -44,11 +59,11 @@ var FullNextDate false т.к доп требования не реализовы
 
 var Search = true
 
-var Token здесь необходимо указать свой токен который, который будет помещен в куки после прохождения аутентификации
+var Token `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJwYXNzd29yZCI6WzE4LDIzMiw5NCwzNiwxNzgsMjAwLDE3MiwxMiwxMTQsMTg1LDc3LDE0LDEyLDU0LDk2LDE3MCwyMTEsMTQwLDE3MiwxNzgsMjA1LDIxNSwxNjEsMTQ0LDYxLDEzNSw1MCwyNDUsMTYwLDI0NCwxMzQsNjBdfQ.h9GJnmvY6fWslCZTppQ3LMYuIxHsQj9fFEdv3p7gZUc`
 
 # docker
 Все инструкции по сборке докер образа находятся в Dockerfile
 
 docker build --tag my_api:v1 .
 
-docker run -it -p <port локальной машины>:<port контейнера>
+docker run -it -p <port локальной машины>:<port контейнера(по умолчанию 7540)>
