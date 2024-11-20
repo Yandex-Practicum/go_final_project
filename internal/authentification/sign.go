@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"final_project/internal/common"
 	"net/http"
-	"os"
 
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -21,7 +20,7 @@ type token struct {
 func Sign(w http.ResponseWriter, r *http.Request) {
 	pswrd := &password{}
 	json.NewDecoder(r.Body).Decode(pswrd)
-	if pswrd.Password != os.Getenv("TODO_PASSWORD") {
+	if pswrd.Password != common.Password {
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(common.Response{Error: "неверый пароль"})
 		return

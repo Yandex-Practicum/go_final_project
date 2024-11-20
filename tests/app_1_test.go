@@ -23,8 +23,7 @@ func getURL(path string) string {
 	}
 	path = strings.TrimPrefix(strings.ReplaceAll(path, `\`, `/`), `../web/`)
 
-	s := fmt.Sprintf("http://localhost:%d/%s", port, path)
-	return s
+	return fmt.Sprintf("http://localhost:%d/%s", port, path)
 }
 
 func getBody(path string) ([]byte, error) {

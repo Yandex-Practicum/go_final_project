@@ -11,8 +11,8 @@ type Tasks struct {
 
 func (rep *Repository) GetAllTasks() (tasks Tasks, err error) {
 	t := Tasks{}
-	query := "SELECT * FROM scheduler ORDER BY date LIMIT 10 "
-	rows, err := rep.db.Query(query)
+	query := "SELECT * FROM scheduler ORDER BY date LIMIT :limit "
+	rows, err := rep.db.Query(query, sql.Named("limit", common.Limit))
 	if err != nil {
 		return t, err
 	}
@@ -30,8 +30,8 @@ func (rep *Repository) GetAllTasks() (tasks Tasks, err error) {
 
 func (rep *Repository) GetTasksByDate(date string) (tasks Tasks, err error) {
 	t := Tasks{}
-	query := "SELECT * FROM scheduler WHERE date=:param LIMIT 10"
-	rows, err := rep.db.Query(query, sql.Named("param", date))
+	query := "SELECT * FROM scheduler WHERE date=:param LIMIT :limit"
+	rows, err := rep.db.Query(query, sql.Named("param", date), sql.Named("limit", common.Limit))
 	if err != nil {
 		return t, err
 	}
@@ -49,8 +49,8 @@ func (rep *Repository) GetTasksByDate(date string) (tasks Tasks, err error) {
 
 func (rep *Repository) GetTasksByParam(param string) (tasks Tasks, err error) {
 	t := Tasks{}
-	query := "SELECT * FROM scheduler WHERE title LIKE :param OR comment LIKE :param ORDER BY date LIMIT 10"
-	rows, err := rep.db.Query(query, sql.Named("param", "%"+param+"%"))
+	query := "SELECT * FROM scheduler WHERE title LIKE :param OR comment LIKE :param ORDER BY date LIMIT :limit"
+	rows, err := rep.db.Query(query, sql.Named("param", "%"+param+"%"), sql.Named("limit", common.Limit))
 	if err != nil {
 		return t, err
 	}
