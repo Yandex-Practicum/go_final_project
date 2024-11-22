@@ -4,18 +4,18 @@ import (
 	"database/sql"
 	"log"
 	"os"
-	"path/filepath"
 
 	_ "github.com/mattn/go-sqlite3"
 )
 
 func CreateDB() (*sql.DB, error) {
-	appPath, err := os.Executable()
-	if err != nil {
-		log.Fatal(err)
-	}
-	dbFile := filepath.Join(filepath.Dir(appPath), "scheduler.db")
-	_, err = os.Stat(dbFile)
+	//appPath, err := os.Executable()
+	//if err != nil {
+	//log.Fatal(err)
+	//}
+	dbFile := "project.db"
+	log.Println(dbFile)
+	_, err := os.Stat(dbFile)
 
 	var install bool
 	if err != nil {

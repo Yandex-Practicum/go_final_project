@@ -3,14 +3,12 @@ package app
 import (
 	"Go/iternal/database"
 
-	"github.com/go-chi/chi"
-
 	"fmt"
 	"net/http"
 )
 
 const (
-	webDir = "./web/"
+	webDir = "./web"
 )
 
 func Run() {
@@ -18,12 +16,11 @@ func Run() {
 	if err != nil {
 		panic(err)
 	}
-	router := chi.NewRouter()
 	fmt.Println("Запускаем сервер!")
 
-	router.Handle("/*", http.StripPrefix("/web", http.FileServer(http.Dir(webDir))))
+	http.Handle("/*", http.FileServer(http.Dir(webDir)))
 
-	err = http.ListenAndServe(":7540", router)
+	err = http.ListenAndServe(":7540", nil)
 	if err != nil {
 		panic(err)
 	}
