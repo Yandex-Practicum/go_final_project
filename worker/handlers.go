@@ -84,16 +84,14 @@ func (c *TaskController) PostTaskHandler(w http.ResponseWriter, r *http.Request)
 	// если дата меньше сегодняшней
 
 	if date.Before(now) {
-		if task.Repeat == "" {
-			task.Date = now.Format("20060102") // устанавливаем сегодняшнюю дату
-		} else {
-			// вычисляем следующую дату
-			nextDate, err := nextdate.NextDate(now, task.Date, task.Repeat)
-			if err != nil {
-				controller.ResponseError(w, "ошибка вычисления следующей даты")
-				return
-			}
-			task.Date = nextDate
+		task.Date = now.Format("20060102") // устанавливаем сегодняшнюю дату {
+	}
+
+	if task.Repeat != "" {
+		_, err := nextdate.NextDate(now, task.Date, task.Repeat)
+		if err != nil {
+			controller.ResponseError(w, "некорректный формат правила")
+			return
 		}
 	}
 
@@ -123,7 +121,7 @@ func (c *TaskController) GetTaskId(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var task controller.Task
-	err := c.db.QueryRow("SELECT id, date, title, comment, repeat FROM tasks WHERE id = ?", taskId).Scan(&task.ID, &task.Date, &task.Title, &task.Comment, &task.Repeat)
+	err := c.db.QueryRow("SELECT id, date, title, comment, repeat FROM scheduler WHERE id = ?", taskId).Scan(&task.ID, &task.Date, &task.Title, &task.Comment, &task.Repeat)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			w.WriteHeader(http.StatusNotFound)
@@ -131,37 +129,16 @@ func (c *TaskController) GetTaskId(w http.ResponseWriter, r *http.Request) {
 			w.Write(response)
 			return
 		} else {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			controller.ResponseError(w, "ошибка")
 			return
 		}
 	}
 
-	tasks, err := db.GetTasks(c.db)
-	if err != nil {
-		log.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	type response struct {
-		Tasks []controller.Task `json:"tasks"`
-	}
-
-	resp := response{Tasks: tasks}
-	jsonResp, err := json.Marshal(resp)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	w.Write(jsonResp)
-
-	/*w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	err = json.NewEncoder(w).Encode(task)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
-	}*/
+	}
 }
 
 func (c *TaskController) UpdateTaskId(w http.ResponseWriter, r *http.Request) {
@@ -226,7 +203,9 @@ func (c *TaskController) UpdateTaskId(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Выполняем запрос обновления записи к db
-	res, err := c.db.Exec("UPDATE tasks SET date = ?, title = ?, comment = ?, repeat = ? WHERE id = ?", task.Date, task.Title, task.Comment, task.Repeat, task.ID)
+	res, err := c.db.
+		Exec("UPDATE scheduler SET date = ?, title = ?, comment = ?, repeat = ? WHERE id = ?",
+			task.Date, task.Title, task.Comment, task.Repeat, task.ID)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		jsonResponse, _ := json.Marshal(map[string]string{"error": "Ошибка обновления"})
@@ -252,7 +231,7 @@ func (c *TaskController) UpdateTaskId(w http.ResponseWriter, r *http.Request) {
 	// Возвращаем успешный ответ
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
-	jsonResp, _ := json.Marshal(map[string]string{"message": "задача обновлена"})
+	jsonResp, _ := json.Marshal(map[string]string{})
 	w.Write(jsonResp)
 }
 

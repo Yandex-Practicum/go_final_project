@@ -33,7 +33,7 @@ func main() {
 	r.Get("/api/tasks", tc.GetTaskHandler)
 	r.Post("/api/task", tc.PostTaskHandler)
 	r.Get("/api/task", tc.GetTaskId)
-	r.Put("/api/task/{id}", tc.UpdateTaskId)
+	r.Put("/api/task", tc.UpdateTaskId)
 	err = http.ListenAndServe(":7540", r)
 	if err != nil {
 		log.Fatal(err)
