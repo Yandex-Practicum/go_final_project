@@ -24,16 +24,16 @@ func main() {
 	rep := repository.New(d)
 	migration(rep)
 
-	//r := chi.NewRouter()
+	r := chi.NewRouter()
 
 	tc := worker.NewTaskController(d)
 
-	r := chi.NewRouter()
-
-	r.Handle("/", http.FileServer(http.Dir(webDir)))
-	r.HandleFunc("/api/nextdate", tc.NextDateHandler)
-	r.HandleFunc("/api/tasks", tc.GetTaskHandler)
-	r.HandleFunc("/api/task", tc.PostTaskHandler)
+	r.Handle("/*", http.FileServer(http.Dir(webDir)))
+	r.Get("/api/nextdate", tc.NextDateHandler)
+	r.Get("/api/tasks", tc.GetTaskHandler)
+	r.Post("/api/task", tc.PostTaskHandler)
+	r.Get("/api/task", tc.GetTaskId)
+	r.Put("/api/task/{id}", tc.UpdateTaskId)
 	err = http.ListenAndServe(":7540", r)
 	if err != nil {
 		log.Fatal(err)
