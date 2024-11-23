@@ -14,10 +14,6 @@ import (
 	"pwd/internal/nextdate"
 )
 
-func DeleteTaskHandler(w http.ResponseWriter, r *http.Request) {
-
-}
-
 type TaskController struct {
 	db *sql.DB
 }
@@ -103,7 +99,6 @@ func (c *TaskController) PostTaskHandler(w http.ResponseWriter, r *http.Request)
 	}
 	taskId := strconv.Itoa(id)
 
-	// Формируем ответ
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{"id": taskId})
@@ -191,7 +186,7 @@ func (c *TaskController) UpdateTaskId(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Проверяем правило
+	// проверяем правило
 	if task.Repeat != "" {
 		_, err := nextdate.NextDate(now, task.Date, task.Repeat)
 		if err != nil {
@@ -202,7 +197,7 @@ func (c *TaskController) UpdateTaskId(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Выполняем запрос обновления записи к db
+	//  запрос на обновления записи
 	res, err := c.db.
 		Exec("UPDATE scheduler SET date = ?, title = ?, comment = ?, repeat = ? WHERE id = ?",
 			task.Date, task.Title, task.Comment, task.Repeat, task.ID)
@@ -233,6 +228,59 @@ func (c *TaskController) UpdateTaskId(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	jsonResp, _ := json.Marshal(map[string]string{})
 	w.Write(jsonResp)
+}
+
+func (c *TaskController) TaskDone(w http.ResponseWriter, r *http.Request) {
+
+	taskId := r.URL.Query().Get("id")
+	if taskId == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		response, _ := json.Marshal(map[string]string{"error": "идентификатор задачи не найден"})
+		w.Write(response)
+		return
+	}
+
+	var task controller.Task
+	err := c.db.QueryRow("SELECT id, date, repeat FROM scheduler WHERE id = ?", taskId).Scan(&task.ID, &task.Date, &task.Repeat)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			w.WriteHeader(http.StatusNotFound)
+			response, _ := json.Marshal(map[string]string{"error": "задача не найдена"})
+			w.Write(response)
+			return
+		}
+		w.WriteHeader(http.StatusInternalServerError)
+		response, _ := json.Marshal(map[string]string{"error": "Ошибка при получении задачи"})
+		w.Write(response)
+		return
+	}
+	now := time.Now()
+	// если задача периодическая
+	if task.Repeat != "" {
+		// рассчитываем следующую дату выполнения
+		task.Date, _ = nextdate.NextDate(now, task.Date, task.Repeat)
+		_, err = c.db.Exec("UPDATE scheduler SET date = ? WHERE id = ?", task.Date, taskId)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			response, _ := json.Marshal(map[string]string{"error": "Ошибка при обновлении задачи"})
+			w.Write(response)
+			return
+		}
+	} else {
+		// удаляем одноразовую задачу
+		_, err = c.db.Exec("DELETE FROM scheduler WHERE id = ?", taskId)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			response, _ := json.Marshal(map[string]string{"error": "Ошибка при удалении задачи"})
+			w.Write(response)
+			return
+		}
+	}
+
+	// возвращаем пустой json
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("{}"))
 }
 
 func (c *TaskController) NextDateHandler(w http.ResponseWriter, r *http.Request) {
