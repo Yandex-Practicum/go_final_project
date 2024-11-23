@@ -203,7 +203,7 @@ func (c *TaskController) UpdateTaskId(w http.ResponseWriter, r *http.Request) {
 			task.Date, task.Title, task.Comment, task.Repeat, task.ID)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		jsonResponse, _ := json.Marshal(map[string]string{"error": "Ошибка обновления"})
+		jsonResponse, _ := json.Marshal(map[string]string{"error": "ошибка обновления"})
 		w.Write(jsonResponse)
 		return
 	}
@@ -250,7 +250,7 @@ func (c *TaskController) TaskDone(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		w.WriteHeader(http.StatusInternalServerError)
-		response, _ := json.Marshal(map[string]string{"error": "Ошибка при получении задачи"})
+		response, _ := json.Marshal(map[string]string{"error": "ошибка при получении задачи"})
 		w.Write(response)
 		return
 	}
@@ -262,7 +262,7 @@ func (c *TaskController) TaskDone(w http.ResponseWriter, r *http.Request) {
 		_, err = c.db.Exec("UPDATE scheduler SET date = ? WHERE id = ?", task.Date, taskId)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			response, _ := json.Marshal(map[string]string{"error": "Ошибка при обновлении задачи"})
+			response, _ := json.Marshal(map[string]string{"error": "ошибка при обновлении задачи"})
 			w.Write(response)
 			return
 		}
@@ -271,13 +271,53 @@ func (c *TaskController) TaskDone(w http.ResponseWriter, r *http.Request) {
 		_, err = c.db.Exec("DELETE FROM scheduler WHERE id = ?", taskId)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			response, _ := json.Marshal(map[string]string{"error": "Ошибка при удалении задачи"})
+			response, _ := json.Marshal(map[string]string{"error": "ошибка при удалении задачи"})
 			w.Write(response)
 			return
 		}
 	}
 
 	// возвращаем пустой json
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("{}"))
+}
+
+func (c *TaskController) TaskDelete(w http.ResponseWriter, r *http.Request) {
+	taskId := r.URL.Query().Get("id")
+	if taskId == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		response, _ := json.Marshal(map[string]string{"error": "идентификатор задачи не передан"})
+		w.Write(response)
+		return
+	}
+	// проверяем существование задачи
+	var exists bool
+	// EXIST возвращает значение типа bool
+	err := c.db.QueryRow("SELECT EXISTS(SELECT 1 FROM scheduler WHERE id = ?)", taskId).Scan(&exists)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		response, _ := json.Marshal(map[string]string{"error": "ошибка при поиске задачи"})
+		w.Write(response)
+		return
+	}
+	// если не true, то такой задачи нет
+	if !exists {
+		w.WriteHeader(http.StatusNotFound)
+		response, _ := json.Marshal(map[string]string{"error": "задача не найдена"})
+		w.Write(response)
+		return
+	}
+
+	// удаляем задачу
+	_, err = c.db.Exec("DELETE FROM scheduler WHERE id = ?", taskId)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		response, _ := json.Marshal(map[string]string{"error": "ошибка при удалении задачи"})
+		w.Write(response)
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("{}"))
