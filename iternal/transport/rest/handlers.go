@@ -34,8 +34,7 @@ func PostTask(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if task.Title == "" {
-		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-		json.NewEncoder(w).Encode(map[string]string{"error": "нет заголовка"})
+		CallError("нет заголовка", w)
 		return
 	}
 
@@ -44,8 +43,7 @@ func PostTask(w http.ResponseWriter, r *http.Request) {
 	} else {
 		date, err = time.Parse(TimeFormat, task.Date)
 		if err != nil {
-			w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-			json.NewEncoder(w).Encode(map[string]string{"error": "неверный формат даты"})
+			CallError("неверный формат даты", w)
 			return
 		}
 	}
@@ -56,8 +54,7 @@ func PostTask(w http.ResponseWriter, r *http.Request) {
 		} else {
 			task.Date, err = services.NextDate(time.Now(), task.Date, task.Repeat)
 			if err != nil {
-				w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-				json.NewEncoder(w).Encode(map[string]string{"error": "неверный формат"})
+				CallError("неверный формат", w)
 				return
 			}
 		}
@@ -73,16 +70,51 @@ func PostTask(w http.ResponseWriter, r *http.Request) {
 
 	id, err := database.PutTaskInDB(task)
 	if err != nil {
-		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-		json.NewEncoder(w).Encode(map[string]string{"error": "ошибка с базой данных"})
+		CallError("ошибка с базой данных", w)
 		return
 	}
 
 	resp, err := json.Marshal(map[string]string{"id": strconv.Itoa(int(id))})
 	if err != nil {
-		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-		json.NewEncoder(w).Encode(map[string]string{"error": "не получилось создать напоминание"})
+		CallError("не получилось создать напоминание", w)
 		return
+	}
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write(resp)
+
+}
+
+func GetTasks(w http.ResponseWriter, r *http.Request) {
+	tasks := []services.Task{}
+
+	count, err := database.GetCountOfTasks()
+	if err != nil {
+		CallError("ошибка с базой данных", w)
+		return
+	}
+
+	if count > 0 {
+		rows, err := database.GetAllTasks()
+		if err != nil {
+			CallError("ошибка с базой данных", w)
+			return
+		}
+		for rows.Next() {
+			var task services.Task
+			err := rows.Scan(&task.ID, &task.Date, &task.Title, &task.Comment, &task.Repeat)
+			if err != nil {
+				CallError("ошибка с базой данных", w)
+				return
+			}
+			tasks = append(tasks, task)
+		}
+	}
+	resp, err := json.Marshal(map[string]interface{}{
+		"tasks": tasks,
+	})
+	if err != nil {
+		CallError("ошибка сериализации данных", w)
 	}
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
@@ -107,4 +139,9 @@ func NextDeadLine(w http.ResponseWriter, r *http.Request) {
 
 	w.Write([]byte(deadline))
 
+}
+
+func CallError(txt string, w http.ResponseWriter) {
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	json.NewEncoder(w).Encode(map[string]string{"error": txt})
 }

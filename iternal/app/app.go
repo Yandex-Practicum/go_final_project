@@ -21,6 +21,7 @@ func Run() {
 	r.Handle("/*", http.FileServer(http.Dir("./web")))
 	r.HandleFunc("/api/task", handlers.PostTask)
 	r.HandleFunc("/api/nextdate", handlers.NextDeadLine)
+	r.HandleFunc("/api/tasks", handlers.GetTasks)
 
 	err = http.ListenAndServe(":7540", r)
 	if err != nil {

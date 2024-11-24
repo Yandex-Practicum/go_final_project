@@ -74,3 +74,31 @@ func PutTaskInDB(task services.Task) (int64, error) {
 
 	return id, nil
 }
+
+func GetCountOfTasks() (int, error) {
+	var count int64
+	db, err := sql.Open("sqlite3", dbFile)
+	if err != nil {
+		return 0, err
+	}
+	defer db.Close()
+
+	row := db.QueryRow("SELECT count(*) FROM scheduler")
+	_ = row.Scan(&count)
+
+	return int(count), nil
+}
+
+func GetAllTasks() (*sql.Rows, error) {
+	db, err := sql.Open("sqlite3", dbFile)
+	if err != nil {
+		return nil, err
+	}
+	defer db.Close()
+
+	rows, err := db.Query("SELECT * FROM 'scheduler' ORDER BY date")
+	if err != nil {
+		return nil, err
+	}
+	return rows, nil
+}
