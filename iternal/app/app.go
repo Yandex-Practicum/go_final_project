@@ -19,7 +19,7 @@ func Run() {
 	fmt.Println("Запускаем сервер!")
 
 	r.Handle("/*", http.FileServer(http.Dir("./web")))
-	r.HandleFunc("/api/task", handlers.PostTask)
+	r.HandleFunc("/api/task", handlers.Task)
 	r.HandleFunc("/api/nextdate", handlers.NextDeadLine)
 	r.HandleFunc("/api/tasks", handlers.GetTasks)
 

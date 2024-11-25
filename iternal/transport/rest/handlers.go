@@ -15,10 +15,15 @@ const (
 	TimeFormat = "20060102"
 )
 
-func PostTask(w http.ResponseWriter, r *http.Request) {
+func Task(w http.ResponseWriter, r *http.Request) {
 	var task services.Task
 	var buf bytes.Buffer
 	var date time.Time
+
+	if r.Method == http.MethodGet {
+		GetTaskByID(w, r)
+		return
+	}
 
 	now, _ := time.Parse(TimeFormat, time.Now().Format(TimeFormat))
 
@@ -58,6 +63,10 @@ func PostTask(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
+	}
+	if r.Method == http.MethodPut {
+		EditTask(w, r, task)
+		return
 	}
 	//else if task.Repeat != "" {
 	//	task.Date, err = services.NextDate(time.Now(), task.Date, task.Repeat)
@@ -138,6 +147,57 @@ func NextDeadLine(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Write([]byte(deadline))
+
+}
+
+func GetTaskByID(w http.ResponseWriter, r *http.Request) {
+	var task services.Task
+
+	id := r.FormValue("id")
+	row, err := database.GetTask(id)
+	if err != nil {
+		CallError("ошибка с базой данных", w)
+		return
+	}
+
+	err = row.Scan(&task.ID, &task.Date, &task.Title, &task.Comment, &task.Repeat)
+	if err != nil {
+		CallError("Задача не найдена", w)
+		return
+	}
+
+	resp, err := json.Marshal(map[string]string{
+		"id":      task.ID,
+		"date":    task.Date,
+		"title":   task.Title,
+		"comment": task.Comment,
+		"repeat":  task.Repeat,
+	})
+	if err != nil {
+		CallError("ошибка сериализации данных", w)
+	}
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write(resp)
+}
+
+func EditTask(w http.ResponseWriter, h *http.Request, task services.Task) {
+	var checkerrortask services.Task
+	row, _ := database.GetTask(task.ID)
+	err := row.Scan(&checkerrortask.ID, &checkerrortask.Date, &checkerrortask.Title, &checkerrortask.Comment, &checkerrortask.Repeat)
+	if err != nil {
+		CallError("задача не найдена", w)
+		return
+
+	}
+	err = database.EditTask(task)
+	if err != nil {
+		CallError("ошибка подключения к базе данных", w)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.Write([]byte("{}"))
 
 }
 

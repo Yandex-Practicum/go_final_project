@@ -96,9 +96,36 @@ func GetAllTasks() (*sql.Rows, error) {
 	}
 	defer db.Close()
 
-	rows, err := db.Query("SELECT * FROM 'scheduler' ORDER BY date")
+	rows, err := db.Query("SELECT * FROM scheduler ORDER BY date")
 	if err != nil {
 		return nil, err
 	}
 	return rows, nil
+}
+
+func GetTask(id string) (*sql.Row, error) {
+	db, err := sql.Open("sqlite3", dbFile)
+	if err != nil {
+		return nil, err
+	}
+	defer db.Close()
+
+	row := db.QueryRow("SELECT * FROM scheduler WHERE id=?", id)
+
+	return row, nil
+}
+
+func EditTask(task services.Task) error {
+	db, err := sql.Open("sqlite3", dbFile)
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	_, err = db.Exec("UPDATE scheduler SET date = ?, title = ?, comment = ?, repeat = ? WHERE id = ?", task.Date, task.Title, task.Comment, task.Repeat, task.ID)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
