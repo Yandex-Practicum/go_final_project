@@ -129,3 +129,48 @@ func EditTask(task services.Task) error {
 
 	return nil
 }
+
+func DeleteTask(id string) error {
+	db, err := sql.Open("sqlite3", dbFile)
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	_, err = db.Exec("DELETE FROM scheduler WHERE id=?", id)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func UpdateDate(task services.Task) error {
+	db, err := sql.Open("sqlite3", dbFile)
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	_, err = db.Exec("UPDATE scheduler SET date = ? WHERE id=?", task.Date, task.ID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func DelTask(id string) error {
+	db, err := sql.Open("sqlite3", dbFile)
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	_, err = db.Exec("DELETE FROM scheduler WHERE id=?", id)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

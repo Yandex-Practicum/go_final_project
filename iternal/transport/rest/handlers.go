@@ -23,6 +23,9 @@ func Task(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		GetTaskByID(w, r)
 		return
+	} else if r.Method == http.MethodDelete {
+		DeleteTask(w, r)
+		return
 	}
 
 	now, _ := time.Parse(TimeFormat, time.Now().Format(TimeFormat))
@@ -45,6 +48,7 @@ func Task(w http.ResponseWriter, r *http.Request) {
 
 	if task.Date == "" {
 		task.Date = time.Now().Format(TimeFormat)
+		date, _ = time.Parse(TimeFormat, time.Now().Format(TimeFormat))
 	} else {
 		date, err = time.Parse(TimeFormat, task.Date)
 		if err != nil {
@@ -68,14 +72,6 @@ func Task(w http.ResponseWriter, r *http.Request) {
 		EditTask(w, r, task)
 		return
 	}
-	//else if task.Repeat != "" {
-	//	task.Date, err = services.NextDate(time.Now(), task.Date, task.Repeat)
-	//	if err != nil {
-	//		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	//		json.NewEncoder(w).Encode(map[string]string{"error": "неверный формат"})
-	//		return
-	//	}
-	// }
 
 	id, err := database.PutTaskInDB(task)
 	if err != nil {
@@ -199,6 +195,75 @@ func EditTask(w http.ResponseWriter, h *http.Request, task services.Task) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.Write([]byte("{}"))
 
+}
+
+func DoneTask(w http.ResponseWriter, r *http.Request) {
+	var task services.Task
+
+	now, _ := time.Parse(TimeFormat, time.Now().Format(TimeFormat))
+
+	id := r.FormValue("id")
+	row, err := database.GetTask(id)
+	if err != nil {
+		CallError("ошибка с базой данных", w)
+		return
+	}
+
+	err = row.Scan(&task.ID, &task.Date, &task.Title, &task.Comment, &task.Repeat)
+	if err != nil {
+		CallError("Задача не найдена", w)
+		return
+	}
+
+	if task.Repeat == "" {
+		err = database.DeleteTask(task.ID)
+		if err != nil {
+			CallError("не получилоось отметить задачу выполненной", w)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+		w.Write([]byte("{}"))
+		return
+	} else {
+		task.Date, err = services.NextDate(now, task.Date, task.Repeat)
+	}
+	if err != nil {
+		CallError("не получилось найти следующую дату", w)
+		return
+	}
+	err = database.UpdateDate(task)
+	if err != nil {
+		CallError("не получилось обновить дату в задаче", w)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.Write([]byte("{}"))
+}
+
+func DeleteTask(w http.ResponseWriter, r *http.Request) {
+	var task services.Task
+
+	id := r.FormValue("id")
+	row, err := database.GetTask(id)
+	if err != nil {
+		CallError("ошибка с базой данных", w)
+		return
+	}
+
+	err = row.Scan(&task.ID, &task.Date, &task.Title, &task.Comment, &task.Repeat)
+	if err != nil {
+		CallError("Задача не найдена", w)
+		return
+	}
+
+	err = database.DelTask(task.ID)
+	if err != nil {
+		CallError("не получилось удалить задачу", w)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.Write([]byte("{}"))
 }
 
 func CallError(txt string, w http.ResponseWriter) {
