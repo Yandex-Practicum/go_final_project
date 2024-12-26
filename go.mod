@@ -1,4 +1,4 @@
-module final
+module final-project
 
 go 1.23.4
 

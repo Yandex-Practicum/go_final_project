@@ -18,6 +18,7 @@ func createDb(db *sql.DB) {
 	comment TEXT,
 	repeat TEXT CHECK(LENGTH(repeat) <= 128)
 	);`
+
 	_, err := db.Exec(createTableSQL)
 	if err != nil {
 		log.Fatal(err)
