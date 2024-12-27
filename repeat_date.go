@@ -31,6 +31,7 @@ func ApiNextDate(w http.ResponseWriter, r *http.Request) {
 
 func NextDate(now time.Time, date string, repeat string) (string, error) {
 	var res string
+
 	if repeat == "" {
 		return "", fmt.Errorf("repeat is empty")
 	}
@@ -102,6 +103,7 @@ func addDay(now, validDate time.Time, days int) string {
 
 func addYear(now, validDate time.Time) string {
 	validDate = validDate.AddDate(1, 0, 0)
+
 	for validDate.Before(now) {
 		validDate = validDate.AddDate(1, 0, 0)
 	}
@@ -141,6 +143,7 @@ func addWeek(now, validDate time.Time, days string) (string, error) {
 func addMonth(now, validDate time.Time, repeat []string) (string, error) {
 	arr := strings.Split(repeat[1], ",")
 	months := []string{}
+
 	if len(repeat) > 2 {
 		months = strings.Split(repeat[2], ",")
 	}
@@ -159,6 +162,7 @@ func addMonth(now, validDate time.Time, repeat []string) (string, error) {
 	}
 
 	monthMap := map[int]bool{}
+
 	for _, month := range months {
 		if month == "" {
 			continue
@@ -179,6 +183,7 @@ func addMonth(now, validDate time.Time, repeat []string) (string, error) {
 			secondLastDay := lastDay - 1
 
 			day := validDate.Day()
+
 			if day == lastDay && dayMap[-1] {
 				day = -1
 			}
