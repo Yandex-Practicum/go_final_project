@@ -2,14 +2,15 @@ package route
 
 import (
 	"github.com/gorilla/mux"
+	"go_final_project/internal/handler"
 	"net/http"
 )
 
 func SetupRouter() http.Handler {
 	// Настройка роутера
 	r := mux.NewRouter()
-	//r.HandleFunc("/auth/register", handlers.RegisterHandler).Methods("POST")
-	//r.HandleFunc("/auth/login", handlers.LoginHandler).Methods("POST")
+	r.HandleFunc("/api/nextdate", handler.NextDateHandler).Methods("GET")
+	r.HandleFunc("/api/task", handler.AddTaskHandler).Methods("POST")
 
 	// Обработка статических файлов
 	staticDir := "./web/"

@@ -13,8 +13,10 @@ func main() {
 	port := os.Getenv("TODO_PORT")
 
 	// Инициализация базы данных
-	db := config.InitializeDatabase()
-	defer db.Close()
+	if err := config.InitializeDatabase(); err != nil {
+		log.Fatalf("Failed to initialize database: %v", err)
+	}
+	defer config.CloseDB()
 
 	// Настройка сервера
 	router := route.SetupRouter()

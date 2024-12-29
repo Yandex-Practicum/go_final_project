@@ -2,12 +2,19 @@ package config
 
 import (
 	"database/sql"
+	"fmt"
 	_ "github.com/mattn/go-sqlite3"
 	"log"
 	"os"
 )
 
-func InitializeDatabase() *sql.DB {
+var db *sql.DB
+
+func GetDB() *sql.DB {
+	return db
+}
+
+func InitializeDatabase() error {
 	// Получаем значение переменной окружения TODO_DBFILE
 	dbFile := os.Getenv("TODO_DBFILE")
 
@@ -18,14 +25,14 @@ func InitializeDatabase() *sql.DB {
 		if os.IsNotExist(err) {
 			install = true
 		} else {
-			log.Fatal(err)
+			return fmt.Errorf("Файл базы данных не существует: %v", err)
 		}
 	}
 
 	// Подключаемся к базе данных
-	db, err := sql.Open("sqlite3", dbFile)
+	db, err = sql.Open("sqlite3", dbFile)
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("Ошибка подключения: %v", err)
 	}
 
 	// Если база данных новая, создаём таблицу
@@ -43,10 +50,22 @@ func InitializeDatabase() *sql.DB {
 		`
 		_, err := db.Exec(createTableQuery)
 		if err != nil {
-			log.Fatal("Ошибка при создании таблицы: ", err)
+			return fmt.Errorf("Ошибка при создании таблицы: %v", err)
 		}
 		log.Println("Таблица scheduler создана.")
 	}
 
-	return db
+	log.Println("Database connection established")
+	return nil
+}
+
+func CloseDB() {
+	if db != nil {
+		err := db.Close()
+		if err != nil {
+			log.Printf("Error closing io connection: %v", err)
+		} else {
+			log.Println("Database connection closed")
+		}
+	}
 }
