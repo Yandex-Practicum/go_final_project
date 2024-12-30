@@ -11,6 +11,8 @@ func SetupRouter() http.Handler {
 	r := mux.NewRouter()
 	r.HandleFunc("/api/nextdate", handler.NextDateHandler).Methods("GET")
 	r.HandleFunc("/api/task", handler.AddTaskHandler).Methods("POST")
+	r.HandleFunc("/api/tasks", handler.GetTasksListHandler).Methods("GET")
+	r.HandleFunc("/api/task", handler.GetTaskHandler).Methods("GET")
 
 	// Обработка статических файлов
 	staticDir := "./web/"

@@ -36,6 +36,31 @@ func AddTaskHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func GetTaskHandler(w http.ResponseWriter, r *http.Request) {
+
+}
+
+func GetTasksListHandler(w http.ResponseWriter, r *http.Request) {
+	// Устанавливаем заголовок для JSON-ответа
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+
+	// Получаем параметры поиска из строки запроса
+	search := r.URL.Query().Get("search")
+
+	// Получаем задачи из репозитория
+	tasks, err := repository.GetTasks(search)
+	if err != nil {
+		writeErrorJSON(w, "ошибка получения задач из базы данных", http.StatusInternalServerError)
+		return
+	}
+
+	// Возвращаем список задач
+	if tasks == nil {
+		tasks = []map[string]string{}
+	}
+	json.NewEncoder(w).Encode(map[string]interface{}{"tasks": tasks})
+}
+
 func writeErrorJSON(w http.ResponseWriter, message string, statusCode int) {
 	w.WriteHeader(statusCode)
 	response := map[string]interface{}{"error": message}
