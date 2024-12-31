@@ -20,7 +20,7 @@ func ValidateAndProcessTask(task *models.Task, now time.Time) error {
 		return errors.New("неправильный формат date")
 	}
 
-	if parsedDate.Before(now) {
+	if startOfDay(parsedDate).Before(startOfDay(now)) {
 		if task.Repeat == "" {
 			task.Date = now.Format("20060102")
 		} else {

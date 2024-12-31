@@ -13,6 +13,9 @@ func SetupRouter() http.Handler {
 	r.HandleFunc("/api/task", handler.AddTaskHandler).Methods("POST")
 	r.HandleFunc("/api/tasks", handler.GetTasksListHandler).Methods("GET")
 	r.HandleFunc("/api/task", handler.GetTaskHandler).Methods("GET")
+	r.HandleFunc("/api/task", handler.UpdateTask).Methods("PUT")
+	r.HandleFunc("/api/task/done", handler.DoneDeleteTask).Methods("POST")
+	r.HandleFunc("/api/task", handler.DoneDeleteTask).Methods("DELETE")
 
 	// Обработка статических файлов
 	staticDir := "./web/"

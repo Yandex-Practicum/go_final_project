@@ -11,7 +11,6 @@ func NextDate(now time.Time, date string, repeat string) (string, error) {
 	if repeat == "" {
 		return "", errors.New("В колонке repeat — пустая строка")
 	}
-
 	startDate, err := time.Parse("20060102", date)
 	if err != nil {
 		return "", errors.New("Время в переменной date не может быть преобразовано в корректную дату")
@@ -28,12 +27,14 @@ func NextDate(now time.Time, date string, repeat string) (string, error) {
 		if days > 400 {
 			return "", errors.New("Превышен максимально допустимый интервал")
 		}
-
-		if days != 1 {
+		// Если startDate равен сегодняшнему дню или находится в будущем
+		if !startOfDay(startDate).Before(startOfDay(now)) {
 			startDate = startDate.AddDate(0, 0, days)
-		}
-		for startOfDay(startDate).Before(startOfDay(now)) {
-			startDate = startDate.AddDate(0, 0, days)
+		} else {
+			// Если startDate в прошлом, прибавляем дни до будущего
+			for startOfDay(startDate).Before(startOfDay(now)) {
+				startDate = startDate.AddDate(0, 0, days)
+			}
 		}
 
 	case repeat == "y":
@@ -141,5 +142,6 @@ func NextDate(now time.Time, date string, repeat string) (string, error) {
 }
 
 func startOfDay(t time.Time) time.Time {
-	return t.Truncate(24 * time.Hour)
+	year, month, day := t.Date()
+	return time.Date(year, month, day, 0, 0, 0, 0, time.UTC)
 }
