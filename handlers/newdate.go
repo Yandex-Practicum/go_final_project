@@ -34,10 +34,6 @@ func NewDateHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	if nextDate == "" {
-		http.Error(w, "No next date", http.StatusBadRequest)
-		return
-	}
 
 	w.Write([]byte(nextDate))
 }

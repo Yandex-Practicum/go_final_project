@@ -14,7 +14,7 @@ func NextDate(now time.Time, date, repeat string) (string, error) {
 	}
 
 	if repeat == "" {
-		return "", nil
+		return "", errors.New("empty repeat")
 	}
 
 	switch {
@@ -49,28 +49,54 @@ func NextDate(now time.Time, date, repeat string) (string, error) {
 		days := make([]int, 0, 7)
 		daysOfWeek := strings.Split(repeat[2:], ",")
 
+		if daysOfWeek[0] == "" {
+			return "", errors.New("wrong format for rule w")
+		}
+
 		for _, day := range daysOfWeek {
 			dayOfWeek, err := strconv.Atoi(day)
 			if err != nil {
 				return "", err
 			}
 
+			if dayOfWeek < 1 || dayOfWeek > 7 {
+				return "", errors.New("days of week must be between 1 and 7")
+			}
+
 			days = append(days, dayOfWeek)
 		}
 
-		for _, day := range days {
-			difference := (day - int(taskDate.Weekday()) + 7) % 7 // TODO: maybe fix
+		var compareTime time.Time
+		if now.Before(taskDate) {
+			compareTime = taskDate
+		} else {
+			compareTime = now
+		}
+
+		var index int
+		for i, day := range days {
+			if day > int(compareTime.Weekday()) {
+				index = i
+			}
+		}
+
+		nextDate := compareTime
+		for {
+			difference := (days[index] - int(nextDate.Weekday()) + 7) % 7
 			if difference == 0 {
 				difference = 7
 			}
 
-			nextDate := taskDate.AddDate(0, 0, difference)
+			nextDate := nextDate.AddDate(0, 0, difference)
 
 			if nextDate.After(now) {
 				return nextDate.Format("20060102"), nil
 			}
+
+			index = (index + 1) % len(days)
 		}
 
+	// TODO: add m rule
 	case strings.HasPrefix(repeat, "m "):
 		monthsData := strings.Split(repeat[2:], " ")
 		if len(monthsData) > 2 || len(monthsData) < 1 {
