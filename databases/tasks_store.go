@@ -55,13 +55,3 @@ func CreateDB() error {
 
 	return nil
 }
-
-func OpenDB() error {
-	database, err := sql.Open("sqlite", path)
-	if err != nil {
-		return fmt.Errorf("can't open database: %s", err.Error())
-	}
-	defer database.Close()
-
-	return nil
-}

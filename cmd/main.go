@@ -9,6 +9,7 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/FunnyFoXD/go_final_project/databases"
+	"github.com/FunnyFoXD/go_final_project/handlers"
 	"github.com/FunnyFoXD/go_final_project/tests"
 )
 
@@ -35,7 +36,8 @@ func main() {
 		log.Fatalf("can't create database: %s", err.Error())
 	}
 
-	router.Handle("/*", http.StripPrefix("/", http.FileServer(http.Dir("./web"))))
+	router.Handle("/*", http.StripPrefix("/", http.FileServer(http.Dir("../web"))))
+	router.Get("/api/nextdate", handlers.NewDateHandler)
 
 	log.Printf("starting listen server on port %s", port)
 	for err := http.ListenAndServe(":"+port, router); err != nil; {
