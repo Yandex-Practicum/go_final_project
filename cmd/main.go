@@ -6,10 +6,17 @@ import (
 	"log"
 	"net/http"
 	"os"
+
+	"github.com/joho/godotenv"
 )
 
 func main() {
-	// Получение значения порта из переменной окружения TODO_PORT
+	// Загружаем переменные из .env
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Ошибка загрузки файла .env")
+	}
+
 	port := os.Getenv("TODO_PORT")
 
 	// Инициализация базы данных
