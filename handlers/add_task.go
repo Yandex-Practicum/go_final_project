@@ -21,6 +21,7 @@ func AddTaskHandler(w http.ResponseWriter, r *http.Request) {
 	var task models.Task
 	var id insertID
 	var buf bytes.Buffer
+	var now = time.Now().Truncate(24 * time.Hour)
 
 	_, err := buf.ReadFrom(r.Body)
 	if err != nil {
@@ -38,10 +39,8 @@ func AddTaskHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Println(task)
-
 	if task.Date == "" || task.Date == "today" || task.Date == "Today" {
-		task.Date = time.Now().Format("20060102")
+		task.Date = now.Format("20060102")
 	}
 
 	taskParse, err := time.Parse("20060102", task.Date)
@@ -50,12 +49,11 @@ func AddTaskHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Println(taskParse.Before(time.Now()))
-	if taskParse.Before(time.Now()) {
+	if taskParse.Before(now) {
 		if task.Repeat == "" {
-			task.Date = time.Now().Format("20060102")
+			task.Date = now.Format("20060102")
 		} else {
-			nextDate, err := helpers.NextDate(time.Now(), task.Date, task.Repeat)
+			nextDate, err := helpers.NextDate(now, task.Date, task.Repeat)
 			if err != nil {
 				http.Error(w, fmt.Sprintf(`{"error":"%v"}`, err), http.StatusBadRequest)
 				return
@@ -64,6 +62,8 @@ func AddTaskHandler(w http.ResponseWriter, r *http.Request) {
 			task.Date = nextDate
 		}
 	}
+
+	log.Println(task)
 
 	id.ID, err = databases.InsertTask(task.Date, task.Title, task.Comment, task.Repeat)
 	if err != nil {
