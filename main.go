@@ -1,32 +1,33 @@
 package main
 
 import (
+	"database/sql"
+	"log"
 	"net/http"
+	"os"
+	"path/filepath"
+
+	_ "github.com/mattn/go-sqlite3"
 )
 
 func main() {
 
-	appPath, err := os.Getwd() 
+	appPath, err := os.Getwd()
 	if err != nil {
 		log.Fatal(err)
 	}
 	println(appPath)
 
-	dbFile := filepath.Join(appPath, "appscheduler.db")
-	_, err := os.Stat(dbFile)
+	dbFile := filepath.Join(appPath, "scheduler.db")
+	_, err = os.Stat(dbFile)
 	println(dbFile)
 
-	ver install bool
+	var install bool
 	if err != nil {
 		install = true
 	}
 
-	if install == true { //если файл БД не существует, то создаем его
-
-		_, err := os.Create(dbFile) //создаем файл БД
-		if err != nil {
-			log.Fatal(err) 
-		}
+	if install { //если файл БД не существует, то создаем его
 
 		db, err := sql.Open("sqlite3", dbFile)
 		if err != nil {
@@ -34,7 +35,7 @@ func main() {
 		}
 		defer db.Close()
 
-		_, err = db.Exec("CREATE TABLE IF NOT EXISTS scheduler (id INTEGER PRIMARY KEY, date TEXT, title TEXT, comment TEXT, repeat TEXT(128), status TEXT)") // создаем таблицу с данными
+		_, err = db.Exec("CREATE TABLE IF NOT EXISTS scheduler (id INTEGER PRIMARY KEY, date TEXT, title TEXT, comment TEXT, repeat TEXT(128))") // создаем таблицу с данными
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -43,12 +44,12 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-	
+
 	}
 
 	webDir := "./web"
 	http.Handle("/", http.FileServer(http.Dir(webDir)))
-	err := http.ListenAndServe(":7540", nil)
+	err = http.ListenAndServe(":7541", nil)
 	if err != nil {
 		panic(err)
 	}
