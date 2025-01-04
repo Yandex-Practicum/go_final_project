@@ -55,3 +55,28 @@ func CreateDB() error {
 
 	return nil
 }
+
+func InsertTask(date, title, comment, repeat string) (int, error) {
+	database, err := sql.Open("sqlite", path)
+	if err != nil {
+		return 0, fmt.Errorf("can't open database: %s", err.Error())
+	}
+	defer database.Close()
+
+	result, err := database.Exec(`INSERT INTO scheduler (date, title, comment, repeat) 
+		VALUES (:date, :title, :comment, :repeat)`,
+		sql.Named("date", date),
+		sql.Named("title", title),
+		sql.Named("comment", comment),
+		sql.Named("repeat", repeat))
+	if err != nil {
+		return 0, fmt.Errorf("can't insert task: %s", err.Error())
+	}
+
+	id, err := result.LastInsertId()
+	if err != nil {
+		return 0, fmt.Errorf("can't get last insert id: %s", err.Error())
+	}
+
+	return int(id), nil
+}

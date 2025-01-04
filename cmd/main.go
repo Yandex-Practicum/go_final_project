@@ -38,7 +38,7 @@ func main() {
 
 	router.Handle("/*", http.StripPrefix("/", http.FileServer(http.Dir("../web"))))
 	router.Get("/api/nextdate", handlers.NewDateHandler)
-	// router.Post("/api/task", handlers.AddTaskHandler)
+	router.Post("/api/task", handlers.AddTaskHandler)
 
 	log.Printf("starting listen server on port %s", port)
 	for err := http.ListenAndServe(":"+port, router); err != nil; {
