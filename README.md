@@ -43,4 +43,5 @@ Token необходимо получить из куки после успеш�
 
 # docker
 docker build -t my_scheduler:latest .
+
 docker run -d -p 7540:7540 --name scheduler my_scheduler:latest
