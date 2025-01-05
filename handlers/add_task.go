@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"time"
 
@@ -62,8 +61,6 @@ func AddTaskHandler(w http.ResponseWriter, r *http.Request) {
 			task.Date = nextDate
 		}
 	}
-
-	log.Println(task)
 
 	id.ID, err = databases.InsertTask(task.Date, task.Title, task.Comment, task.Repeat)
 	if err != nil {

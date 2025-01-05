@@ -7,6 +7,7 @@ import (
 
 	_ "modernc.org/sqlite"
 
+	"github.com/FunnyFoXD/go_final_project/models"
 	"github.com/FunnyFoXD/go_final_project/tests"
 )
 
@@ -79,4 +80,35 @@ func InsertTask(date, title, comment, repeat string) (int, error) {
 	}
 
 	return int(id), nil
+}
+
+func GetTasks() ([]models.TaskFromDB, error) {
+	database, err := sql.Open("sqlite", path)
+	if err != nil {
+		return nil, fmt.Errorf("can't open database: %s", err.Error())
+	}
+	defer database.Close()
+
+	rows, err := database.Query(`SELECT id, date, title, comment, repeat FROM scheduler ORDER BY date ASC LIMIT 10`)
+	if err != nil {
+		return nil, fmt.Errorf("can't get tasks: %s", err.Error())
+	}
+	defer rows.Close()
+
+	var tasks = make([]models.TaskFromDB, 0, 10)
+	for rows.Next() {
+		var task models.TaskFromDB
+		err = rows.Scan(&task.ID, &task.Date, &task.Title, &task.Comment, &task.Repeat)
+		if err != nil {
+			return nil, fmt.Errorf("can't scan task: %s", err.Error())
+		}
+
+		tasks = append(tasks, task)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error while reading rows: %s", err.Error())
+	}
+
+	return tasks, nil
 }
