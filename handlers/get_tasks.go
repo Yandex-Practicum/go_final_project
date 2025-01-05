@@ -14,7 +14,9 @@ type response struct {
 }
 
 func GetTasksHandler(w http.ResponseWriter, r *http.Request) {
-	tasks, err := databases.GetTasks()
+	search := r.FormValue("search")
+
+	tasks, err := databases.GetTasks(search)
 	if err != nil {
 		http.Error(w, fmt.Sprintf(`{"error":"%v"}`, err), http.StatusInternalServerError)
 		return

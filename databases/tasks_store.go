@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"regexp"
+	"time"
 
 	_ "modernc.org/sqlite"
 
@@ -82,20 +84,44 @@ func InsertTask(date, title, comment, repeat string) (int, error) {
 	return int(id), nil
 }
 
-func GetTasks() ([]models.TaskFromDB, error) {
+func GetTasks(search string) ([]models.TaskFromDB, error) {
 	database, err := sql.Open("sqlite", path)
 	if err != nil {
 		return nil, fmt.Errorf("can't open database: %s", err.Error())
 	}
 	defer database.Close()
 
-	rows, err := database.Query(`SELECT id, date, title, comment, repeat FROM scheduler ORDER BY date ASC LIMIT 10`)
-	if err != nil {
-		return nil, fmt.Errorf("can't get tasks: %s", err.Error())
+	dateRegExp := regexp.MustCompile(`^([0-2][0-9]|(3)[0-1])\.(0[1-9]|1[0-2])\.\d{4}$`)
+	matched := dateRegExp.MatchString(search)
+
+	var tasks = make([]models.TaskFromDB, 0, 20)
+	var rows *sql.Rows
+
+	switch matched {
+	case true:
+		date, err := time.Parse("02.01.2006", search)
+		if err != nil {
+			return nil, fmt.Errorf("error while parsing date: %v", err)
+		}
+
+		dateStr := date.Format("20060102")
+
+		rows, err = database.Query(`SELECT id, date, title, comment, repeat FROM scheduler
+			WHERE date = :date ORDER BY date ASC LIMIT 20`,
+			sql.Named("date", dateStr))
+		if err != nil {
+			return nil, fmt.Errorf("can't get tasks: %v", err)
+		}
+	default:
+		rows, err = database.Query(`SELECT id, date, title, comment, repeat FROM scheduler
+			WHERE title LIKE :search OR comment LIKE :search ORDER BY date ASC LIMIT 20`,
+			sql.Named("search", "%"+search+"%"))
+		if err != nil {
+			return nil, fmt.Errorf("can't get tasks: %v", err)
+		}
 	}
 	defer rows.Close()
 
-	var tasks = make([]models.TaskFromDB, 0, 10)
 	for rows.Next() {
 		var task models.TaskFromDB
 		err = rows.Scan(&task.ID, &task.Date, &task.Title, &task.Comment, &task.Repeat)
