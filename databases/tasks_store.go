@@ -138,3 +138,59 @@ func GetTasks(search string) ([]models.TaskFromDB, error) {
 
 	return tasks, nil
 }
+
+func GetTaskByID(id string) (models.TaskFromDB, error){
+	var task models.TaskFromDB
+
+	database, err := sql.Open("sqlite", path)
+	if err != nil {
+		return task, fmt.Errorf("can't open database: %v", err)
+	}
+	defer database.Close()
+
+	err = database.QueryRow(`SELECT id, date, title, comment, repeat FROM scheduler WHERE id = :id`,
+		sql.Named("id", id)).Scan(&task.ID, &task.Date, &task.Title, &task.Comment, &task.Repeat)
+	
+	if err == sql.ErrNoRows {
+		return task, err
+	} else if err != nil {
+		return task, fmt.Errorf("can't get task: %v", err)	
+	}
+
+	return task, nil
+}
+
+func UpdateTaskByID(updatedTask models.TaskFromDB) error {
+	database, err := sql.Open("sqlite", path)
+	if err != nil {
+		return fmt.Errorf("can't open database: %v", err)
+	}
+	defer database.Close()
+
+	var existingID string
+	
+	err = database.QueryRow(`SELECT id FROM scheduler WHERE id = :id`,
+		sql.Named("id", updatedTask.ID)).Scan(&existingID)
+	if err == sql.ErrNoRows {
+		return err
+	} else if err != nil {
+		return fmt.Errorf("can't get task: %v", err)
+	}
+
+	query := `
+	UPDATE scheduler SET date = :date, title = :title, comment = :comment, repeat = :repeat
+	WHERE id = :id
+	`
+
+	_, err = database.Exec(query,
+		sql.Named("id", updatedTask.ID),
+		sql.Named("date", updatedTask.Date),
+		sql.Named("title", updatedTask.Title),
+		sql.Named("comment", updatedTask.Comment),
+		sql.Named("repeat", updatedTask.Repeat))
+	if err != nil {
+		return fmt.Errorf("can't update task: %v", err)
+	}
+
+	return nil
+}
