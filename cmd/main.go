@@ -38,7 +38,7 @@ func main() {
 
 	router.Handle("/*", http.StripPrefix("/", http.FileServer(http.Dir("../web"))))
 
-	router.Get("/api/nextdate", handlers.NewDateHandler)
+	router.Get("/api/nextdate", handlers.NextDateHandler)
 	router.Get("/api/tasks", handlers.GetTasksHandler)
 	router.Get("/api/task", handlers.GetTaskHandler)
 

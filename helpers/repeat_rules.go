@@ -46,58 +46,61 @@ func NextDate(now time.Time, date, repeat string) (string, error) {
 		return nextDate.Format("20060102"), nil
 
 	case repeat == "w" || strings.HasPrefix(repeat, "w "):
-		return "", errors.New("wrong format for rule w")
-		/*
-			days := make([]int, 0, 7)
-			daysOfWeek := strings.Split(repeat[2:], ",")
+		var daysOfWeek []string
+		days := make([]int, 0, 7)
+		if repeat == "w" {
+			daysOfWeek = []string{"7"}
+		} else {
+			daysOfWeek = strings.Split(repeat[2:], ",")
+		}
 
-			if daysOfWeek[0] == "" {
-				return "", errors.New("wrong format for rule w")
+		if daysOfWeek[0] == "" {
+			return "", errors.New("wrong format for rule w")
+		}
+
+		for _, day := range daysOfWeek {
+			dayOfWeek, err := strconv.Atoi(day)
+			if err != nil {
+				return "", err
 			}
 
-			for _, day := range daysOfWeek {
-				dayOfWeek, err := strconv.Atoi(day)
-				if err != nil {
-					return "", err
-				}
-
-				if dayOfWeek < 1 || dayOfWeek > 7 {
-					return "", errors.New("days of week must be between 1 and 7")
-				}
-
-				days = append(days, dayOfWeek)
+			if dayOfWeek < 1 || dayOfWeek > 7 {
+				return "", errors.New("days of week must be between 1 and 7")
 			}
 
-			var compareTime time.Time
-			if now.Before(taskDate) {
-				compareTime = taskDate
-			} else {
-				compareTime = now
+			days = append(days, dayOfWeek)
+		}
+
+		var compareTime time.Time
+		if now.Before(taskDate) {
+			compareTime = taskDate
+		} else {
+			compareTime = now
+		}
+
+		var index int
+		for i, day := range days {
+			if day > int(compareTime.Weekday()) {
+				index = i
+				break
+			}
+		}
+
+		nextDate := compareTime
+		for {
+			difference := (days[index] - int(nextDate.Weekday()) + 7) % 7
+			if difference == 0 {
+				difference = 7
 			}
 
-			var index int
-			for i, day := range days {
-				if day > int(compareTime.Weekday()) {
-					index = i
-					break
-				}
+			nextDate := nextDate.AddDate(0, 0, difference)
+
+			if nextDate.After(now) {
+				return nextDate.Format("20060102"), nil
 			}
 
-			nextDate := compareTime
-			for {
-				difference := (days[index] - int(nextDate.Weekday()) + 7) % 7
-				if difference == 0 {
-					difference = 7
-				}
-
-				nextDate := nextDate.AddDate(0, 0, difference)
-
-				if nextDate.After(now) {
-					return nextDate.Format("20060102"), nil
-				}
-
-				index = (index + 1) % len(days)
-			} */
+			index = (index + 1) % len(days)
+		}
 
 	// TODO: add m rule
 	case strings.HasPrefix(repeat, "m "):

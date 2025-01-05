@@ -7,7 +7,7 @@ import (
 	"github.com/FunnyFoXD/go_final_project/helpers"
 )
 
-func NewDateHandler(w http.ResponseWriter, r *http.Request) {
+func NextDateHandler(w http.ResponseWriter, r *http.Request) {
 	nowStr := r.FormValue("now")
 	dateStr := r.FormValue("date")
 	repeat := r.FormValue("repeat")
