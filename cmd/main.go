@@ -43,8 +43,11 @@ func main() {
 	router.Get("/api/task", handlers.GetTaskHandler)
 
 	router.Post("/api/task", handlers.AddTaskHandler)
-	
+	router.Post("/api/task/done", handlers.DoneTaskHandler)
+
 	router.Put("/api/task", handlers.UpdateTaskHandler)
+
+	router.Delete("/api/task", handlers.DeleteTaskHandler)
 
 	log.Printf("starting listen server on port %s", port)
 	for err := http.ListenAndServe(":"+port, router); err != nil; {
