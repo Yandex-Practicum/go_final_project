@@ -38,16 +38,17 @@ func main() {
 
 	router.Handle("/*", http.StripPrefix("/", http.FileServer(http.Dir("../web"))))
 
+	router.Post("/api/signin", handlers.SigninHandler)
+	router.Post("/api/task", handlers.Authorization(handlers.AddTaskHandler))
+	router.Post("/api/task/done", handlers.Authorization(handlers.DoneTaskHandler))
+
 	router.Get("/api/nextdate", handlers.NextDateHandler)
-	router.Get("/api/tasks", handlers.GetTasksHandler)
-	router.Get("/api/task", handlers.GetTaskHandler)
+	router.Get("/api/tasks", handlers.Authorization(handlers.GetTasksHandler))
+	router.Get("/api/task", handlers.Authorization(handlers.GetTaskHandler))
 
-	router.Post("/api/task", handlers.AddTaskHandler)
-	router.Post("/api/task/done", handlers.DoneTaskHandler)
+	router.Put("/api/task", handlers.Authorization(handlers.UpdateTaskHandler))
 
-	router.Put("/api/task", handlers.UpdateTaskHandler)
-
-	router.Delete("/api/task", handlers.DeleteTaskHandler)
+	router.Delete("/api/task", handlers.Authorization(handlers.DeleteTaskHandler))
 
 	log.Printf("starting listen server on port %s", port)
 	for err := http.ListenAndServe(":"+port, router); err != nil; {
