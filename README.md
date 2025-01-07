@@ -90,4 +90,4 @@
     docker run -p 7540:7540 -e TODO_PASSWORD="secret_password" final-web-server
     ```
 
-    Это запустит веб-сервер в контейнере, доступный по адресу `http://localhost:8080`.
+    Это запустит веб-сервер в контейнере, доступный по адресу `http://localhost:7540`.
