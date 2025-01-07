@@ -32,7 +32,6 @@ func getPort() string {
 // router, and sets up the database. The function then defines the routes 
 // for handling HTTP requests, including sign-in, task management, and 
 // authorization. Finally, it starts the HTTP server on the specified port.
-
 func main() {
 	err := os.Chdir("./cmd")
 	if err != nil {
