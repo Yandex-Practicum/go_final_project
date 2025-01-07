@@ -15,6 +15,10 @@ import (
 
 var path = getPath()
 
+// getPath returns a path to the SQLite database file.
+//
+// If TODO_DBFILE environment variable is set, it will be used, otherwise
+// tests.DBFile will be used as a default value.
 func getPath() string {
 	pathDB := os.Getenv("TODO_DBFILE")
 	if pathDB == "" {
@@ -24,6 +28,22 @@ func getPath() string {
 	return pathDB
 }
 
+// CreateDB creates the database file if it doesn't exist and installs the
+// scheduler table schema with an index on the date column.
+//
+// If the database file already exists, this function does nothing and returns
+// nil.
+//
+// The table schema is as follows:
+//
+// CREATE TABLE scheduler (
+// 	id INTEGER PRIMARY KEY AUTOINCREMENT,
+// 	date TEXT NOT NULL,
+// 	title TEXT NOT NULL,
+// 	comment TEXT,
+// 	repeat TEXT
+// );
+// CREATE INDEX idx_date ON scheduler(date);
 func CreateDB() error {
 	var install bool
 
@@ -59,6 +79,16 @@ func CreateDB() error {
 	return nil
 }
 
+// InsertTask inserts a new task into the scheduler table.
+//
+// The function takes four string parameters for the date, title, comment, and
+// repeat fields of the task. The date must be in the format "YYYYMMDD".
+//
+// The function returns the integer ID of the newly inserted task and an error.
+// If the task is successfully inserted, the returned error is nil.
+//
+// If the task cannot be inserted, the function returns an error with the
+// following format: "can't insert task: <error message>".
 func InsertTask(date, title, comment, repeat string) (int, error) {
 	database, err := sql.Open("sqlite", path)
 	if err != nil {
@@ -84,6 +114,18 @@ func InsertTask(date, title, comment, repeat string) (int, error) {
 	return int(id), nil
 }
 
+// GetTasks returns a slice of models.TaskFromDB and an error.
+//
+// The function takes one string parameter for a search query.
+//
+// If the search query is a date in the format "DD.MM.YYYY", the function
+// returns a slice of tasks for that date. Otherwise, the function returns a
+// slice of tasks whose title or comment contains the search query.
+//
+// The returned slice of tasks is limited to 20 tasks.
+//
+// If the tasks cannot be retrieved, the function returns an error with the
+// following format: "can't get tasks: <error message>".
 func GetTasks(search string) ([]models.TaskFromDB, error) {
 	database, err := sql.Open("sqlite", path)
 	if err != nil {
@@ -139,6 +181,12 @@ func GetTasks(search string) ([]models.TaskFromDB, error) {
 	return tasks, nil
 }
 
+// GetTaskByID gets a task from the database by its id.
+//
+// The function takes a string id parameter and returns a TaskFromDB struct and an error.
+// If the task is not found, the error is sql.ErrNoRows.
+// If there is a database error, the error is wrapped with a message in the format
+// "can't get task: <error message>".
 func GetTaskByID(id string) (models.TaskFromDB, error) {
 	var task models.TaskFromDB
 
@@ -160,6 +208,15 @@ func GetTaskByID(id string) (models.TaskFromDB, error) {
 	return task, nil
 }
 
+// UpdateTaskByID updates an existing task in the scheduler table.
+//
+// The function takes a TaskFromDB struct as a parameter, which contains the
+// updated details of the task including id, date, title, comment, and repeat.
+//
+// The function returns an error if the task cannot be found or updated.
+// If the task is not found, the error is sql.ErrNoRows.
+// If there is a database error, the error is wrapped with a message in the
+// format "can't update task: <error message>".
 func UpdateTaskByID(updatedTask models.TaskFromDB) error {
 	database, err := sql.Open("sqlite", path)
 	if err != nil {
@@ -195,6 +252,12 @@ func UpdateTaskByID(updatedTask models.TaskFromDB) error {
 	return nil
 }
 
+// UpdateTaskDateByID updates the date field of a task with the given id.
+//
+// The function returns an error if the task cannot be found or updated.
+// If the task is not found, the error is sql.ErrNoRows.
+// If there is a database error, the error is wrapped with a message in the
+// format "can't update task: <error message>".
 func UpdateTaskDateByID(id, date string) error {
 	database, err := sql.Open("sqlite", path)
 	if err != nil {
@@ -212,6 +275,12 @@ func UpdateTaskDateByID(id, date string) error {
 	return nil
 }
 
+// DeleteTask deletes a task with the given id from the database.
+//
+// The function returns an error if the task cannot be found or deleted.
+// If the task is not found, the error is sql.ErrNoRows.
+// If there is a database error, the error is wrapped with a message in the
+// format "can't delete task: <error message>".
 func DeleteTask(id string) error {
 	database, err := sql.Open("sqlite", path)
 	if err != nil {

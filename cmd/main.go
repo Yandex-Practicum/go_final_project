@@ -13,6 +13,10 @@ import (
 	"github.com/FunnyFoXD/go_final_project/tests"
 )
 
+// getPort returns the port number to be used for the server.
+//
+// If TODO_PORT environment variable is set, it will be used, otherwise
+// tests.Port will be used as a default value.
 func getPort() string {
 	port := os.Getenv("TODO_PORT")
 	if port == "" {
@@ -21,6 +25,13 @@ func getPort() string {
 
 	return port
 }
+
+// main is the entry point for the server application.
+//
+// It changes the current working directory to "./cmd", initializes the 
+// router, and sets up the database. The function then defines the routes 
+// for handling HTTP requests, including sign-in, task management, and 
+// authorization. Finally, it starts the HTTP server on the specified port.
 
 func main() {
 	err := os.Chdir("./cmd")

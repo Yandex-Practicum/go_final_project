@@ -16,6 +16,19 @@ type insertID struct {
 	ID int `json:"id"`
 }
 
+// AddTaskHandler is a handler for "/api/task" endpoint.
+// It adds a new task to the database.
+// It expects a JSON object with the following fields:
+// - date: a string in the format "YYYYMMDD"
+// - title: a string
+// - comment: a string (optional)
+// - repeat: a string (optional)
+// It returns a JSON object with the following fields:
+// - id: an integer representing the ID of the new task
+// It returns the following HTTP status codes:
+// - 201 Created: the task was successfully added
+// - 400 Bad Request: the request body is invalid
+// - 500 Internal Server Error: an error occurred while adding the task
 func AddTaskHandler(w http.ResponseWriter, r *http.Request) {
 	var task models.Task
 	var id insertID

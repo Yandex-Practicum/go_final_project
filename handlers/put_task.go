@@ -13,6 +13,21 @@ import (
 	"github.com/FunnyFoXD/go_final_project/models"
 )
 
+// UpdateTaskHandler is a handler for "/api/task" endpoint.
+// It updates a task with the given id in the database.
+// It expects a PUT request with a JSON object with the following fields:
+// - id: a string
+// - date: a string (optional)
+// - title: a string
+// - comment: a string (optional)
+// - repeat: a string (optional)
+// It returns a JSON object with the following fields:
+// - id: an integer representing the ID of the updated task
+// It returns the following HTTP status codes:
+// - 200 OK: the task was successfully updated
+// - 400 Bad Request: the request body is invalid
+// - 404 Not Found: the task with the given id cannot be found
+// - 500 Internal Server Error: an error occurred while updating the task
 func UpdateTaskHandler(w http.ResponseWriter, r *http.Request) {
 	var updatedTask models.TaskFromDB
 	var buf bytes.Buffer

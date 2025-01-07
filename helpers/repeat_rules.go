@@ -9,6 +9,26 @@ import (
 	"time"
 )
 
+// NextDate calculates the next occurrence of a date based on a given repetition rule.
+// The function takes the current date, a target date, and a repeat rule as input, and returns
+// the next date as a string in "YYYYMMDD" format. It also returns an error if any of the inputs
+// are invalid or if the repeat rule is not recognized.
+//
+// Parameters:
+// - now: the current date as a time.Time object.
+// - date: the target date as a string in "YYYYMMDD" format.
+// - repeat: a string representing the repeat rule. It can be one of the following:
+//   - "d <days>": for daily repetition, where <days> is an integer between 1 and 400.
+//   - "y": for yearly repetition.
+//   - "w <days>": for weekly repetition, where <days> is a comma-separated list of integers
+//     representing days of the week (1 for Monday to 7 for Sunday).
+//   - "m <days> <months>": for monthly repetition, where <days> is a comma-separated list of days
+//     (1 to 31, -1 for the last day, -2 for the second last day of the month), and <months> is an
+//     optional comma-separated list of months (1 for January to 12 for December).
+//
+// Returns:
+// - A string with the next occurrence date in "YYYYMMDD" format.
+// - An error if the input parameters are invalid or if the repeat rule is not recognized.
 func NextDate(now time.Time, date, repeat string) (string, error) {
 	taskDate, err := time.Parse("20060102", date)
 	if err != nil {

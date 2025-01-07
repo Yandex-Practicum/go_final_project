@@ -7,6 +7,14 @@ import (
 	"github.com/FunnyFoXD/go_final_project/helpers"
 )
 
+// NextDateHandler is a handler for "/api/nextdate" endpoint.
+// It takes "now", "date" and "repeat" parameters and returns the next date
+// based on the given parameters.
+// The "now" parameter should be given in the format "YYYYMMDD".
+// The "date" parameter should be given in the same format.
+// The "repeat" parameter can be "y" for yearly repeat or "d <days>" for daily repeat.
+// If the parameters are invalid or if the date is invalid, it returns an error with HTTP status code 400.
+// If the date is successfully calculated, it returns the next date in the same format with HTTP status code 200.
 func NextDateHandler(w http.ResponseWriter, r *http.Request) {
 	nowStr := r.FormValue("now")
 	dateStr := r.FormValue("date")

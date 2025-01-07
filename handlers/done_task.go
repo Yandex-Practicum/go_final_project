@@ -10,6 +10,12 @@ import (
 	"github.com/FunnyFoXD/go_final_project/helpers"
 )
 
+// DoneTaskHandler is a handler for "/api/task/done" endpoint.
+// It marks a task with the given id as done.
+// If the id is not given, it returns an error with HTTP status code 400.
+// If the id is invalid, it returns an error with HTTP status code 400.
+// If there is a database error, it returns an error with HTTP status code 500.
+// If the task is successfully marked as done, it returns an empty JSON object with HTTP status code 200.
 func DoneTaskHandler(w http.ResponseWriter, r *http.Request) {
 	id := r.FormValue("id")
 

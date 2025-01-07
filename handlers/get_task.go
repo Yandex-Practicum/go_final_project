@@ -9,6 +9,12 @@ import (
 	"github.com/FunnyFoXD/go_final_project/databases"
 )
 
+// GetTaskHandler is a handler for "/api/task" endpoint.
+// It expects a GET request with a parameter "id" which is a string.
+// If the id is not given, it returns an error with HTTP status code 400.
+// If the id is invalid, it returns an error with HTTP status code 400.
+// If there is a database error, it returns an error with HTTP status code 500.
+// If the task is successfully retrieved, it returns a JSON object with HTTP status code 200.
 func GetTaskHandler(w http.ResponseWriter, r *http.Request) {
 	id := r.FormValue("id")
 

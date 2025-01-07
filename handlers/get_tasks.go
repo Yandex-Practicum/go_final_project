@@ -13,6 +13,11 @@ type response struct {
 	Tasks []models.TaskFromDB `json:"tasks"`
 }
 
+// GetTasksHandler is a handler for "/api/tasks" endpoint.
+// It returns a JSON object with a "tasks" field which is a slice of TaskFromDB structs.
+// The returned slice of tasks is limited to 20 tasks.
+// If the tasks cannot be retrieved, the function returns an error with the
+// following format: "can't get tasks: <error message>".
 func GetTasksHandler(w http.ResponseWriter, r *http.Request) {
 	search := r.FormValue("search")
 
