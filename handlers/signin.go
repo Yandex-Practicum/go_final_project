@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"time"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -27,7 +27,6 @@ func SigninHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"error":"can't read body"}`, http.StatusBadRequest)
 		return
 	}
-
 	if err = json.Unmarshal(buf.Bytes(), &request); err != nil {
 		http.Error(w, `{"error":"can't unmarshal body"}`, http.StatusBadRequest)
 		return
@@ -60,9 +59,9 @@ func SigninHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func generateTokenJWT(password string) (string, error) {
-	claims := jwt.MapClaims {
+	claims := jwt.MapClaims{
 		"password_hash": fmt.Sprintf("%x", hashPassword(password)),
-		"exp": time.Now().Add(8 * time.Hour).Unix(),
+		"exp":           time.Now().Add(8 * time.Hour).Unix(),
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
