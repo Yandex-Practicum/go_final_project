@@ -45,7 +45,7 @@ func SigninHandler(w http.ResponseWriter, r *http.Request) {
 
 	storedPassword := os.Getenv("TODO_PASSWORD")
 	if storedPassword == "" {
-		http.Error(w, `{"error":"password is empty"}`, http.StatusInternalServerError)
+		http.Error(w, `{"error":"password in env is empty"}`, http.StatusInternalServerError)
 		return
 	}
 
@@ -138,11 +138,11 @@ func isValidTokenJWT(token, password string) bool {
 func Authorization(next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		password := os.Getenv("TODO_PASSWORD")
-		if password == "" {
+		if len(password) > 0 {
 			var tokenJWT string
 
 			cookie, err := r.Cookie("token")
-			if err != nil {
+			if err == nil {
 				tokenJWT = cookie.Value
 			}
 
