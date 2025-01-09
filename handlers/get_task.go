@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/FunnyFoXD/go_final_project/databases"
@@ -33,7 +34,8 @@ func GetTaskHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"error":"task not found"}`, http.StatusNotFound)
 		return
 	} else if err != nil {
-		http.Error(w, fmt.Sprintf(`{"error":"%v"}`, err), http.StatusInternalServerError)
+		log.Printf("Error while getting task: %v", err)
+		http.Error(w, `{"error":"Internal server error"}`, http.StatusInternalServerError)
 		return
 	}
 

@@ -32,7 +32,7 @@ var tokenResponse struct {
 // - 500 Internal Server Error: an error occurred while generating the token
 func SigninHandler(w http.ResponseWriter, r *http.Request) {
 	var err error
-	
+
 	var buf bytes.Buffer
 	if _, err := buf.ReadFrom(r.Body); err != nil {
 		http.Error(w, `{"error":"can't read body"}`, http.StatusBadRequest)

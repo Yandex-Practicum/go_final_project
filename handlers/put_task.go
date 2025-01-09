@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 
@@ -76,7 +77,8 @@ func UpdateTaskHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"error":"task not found"}`, http.StatusNotFound)
 		return
 	} else if err != nil {
-		http.Error(w, fmt.Sprintf(`{"error":"%v"}`, err), http.StatusInternalServerError)
+		log.Printf("Error while updating task: %v", err)
+		http.Error(w, `{"error":"Internal server error"}`, http.StatusInternalServerError)
 		return
 	}
 

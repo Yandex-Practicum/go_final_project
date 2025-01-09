@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 
@@ -76,7 +77,8 @@ func AddTaskHandler(w http.ResponseWriter, r *http.Request) {
 	var id insertID
 	id.ID, err = databases.InsertTask(task.Date, task.Title, task.Comment, task.Repeat)
 	if err != nil {
-		http.Error(w, fmt.Sprintf(`{"error":"%v"}`, err), http.StatusBadRequest)
+		log.Printf("Error while inserting task: %v", err)
+		http.Error(w, `{"error":"Internal server error"}`, http.StatusInternalServerError)
 		return
 	}
 

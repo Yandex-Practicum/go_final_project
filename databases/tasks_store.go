@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"errors"
 	"regexp"
 	"time"
 
@@ -35,7 +36,7 @@ func getPath() string {
 func openDB() (*sql.DB, error) {
 	database, err := sql.Open("sqlite", path)
 	if err != nil {
-		return nil, fmt.Errorf("can't open database: %v", err)
+		return nil, fmt.Errorf("can't open database: %w", err)
 	}
 
 	return database, nil
@@ -82,7 +83,7 @@ func CreateDB() error {
 	`
 
 	if _, err := database.Exec(query); err != nil {
-		return fmt.Errorf("can't create table: %v", err)
+		return fmt.Errorf("can't create table: %w", err)
 	}
 
 	return nil
@@ -112,12 +113,12 @@ func InsertTask(date, title, comment, repeat string) (int, error) {
 		sql.Named("comment", comment),
 		sql.Named("repeat", repeat))
 	if err != nil {
-		return 0, fmt.Errorf("can't insert task: %v", err)
+		return 0, fmt.Errorf("can't insert task: %w", err)
 	}
 
 	id, err := result.LastInsertId()
 	if err != nil {
-		return 0, fmt.Errorf("can't get last insert id: %v", err)
+		return 0, fmt.Errorf("can't get last insert id: %w", err)
 	}
 
 	return int(id), nil
@@ -151,7 +152,7 @@ func GetTasks(search string) ([]models.TaskFromDB, error) {
 	if dateRegExp.MatchString(search) {
 		date, err := time.Parse("02.01.2006", search)
 		if err != nil {
-			return nil, fmt.Errorf("error while parsing date: %v", err)
+			return nil, fmt.Errorf("error while parsing date: %w", err)
 		}
 
 		dateStr := date.Format("20060102")
@@ -167,21 +168,21 @@ func GetTasks(search string) ([]models.TaskFromDB, error) {
 
 	rows, err := database.Query(query, args...)
 	if err != nil {
-		return nil, fmt.Errorf("can't get tasks: %v", err)
+		return nil, fmt.Errorf("can't get tasks: %w", err)
 	}
 	defer rows.Close()
 
 	for rows.Next() {
 		var task models.TaskFromDB
 		if err := rows.Scan(&task.ID, &task.Date, &task.Title, &task.Comment, &task.Repeat); err != nil {
-			return nil, fmt.Errorf("can't scan task: %v", err)
+			return nil, fmt.Errorf("can't scan task: %w", err)
 		}
 
 		tasks = append(tasks, task)
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("error while reading rows: %v", err)
+		return nil, fmt.Errorf("error while reading rows: %w", err)
 	}
 
 	return tasks, nil
@@ -205,10 +206,10 @@ func GetTaskByID(id string) (models.TaskFromDB, error) {
 	err = database.QueryRow(`SELECT id, date, title, comment, repeat FROM scheduler WHERE id = :id`,
 		sql.Named("id", id)).Scan(&task.ID, &task.Date, &task.Title, &task.Comment, &task.Repeat)
 
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return task, err
 	} else if err != nil {
-		return task, fmt.Errorf("can't get task: %v", err)
+		return task, fmt.Errorf("can't get task: %w", err)
 	}
 
 	return task, nil
@@ -233,10 +234,10 @@ func UpdateTaskByID(updatedTask models.TaskFromDB) error {
 	var existingID string
 	err = database.QueryRow(`SELECT id FROM scheduler WHERE id = :id`,
 		sql.Named("id", updatedTask.ID)).Scan(&existingID)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return err
 	} else if err != nil {
-		return fmt.Errorf("can't get task: %v", err)
+		return fmt.Errorf("can't get task: %w", err)
 	}
 
 	query := `
@@ -250,7 +251,7 @@ func UpdateTaskByID(updatedTask models.TaskFromDB) error {
 		sql.Named("comment", updatedTask.Comment),
 		sql.Named("repeat", updatedTask.Repeat))
 	if err != nil {
-		return fmt.Errorf("can't update task: %v", err)
+		return fmt.Errorf("can't update task: %w", err)
 	}
 
 	return nil
@@ -273,7 +274,7 @@ func UpdateTaskDateByID(id, date string) error {
 		sql.Named("id", id),
 		sql.Named("date", date))
 	if err != nil {
-		return fmt.Errorf("can't update task: %v", err)
+		return fmt.Errorf("can't update task: %w", err)
 	}
 
 	return nil
@@ -295,7 +296,7 @@ func DeleteTask(id string) error {
 	_, err = database.Exec(`DELETE FROM scheduler WHERE id = :id`,
 		sql.Named("id", id))
 	if err != nil {
-		return fmt.Errorf("can't delete task: %v", err)
+		return fmt.Errorf("can't delete task: %w", err)
 	}
 
 	return nil

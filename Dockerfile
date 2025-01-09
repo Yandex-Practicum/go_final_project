@@ -7,9 +7,8 @@ RUN apt-get update && \
     build-essential \
     curl
 
-ENV TODO_PORT=7540
 ENV TODO_DBFILE="../scheduler.db"
-ENV TODO_PASSWORD="123123"
+ENV TODO_PASSWORD="1234"
 
 WORKDIR /app
 
@@ -19,6 +18,7 @@ RUN go mod tidy
     
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o ./final-wev-server ./cmd/main.go
 
+ENV TODO_PORT=7540
 EXPOSE ${TODO_PORT}
 
 CMD [ "./final-wev-server" ]

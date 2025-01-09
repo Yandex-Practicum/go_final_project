@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"regexp"
 
@@ -30,7 +31,8 @@ func DeleteTaskHandler(w http.ResponseWriter, r *http.Request) {
 
 	err := databases.DeleteTask(id)
 	if err != nil {
-		http.Error(w, fmt.Sprintf(`{"error":"%v"}`, err), http.StatusInternalServerError)
+		log.Printf("Error while deleting task: %v", err)
+		http.Error(w, `{"error":"Internal server error"}`, http.StatusInternalServerError)
 		return
 	}
 

@@ -3,6 +3,7 @@ package handlers
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 
@@ -49,7 +50,8 @@ func DoneTaskHandler(w http.ResponseWriter, r *http.Request) {
 		task.Date = nextDate
 		err = databases.UpdateTaskDateByID(id, task.Date)
 		if err != nil {
-			http.Error(w, fmt.Sprintf(`{"error":"%v"}`, err), http.StatusInternalServerError)
+			log.Printf("Error while updating task: %v", err)
+			http.Error(w, `{"error":"Internal server error"}`, http.StatusInternalServerError)
 			return
 		}
 	}

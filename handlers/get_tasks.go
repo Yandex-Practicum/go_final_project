@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/FunnyFoXD/go_final_project/databases"
@@ -23,7 +24,8 @@ func GetTasksHandler(w http.ResponseWriter, r *http.Request) {
 
 	tasks, err := databases.GetTasks(search)
 	if err != nil {
-		http.Error(w, fmt.Sprintf(`{"error":"%v"}`, err), http.StatusInternalServerError)
+		log.Printf("Error while getting tasks: %v", err)
+		http.Error(w, `{"error":"Internal server error"}`, http.StatusInternalServerError)
 		return
 	}
 
