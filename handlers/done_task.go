@@ -40,14 +40,13 @@ func DoneTaskHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	} else {
-		nextDate, err := helpers.NextDate(time.Now().Truncate(24*time.Hour), task.Date, task.Repeat)
+		nextDate, err := helpers.NextDate(time.Now(), task.Date, task.Repeat)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			http.Error(w, fmt.Sprintf(`{"error":"%v"}`, err), http.StatusBadRequest)
 			return
 		}
 
 		task.Date = nextDate
-
 		err = databases.UpdateTaskDateByID(id, task.Date)
 		if err != nil {
 			http.Error(w, fmt.Sprintf(`{"error":"%v"}`, err), http.StatusInternalServerError)
@@ -58,5 +57,8 @@ func DoneTaskHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 
-	w.Write([]byte("{}"))
+	if _, err := w.Write([]byte("{}")); err != nil {
+		http.Error(w, fmt.Sprintf(`{"error":"%v"}`, err), http.StatusInternalServerError)
+		return
+	}
 }

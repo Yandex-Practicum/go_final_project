@@ -30,18 +30,15 @@ type insertID struct {
 // - 400 Bad Request: the request body is invalid
 // - 500 Internal Server Error: an error occurred while adding the task
 func AddTaskHandler(w http.ResponseWriter, r *http.Request) {
-	var task models.Task
-	var id insertID
-	var buf bytes.Buffer
-	var now = time.Now().Truncate(24 * time.Hour)
 
-	_, err := buf.ReadFrom(r.Body)
-	if err != nil {
+	var buf bytes.Buffer	
+	if _, err := buf.ReadFrom(r.Body); err != nil {
 		http.Error(w, `{"error":"can't read body"}`, http.StatusBadRequest)
 		return
 	}
 
-	if err = json.Unmarshal(buf.Bytes(), &task); err != nil {
+	var task models.Task
+	if err := json.Unmarshal(buf.Bytes(), &task); err != nil {
 		http.Error(w, `{"error":"can't unmarshal body"}`, http.StatusBadRequest)
 		return
 	}
@@ -51,6 +48,7 @@ func AddTaskHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var now = time.Now().Truncate(24 * time.Hour)
 	if task.Date == "" || task.Date == "today" || task.Date == "Today" {
 		task.Date = now.Format("20060102")
 	}
@@ -75,6 +73,7 @@ func AddTaskHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	var id insertID
 	id.ID, err = databases.InsertTask(task.Date, task.Title, task.Comment, task.Repeat)
 	if err != nil {
 		http.Error(w, fmt.Sprintf(`{"error":"%v"}`, err), http.StatusBadRequest)

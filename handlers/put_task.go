@@ -29,17 +29,14 @@ import (
 // - 404 Not Found: the task with the given id cannot be found
 // - 500 Internal Server Error: an error occurred while updating the task
 func UpdateTaskHandler(w http.ResponseWriter, r *http.Request) {
-	var updatedTask models.TaskFromDB
 	var buf bytes.Buffer
-	var now = time.Now().Truncate(24 * time.Hour)
-
-	_, err := buf.ReadFrom(r.Body)
-	if err != nil {
+	if _, err := buf.ReadFrom(r.Body); err != nil {
 		http.Error(w, `{"error":"can't read body"}`, http.StatusBadRequest)
 		return
 	}
 
-	if err = json.Unmarshal(buf.Bytes(), &updatedTask); err != nil {
+	var updatedTask models.TaskFromDB
+	if err := json.Unmarshal(buf.Bytes(), &updatedTask); err != nil {
 		http.Error(w, `{"error":"can't unmarshal body"}`, http.StatusBadRequest)
 		return
 	}
@@ -49,6 +46,7 @@ func UpdateTaskHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var now = time.Now().Truncate(24 * time.Hour)
 	if updatedTask.Date == "" || updatedTask.Date == "today" || updatedTask.Date == "Today" {
 		updatedTask.Date = now.Format("20060102")
 	}
@@ -85,5 +83,8 @@ func UpdateTaskHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 
-	w.Write([]byte("{}"))
+	if _, err := w.Write([]byte("{}")); err != nil {
+		http.Error(w, fmt.Sprintf(`{"error":"%v"}`, err), http.StatusInternalServerError)
+		return
+	}
 }

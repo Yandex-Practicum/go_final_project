@@ -31,14 +31,14 @@ var tokenResponse struct {
 // - 401 Unauthorized: the password is invalid
 // - 500 Internal Server Error: an error occurred while generating the token
 func SigninHandler(w http.ResponseWriter, r *http.Request) {
+	var err error
+	
 	var buf bytes.Buffer
-
-	_, err := buf.ReadFrom(r.Body)
-	if err != nil {
+	if _, err := buf.ReadFrom(r.Body); err != nil {
 		http.Error(w, `{"error":"can't read body"}`, http.StatusBadRequest)
 		return
 	}
-	if err = json.Unmarshal(buf.Bytes(), &request); err != nil {
+	if err := json.Unmarshal(buf.Bytes(), &request); err != nil {
 		http.Error(w, `{"error":"can't unmarshal body"}`, http.StatusBadRequest)
 		return
 	}

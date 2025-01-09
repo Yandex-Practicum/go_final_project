@@ -70,19 +70,16 @@ func NextDate(now time.Time, date, repeat string) (string, error) {
 		return nextDate.Format("20060102"), nil
 
 	case strings.HasPrefix(repeat, "w "):
-		var daysOfWeek []string
-		days := make([]int, 0, 7)
-
 		if repeat == "w" {
 			return "", errors.New("wrong format for rule w")
 		}
 
-		daysOfWeek = strings.Split(repeat[2:], ",")
-
+		daysOfWeek := strings.Split(repeat[2:], ",")
 		if daysOfWeek[0] == "" {
 			return "", errors.New("wrong format for rule w")
 		}
 
+		days := make([]int, 0, len(daysOfWeek))
 		for _, day := range daysOfWeek {
 			dayOfWeek, err := strconv.Atoi(day)
 			if err != nil {
@@ -97,11 +94,9 @@ func NextDate(now time.Time, date, repeat string) (string, error) {
 		}
 		sort.Ints(days)
 
-		var compareTime time.Time
+		compareTime := now
 		if now.Before(taskDate) {
 			compareTime = taskDate
-		} else {
-			compareTime = now
 		}
 
 		var index int
@@ -127,6 +122,7 @@ func NextDate(now time.Time, date, repeat string) (string, error) {
 
 			index = (index + 1) % len(days)
 		}
+
 	case strings.HasPrefix(repeat, "m "):
 		monthsData := strings.Split(repeat[2:], " ")
 
@@ -166,11 +162,9 @@ func NextDate(now time.Time, date, repeat string) (string, error) {
 			sort.Ints(months)
 		}
 
-		var compareTime time.Time
+		compareTime := now
 		if now.Before(taskDate) {
 			compareTime = taskDate
-		} else {
-			compareTime = now
 		}
 
 		minusOneContaines := slices.Contains(days, -1)
@@ -220,6 +214,19 @@ func NextDate(now time.Time, date, repeat string) (string, error) {
 	return "", errors.New("repeat rule not found")
 }
 
+// lastDays returns either the last or second to last day of the month for a given date.
+// If 'second' is true, it returns the second to last day of the month.
+// If 'one' is true, it returns the last day of the month.
+// If neither 'one' nor 'second' is true, it returns an empty time.Time and false.
+//
+// Parameters:
+// - date: the date from which to calculate the last or second last day of the month.
+// - one: a boolean indicating whether to return the last day of the month.
+// - second: a boolean indicating whether to return the second to last day of the month.
+//
+// Returns:
+// - A time.Time object representing the calculated day of the month.
+// - A boolean indicating if a valid day was found and returned.
 func lastDays(date time.Time, one, second bool) (time.Time, bool) {
 	currentYear, currentMonth, _ := date.Date()
 	firstOfMonth := time.Date(currentYear, currentMonth, 1, 0, 0, 0, 0, date.Location())

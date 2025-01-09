@@ -23,6 +23,11 @@ func GetTaskHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if !isValidID(id) {
+		http.Error(w, `{"error":"invalid identifier"}`, http.StatusBadRequest)
+		return
+	}
+
 	task, err := databases.GetTaskByID(id)
 	if err == sql.ErrNoRows {
 		http.Error(w, `{"error":"task not found"}`, http.StatusNotFound)

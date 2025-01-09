@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
@@ -21,27 +22,30 @@ func NextDateHandler(w http.ResponseWriter, r *http.Request) {
 	repeat := r.FormValue("repeat")
 
 	if nowStr == "" || dateStr == "" || repeat == "" {
-		http.Error(w, "missing some parameters", http.StatusBadRequest)
+		http.Error(w, `{"error":"missing some parameters"}`, http.StatusBadRequest)
 		return
 	}
 
 	now, err := time.Parse("20060102", nowStr)
 	if err != nil {
-		http.Error(w, "Invalid now parameter", http.StatusBadRequest)
+		http.Error(w, fmt.Sprintf(`{"error":"%v"}`, err), http.StatusBadRequest)
 		return
 	}
 
 	_, err = time.Parse("20060102", dateStr)
 	if err != nil {
-		http.Error(w, "Invalid date parameter", http.StatusBadRequest)
+		http.Error(w, fmt.Sprintf(`{"error":"%v"}`, err), http.StatusBadRequest)
 		return
 	}
 
 	nextDate, err := helpers.NextDate(now, dateStr, repeat)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, fmt.Sprintf(`{"error":"%v"}`, err), http.StatusBadRequest)
 		return
 	}
 
-	w.Write([]byte(nextDate))
+	if _, err := w.Write([]byte(nextDate)) ;err != nil {
+		http.Error(w, fmt.Sprintf(`{"error":"%v"}`, err), http.StatusInternalServerError)
+		return
+	}
 }

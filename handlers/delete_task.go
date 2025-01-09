@@ -37,7 +37,10 @@ func DeleteTaskHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 
-	w.Write([]byte("{}"))
+	if _, err = w.Write([]byte("{}")); err != nil {
+		http.Error(w, fmt.Sprintf(`{"error":"%v"}`, err), http.StatusInternalServerError)
+		return
+	}
 }
 
 // isValidID checks whether the given string is a valid task identifier.
