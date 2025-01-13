@@ -4,30 +4,44 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 
-	"go_final_project/database"
-	"go_final_project/handlers"
+	"github.com/go-chi/chi/v5"
+
+	"final/handlers"
+	"final/storage"
+	"final/tests"
 )
 
 func main() {
-	port := "7540"
-	if val, ok := os.LookupEnv("TODO_PORT"); ok {
-		port = val
+
+	port := os.Getenv("TODO_PORT")
+	if port == "" {
+		port = strconv.Itoa(tests.Port)
 	}
 
-	webDir := "./web"
-	http.Handle("/", http.FileServer(http.Dir(webDir)))
-
-	// Инициализация базы данных
-	db, err := database.InitDB()
+	db, err := storage.Createdatabase()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Ошибка инициализации базы данных: %v", err)
 	}
-	defer db.Close()
 
-	// Регистрация обработчиков
-	handlers.RegisterHandlers(db)
+	handlers := handlers.Handlers{db}
 
-	log.Printf("Starting server on :%s\n", port)
-	log.Fatal(http.ListenAndServe(":"+port, nil))
+	r := chi.NewRouter()
+	r.Delete("/api/task", handlers.DeleteTask())
+	r.Post("/api/task/done", handlers.TaskDone())
+	r.Get("/api/task", handlers.GetTask())
+	r.Put("/api/task", handlers.ChangeTask())
+	r.Get("/api/tasks", handlers.ReceiveTasks())
+	r.Post("/api/task", handlers.AddTask())
+	r.Get("/api/nextdate", handlers.NextDate())
+
+	r.Handle("/*", http.FileServer(http.Dir("./web")))
+
+	log.Printf("Сервер слушает порт %s", port)
+
+	if err := http.ListenAndServe(":"+port, r); err != nil {
+		log.Fatalf("Ошибка при запуске сервера: %v", err)
+		return
+	}
 }
