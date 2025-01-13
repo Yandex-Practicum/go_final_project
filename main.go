@@ -8,9 +8,9 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"final/handlers"
-	"final/storage"
-	"final/tests"
+	"go_final_project/handlers" // Correct
+	"go_final_project/storage"  // Correct
+	"go_final_project/tests"    // Correct
 )
 
 func main() {
