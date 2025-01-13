@@ -2,8 +2,9 @@ package task
 
 import (
 	"errors"
-	"final/nextdate"
 	"time"
+
+	"final/nextdate"
 )
 
 const ParseDate = "20060102"
@@ -16,66 +17,74 @@ type Task struct {
 	Repeat  string `json:"repeat"`
 }
 
-// CheckTitle проверяет наличие заголовка задачи.
-func (t Task) CheckTitle() error {
+func (t Task) Checktitle() error {
 	if t.Title == "" {
-		return errors.New("пустой заголовок")
+		return errors.New("Пустой заголовок")
 	}
 	return nil
 }
 
-// CheckDate проверяет корректность даты задачи и устанавливает ее в настоящее время, если она неправильная.
-func (t Task) CheckDate() (Task, error) {
+func (t Task) Checkdate() (Task, error) {
+
 	now := time.Now()
 	if t.Date == "" {
 		t.Date = now.Format(ParseDate)
 		return t, nil
-	}
-
-	date, err := time.Parse(ParseDate, t.Date)
-	if err != nil {
-		return t, errors.New("неправильный формат даты")
-	}
-	if date.Before(now) {
-		if t.Repeat == "" {
-			t.Date = now.Format(ParseDate)
-			return t, nil
-		}
-		nextDate, err := nextdate.CalcNextDate(now.Format(ParseDate), t.Date, t.Repeat)
+	} else {
+		date, err := time.Parse(ParseDate, t.Date)
 		if err != nil {
-			return t, errors.New("ошибка вычисления следующей даты")
+			return t, errors.New("Неправильный формат даты")
 		}
-		t.Date = nextDate
+		if date.Before(now) {
+			if t.Repeat == "" {
+				t.Date = now.Format(ParseDate)
+				return t, nil
+			} else {
+				nowtime := now.Format(ParseDate)
+				if nowtime != t.Date {
+					nextDate, err := nextdate.CalcNextDate(nowtime, t.Date, t.Repeat)
+					if err != nil {
+						return t, errors.New("Ошибка вычисления даты")
+					}
+					t.Date = nextDate
+					return t, nil
+				} else {
+					t.Date = nowtime
+					return t, nil
+				}
+			}
+		}
 	}
 	return t, nil
 }
 
-// CountDate вычисляет следующую дату, если задано правило повторения.
-func (t Task) CountDate() error {
+func (t Task) Countdate() error {
 	if t.Repeat != "" {
-		nextDate, err := nextdate.CalcNextDate(time.Now().Format(ParseDate), t.Date, t.Repeat)
+		now := time.Now()
+		nowtime := now.Format(ParseDate)
+		nextDate, err := nextdate.CalcNextDate(nowtime, t.Date, t.Repeat)
 		if err != nil {
-			return errors.New("ошибка вычисления следующей даты")
+			return errors.New("Ошибка вычисления даты")
 		}
 		t.Date = nextDate
 	}
 	return nil
 }
 
-// CheckID проверяет наличие идентификатора задачи.
-func (t Task) CheckID() error {
+func (t Task) CheckId() string {
 	if t.ID == "" {
-		return errors.New("не указан идентификатор задачи")
+		return "Не указан индентификатор задачи"
+	} else {
+		return ""
 	}
-	return nil
 }
 
-// CheckRepeat проверяет корректность правила повторения.
-func (t Task) CheckRepeat() error {
+func (t Task) CheckRepeate() string {
 	if t.Repeat != "" {
-		if _, err := nextdate.ParseRepeatRules(t.Repeat); err != nil {
-			return errors.New("правило повторения указано в неправильном формате")
+		_, err := nextdate.ParseRepeatRules(t.Repeat)
+		if err != nil {
+			return "Правило повторения указано в неправильном формате"
 		}
 	}
-	return nil
+	return ""
 }

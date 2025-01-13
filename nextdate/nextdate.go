@@ -35,6 +35,7 @@ func CalcNextDate(now, date, repeat string) (string, error) {
 		return resultDate, nil
 	}
 }
+
 func ParseRepeatRules(rule string) ([]string, error) {
 	repeatRule := strings.Split(rule, " ")
 	if (repeatRule[0] == "d" && len(repeatRule) == 2) || (repeatRule[0] == "y" && len(repeatRule) == 1) {
@@ -43,6 +44,7 @@ func ParseRepeatRules(rule string) ([]string, error) {
 		return repeatRule, errors.New("Формат правила повторения не соблюден")
 	}
 }
+
 func ParsingDates(now, date string) (time.Time, time.Time, error) {
 	nowTime, err := time.Parse(ParseDate, now)
 	if err != nil {
@@ -54,6 +56,7 @@ func ParsingDates(now, date string) (time.Time, time.Time, error) {
 	}
 	return nowTime, dateTime, nil
 }
+
 func CountDateRepeatDay(rules []string, nowTime, dateTime time.Time) (string, error) {
 	subtraction := dateTime.Sub(nowTime)
 	days, err := strconv.Atoi(rules[1])
@@ -70,6 +73,7 @@ func CountDateRepeatDay(rules []string, nowTime, dateTime time.Time) (string, er
 	}
 	return dateTime.Format(ParseDate), nil
 }
+
 func CountDateRepeatRule(nowTime, dateTime time.Time) (string, error) {
 	//определяем високосный год или нет
 	ageStringdate := dateTime.Format(ParseDate)
@@ -78,6 +82,7 @@ func CountDateRepeatRule(nowTime, dateTime time.Time) (string, error) {
 	resNow, _ := strconv.Atoi(ageStringnow)
 	ageDate := int(resDate) / int(10000)
 	ageNow := int(resNow) / int(10000)
+
 	if ageDate >= ageNow {
 		dateTime = dateTime.AddDate(1, 0, 0)
 		return dateTime.Format(ParseDate), nil

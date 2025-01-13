@@ -1,95 +1,154 @@
-package nextdate
+package storage
 
 import (
+	"database/sql"
 	"errors"
-	"strconv"
-	"strings"
-	"time"
+	"fmt"
+	"log"
+	"os"
+	"path/filepath"
+
+	_ "github.com/mattn/go-sqlite3"
+
+	"final/task"
 )
-"go_final_project/task"
 
-const ParseDate = "20060102"
+const Limit = 50
 
-func CalcNextDate(now, date, repeat string) (string, error) {
-	// получаю правила повторения задач
-	rule, err := ParseRepeatRules(repeat)
+type DB struct {
+	conn *sql.DB
+}
+
+func Createdatabase() (DB, error) {
+	appPath, err := os.Executable()
 	if err != nil {
-		return "", errors.New("Формат правила повторения не соблюден")
+		log.Fatal(err)
+		return DB{conn: nil}, err
 	}
-	// парсинг полученных дат
-	nowTime, dateTime, err := ParsingDates(now, date)
+	dbFile := filepath.Join(filepath.Dir(appPath), "scheduler.db")
+	_, err = os.Stat(dbFile)
+
+	var install bool
 	if err != nil {
-		return "", errors.New("Некорректный формат даты")
+		install = true
 	}
-	//вычисление дня переноса задачи
-	if rule[0] == "d" {
-		resultDate, err := CountDateRepeatDay(rule, nowTime, dateTime)
+	// если install равен true, после открытия БД требуется выполнить
+	// sql-запрос с CREATE TABLE и CREATE INDEX
+	db, err := sql.Open("sqlite3", "scheduler.db")
+	if err != nil {
+		log.Fatal(err)
+		return DB{conn: nil}, err
+	}
+	if install {
+		createTableSql := `CREATE TABLE IF NOT EXISTS scheduler (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			date CHAR(8) NOT NULL DEFAULT "",
+			title VARCHAR(128) NOT NULL DEFAULT "",
+			comment TEXT NOT NULL DEFAULT "",
+			repeat VARCHAR(128) NOT NULL DEFAULT ""
+			);
+			CREATE INDEX IF NOT EXISTS scheduler_date ON scheduler (date);`
+		_, err = db.Exec(createTableSql)
 		if err != nil {
-			return "", errors.New("Формат правила повторения не соблюден")
+			log.Fatal(err)
+			return DB{conn: nil}, err
 		}
-		return resultDate, nil
-	} else {
-		resultDate, err := CountDateRepeatRule(nowTime, dateTime)
-		if err != nil {
-			return "", errors.New("Формат правила повторения не соблюден")
-		}
-		return resultDate, nil
+		return DB{conn: db}, nil
 	}
+	return DB{conn: db}, nil
 }
-func ParseRepeatRules(rule string) ([]string, error) {
-	repeatRule := strings.Split(rule, " ")
-	if (repeatRule[0] == "d" && len(repeatRule) == 2) || (repeatRule[0] == "y" && len(repeatRule) == 1) {
-		return repeatRule, nil
-	} else {
-		return repeatRule, errors.New("Формат правила повторения не соблюден")
-	}
-}
-func ParsingDates(now, date string) (time.Time, time.Time, error) {
-	nowTime, err := time.Parse(ParseDate, now)
+
+func (db *DB) Addtasktodb(task task.Task) (int64, error) {
+	query := `INSERT INTO scheduler (date, title, comment, repeat) VALUES (?, ?, ?, ?)`
+	res, err := db.conn.Exec(query, task.Date, task.Title, task.Comment, task.Repeat)
 	if err != nil {
-		return time.Time{}, time.Time{}, errors.New("Некорректный формат даты")
+		return 0, fmt.Errorf("Ошибка добавления задачи: %w", err)
 	}
-	dateTime, err := time.Parse(ParseDate, date)
+
+	id, err := res.LastInsertId()
 	if err != nil {
-		return time.Time{}, time.Time{}, errors.New("Некорректный формат даты")
+		return 0, errors.New("Ошибка добавления задачи")
 	}
-	return nowTime, dateTime, nil
+	return id, nil
 }
-func CountDateRepeatDay(rules []string, nowTime, dateTime time.Time) (string, error) {
-	subtraction := dateTime.Sub(nowTime)
-	days, err := strconv.Atoi(rules[1])
-	if (err != nil) || (days > 400) {
-		return "", errors.New("Формат правила повторения не соблюден")
+
+func (db *DB) DeleteQuery(id string) string {
+	deleteQuery := `DELETE FROM scheduler WHERE id = ?`
+	res, err := db.conn.Exec(deleteQuery, id)
+	if err != nil {
+		return "Ошибка выполнения запроса"
 	}
-	if int(subtraction.Hours()) > 0 {
-		dateTime = dateTime.AddDate(0, 0, days)
-		return dateTime.Format(ParseDate), nil
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		return "Ошибка получения результата запроса"
 	}
-	for int(subtraction.Hours()) <= 0 {
-		dateTime = dateTime.AddDate(0, 0, days)
-		subtraction += time.Duration(days * 24 * int(time.Hour))
+	if rowsAffected == 0 {
+		return "Запись не найдена"
 	}
-	return dateTime.Format(ParseDate), nil
+	return ""
 }
-func CountDateRepeatRule(nowTime, dateTime time.Time) (string, error) {
-	//определяем високосный год или нет
-	ageStringdate := dateTime.Format(ParseDate)
-	ageStringnow := nowTime.Format(ParseDate)
-	resDate, _ := strconv.Atoi(ageStringdate)
-	resNow, _ := strconv.Atoi(ageStringnow)
-	ageDate := int(resDate) / int(10000)
-	ageNow := int(resNow) / int(10000)
-	if ageDate >= ageNow {
-		dateTime = dateTime.AddDate(1, 0, 0)
-		return dateTime.Format(ParseDate), nil
+
+func (db *DB) Update(task task.Task) string {
+	query := `UPDATE scheduler SET date = ?, title = ?, comment = ?, repeat = ? WHERE id = ?`
+	res, err := db.conn.Exec(query, task.Date, task.Title, task.Comment, task.Repeat, task.ID)
+	if err != nil {
+		return "Ошибка выполнения запроса"
 	}
-	for ageDate < ageNow {
-		dateTime = dateTime.AddDate(1, 0, 0)
-		if (ageDate%4 == 0) && (ageDate%100 == 0) && (ageDate%400 == 0) {
-			ageDate += 1
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		return "Ошибка получения результата запроса"
+	}
+
+	if rowsAffected == 0 {
+		return "Задача не найдена"
+	}
+	return ""
+
+}
+
+func (db *DB) Findtask(id string) (task.Task, string) {
+	var task task.Task
+	query := `SELECT id, date, title, comment, repeat FROM scheduler WHERE id = ?`
+	err := db.conn.QueryRow(query, id).Scan(&task.ID, &task.Date, &task.Title, &task.Comment, &task.Repeat)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return task, "Задача не найдена"
 		} else {
-			ageDate += 1
+			return task, "Ошибка выполнения запроса"
 		}
+
 	}
-	return dateTime.Format(ParseDate), nil
+	return task, ""
+}
+
+func (db *DB) GetTasks() ([]task.Task, error) {
+	rows, err := db.conn.Query(`SELECT id, date, title, comment, repeat FROM scheduler ORDER BY date LIMIT :limit`, sql.Named("limit", Limit))
+	if err != nil {
+		return nil, errors.New("Ошибка выполнения запроса: ")
+	}
+	defer rows.Close()
+
+	tasks := make([]task.Task, 0, 0)
+
+	for rows.Next() {
+		var task task.Task
+		if err := rows.Scan(&task.ID, &task.Date, &task.Title, &task.Comment, &task.Repeat); err != nil {
+			return nil, errors.New("Ошибка чтения строки: ")
+		}
+		tasks = append(tasks, task)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, errors.New("Ошибка обработки результата: ")
+	}
+	return tasks, nil
+}
+
+func (db *DB) Updatetask(date string, id string) string {
+	updateQuery := `UPDATE scheduler SET date = ? WHERE id = ?`
+	_, err := db.conn.Exec(updateQuery, date, id)
+	if err != nil {
+		return "Ошибка обновления задачи"
+	}
+	return ""
 }
