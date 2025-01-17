@@ -1,19 +1,27 @@
 package httpserver
 
 import (
-	"database/sql"
-	"fmt"
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
+
+	"github.com/ASHmanR17/go_final_project/internal/service"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 )
 
-// Start запускает сервер
-func Start() {
+type TaskServer struct {
+	services service.TaskService
+}
 
+func NewTaskServer(s service.TaskService) *TaskServer {
+	return &TaskServer{services: s}
+}
+
+// Serve запускает сервер
+func (t *TaskServer) Serve() {
 	// Настройка роутера
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
@@ -32,22 +40,15 @@ func Start() {
 		port = defaultPort
 	}
 
-	// подключаемся к БД
-	db, err := sql.Open("sqlite3", "scheduler.db")
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	defer db.Close()
-
+	handler := newHTTPHandler(t.services) // handlers creating
 	// Маршруты
-	r.Get("/api/nextdate", handleNextDate)
-	r.Post("/api/task", handleAddTask(db))
-	r.Get("/api/tasks", handleGetTasks(db))
-	r.Get("/api/task", handleGetTask(db))
-	r.Put("/api/task", handleEditTask(db))
-	r.Post("/api/task/done", handleDoneTask(db))
-	r.Delete("/api/task", handleDeleteTask(db))
+	r.Get("/api/nextdate", handler.NextDate)
+	r.Post("/api/task", handler.AddTask)
+	r.Get("/api/tasks", handler.GetTasks)
+	r.Get("/api/task", handler.GetTask)
+	r.Put("/api/task", handler.EditTask)
+	r.Post("/api/task/done", handler.DoneTask)
+	r.Delete("/api/task", handler.DeleteTask)
 
 	// Запускаем сервер на порту 7540
 	log.Printf("Serving files from %s on port %s", filesDir, port)
