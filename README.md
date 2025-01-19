@@ -44,6 +44,7 @@ http://localhost:7540/
     ```
 
 ## 5. Docker
+Образ создавался и запускался на  Ubuntu 22.04.5 LTS.
 - Создание образа
     ```sh
             docker build --tag server_tasks:v1 .
