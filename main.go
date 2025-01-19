@@ -20,11 +20,11 @@ func main() {
 
 	// Определяем порт из окружения, если переменная окружения отсутствует - устанавливаем порт по умолчанию
 	port := configs.DefaultPort
-	envPort := os.Getenv("TODO_PORT")
+	envPort := os.Getenv("TODO_PORT") 
 	if len(envPort) != 0 {
 		port = envPort
 	}
-	port = ":" + port
+	port = ":" + port // преобразуем порт в строку
 
 	// Создаем хендлер для файлов фронта
 	fileServer := http.FileServer(http.Dir(configs.WebDir))

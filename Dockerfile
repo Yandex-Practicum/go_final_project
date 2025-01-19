@@ -1,4 +1,4 @@
-FROM golang:1.22.1
+FROM ubuntu:latest
 
 ENV CGO_ENABLED=0
 ENV GOOS=linux
@@ -9,10 +9,13 @@ WORKDIR /app
 
 COPY . .
 
+RUN apt-get update && apt-get install -y golang
+RUN apt-get update && apt-get install -y ca-certificates
+
 RUN go mod download
 
 EXPOSE ${TODO_PORT}
 
-RUN  go build -o task_manager_server
+RUN  go build -o server_tasks
 
-CMD ["/task_manager_server"]
+CMD ["./server_tasks"]
