@@ -16,7 +16,7 @@ func TaskGetHandler(store storage.Store) http.HandlerFunc {
 		id := req.URL.Query().Get("id")
 		task, err := store.GetTask(id)
 		if err != nil {
-			err := errors.New("Задача с таким id не найдена")
+			err := errors.New("задача с таким id не найдена")
 			configs.ErrorResponse.Error = err.Error()
 			json.NewEncoder(res).Encode(configs.ErrorResponse)
 			return

@@ -15,14 +15,14 @@ func TaskDeleteHandler(store storage.Store) http.HandlerFunc {
 		id := req.URL.Query().Get("id")
 		err := store.DeleteTask(id)
 		if err != nil {
-			err := errors.New("Задача с таким id не найдена")
+			err := errors.New("задача с таким id не найдена")
 			configs.ErrorResponse.Error = err.Error()
 			json.NewEncoder(res).Encode(configs.ErrorResponse)
 			return
 		}
 		res.Header().Set("Content-Type", "application/json")
 		if err := json.NewEncoder(res).Encode(map[string]string{}); err != nil {
-			http.Error(res, `{"error":"Ошибка кодирования JSON"}`, http.StatusInternalServerError)
+			http.Error(res, `{"error":"ошибка кодирования JSON"}`, http.StatusInternalServerError)
 			return
 		}
 	}

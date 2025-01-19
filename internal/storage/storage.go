@@ -79,7 +79,7 @@ func (s *Store) CreateTask(t configs.Task) (string, error) {
 	var err error
 
 	if t.Title == "" {
-		return "", fmt.Errorf(`{"error":"Не указан заголовок задачи"}`)
+		return "", fmt.Errorf(`{"error":"не указан заголовок задачи"}`)
 	}
 
 	// Проверяем наличие даты
@@ -89,7 +89,7 @@ func (s *Store) CreateTask(t configs.Task) (string, error) {
 
 	_, err = time.Parse(configs.DateFormat, t.Date)
 	if err != nil {
-		return "", fmt.Errorf(`{"error":"Некорректный формат даты"}`)
+		return "", fmt.Errorf(`{"error":"некорректный формат даты"}`)
 	}
 	// Если дата меньше сегодняшней, устанавливаем следующую дату по правилу
 	if t.Date < time.Now().Format(configs.DateFormat) {
@@ -108,13 +108,13 @@ func (s *Store) CreateTask(t configs.Task) (string, error) {
 	query := `INSERT INTO scheduler (date, title, comment, repeat) VALUES (?, ?, ?, ?)`
 	result, err := s.db.Exec(query, t.Date, t.Title, t.Comment, t.Repeat)
 	if err != nil {
-		return "", fmt.Errorf(`{"error":"Не удалось добавить задачу"}`)
+		return "", fmt.Errorf(`{"error":"не удалось добавить задачу"}`)
 	}
 
 	// Возвращаем идентификатор добавленной задачи
 	id, err := result.LastInsertId()
 	if err != nil {
-		return "", fmt.Errorf(`{"error":"Не удалось вернуть id новой задачи"}`)
+		return "", fmt.Errorf(`{"error":"не удалось вернуть id новой задачи"}`)
 	}
 	return fmt.Sprintf("%d", id), nil
 }
@@ -142,7 +142,7 @@ func (s *Store) GetTasks(search string) ([]configs.Task, error) {
 	for rows.Next() {
 		err := rows.Scan(&t.ID, &t.Date, &t.Title, &t.Comment, &t.Repeat)
 		if err = rows.Err(); err != nil {
-			return []configs.Task{}, fmt.Errorf(`{"error":"Ошибка распознавания данных"}`)
+			return []configs.Task{}, fmt.Errorf(`{"error":"ошибка распознавания данных"}`)
 		}
 		tasks = append(tasks, t)
 	}
@@ -157,7 +157,7 @@ func (s *Store) GetTasks(search string) ([]configs.Task, error) {
 func (s *Store) GetTask(id string) (configs.Task, error) {
 	var t configs.Task
 	if id == "" {
-		return configs.Task{}, fmt.Errorf(`{"error":"Не указан id"}`)
+		return configs.Task{}, fmt.Errorf(`{"error":"не указан id"}`)
 	}
 	row := s.db.QueryRow("SELECT id, date, title, comment, repeat FROM scheduler WHERE id = ?", id)
 	err := row.Scan(&t.ID, &t.Date, &t.Title, &t.Comment, &t.Repeat)
@@ -171,11 +171,11 @@ func (s *Store) GetTask(id string) (configs.Task, error) {
 func (s *Store) UpdateTask(t configs.Task) error {
 	// Проверяем, что id в теле не пустой
 	if t.ID == "" {
-		return fmt.Errorf(`{"error":"Не указан id"}`)
+		return fmt.Errorf(`{"error":"не указан id"}`)
 	}
 	// Проверяем обязательное поле Title
 	if t.Title == "" {
-		return fmt.Errorf(`{"error":"Не указан заголовок задачи"}`)
+		return fmt.Errorf(`{"error":"не указан заголовок задачи"}`)
 	}
 	// Проверяем дату
 	if t.Date == "" {
@@ -206,17 +206,17 @@ func (s *Store) UpdateTask(t configs.Task) error {
 	result, err := s.db.Exec(query, t.Date, t.Title, t.Comment, t.Repeat, t.ID)
 	if err != nil {
 
-		return fmt.Errorf(`{"error":"Задача с таким id не найдена"}`) // вот эта вот история не работает, посчитаем измененные ряды
+		return fmt.Errorf(`{"error":"задача с таким id не найдена"}`) // вот эта вот история не работает, посчитаем измененные ряды
 	}
 
 	// Считаем измененные строки
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		return fmt.Errorf(`{"error":"Не удалось посчитать измененные строки"}`)
+		return fmt.Errorf(`{"error":"не удалось посчитать измененные строки"}`)
 	}
 
 	if rowsAffected == 0 {
-		return fmt.Errorf(`{"error":"Задача с таким id не найдена"}`)
+		return fmt.Errorf(`{"error":"задача с таким id не найдена"}`)
 	}
 	// Если ошибок не возникло, возвращаем nil
 	return nil

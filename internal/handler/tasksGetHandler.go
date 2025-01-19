@@ -15,12 +15,10 @@ func TasksGetHandler(store storage.Store) http.HandlerFunc {
 		searchParams := req.URL.Query().Get("search")
 		tasks, err := store.GetTasks(searchParams)
 		if err != nil {
-			if err != nil {
-				err := errors.New("Ошибка запроса к базе данных")
-				configs.ErrorResponse.Error = err.Error()
-				json.NewEncoder(res).Encode(configs.ErrorResponse)
-				return
-			}
+			err := errors.New("ошибка запроса к базе данных")
+			configs.ErrorResponse.Error = err.Error()
+			json.NewEncoder(res).Encode(configs.ErrorResponse)
+			return
 		}
 		response := map[string][]configs.Task{
 			"tasks": tasks,
