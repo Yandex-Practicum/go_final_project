@@ -1,47 +1,53 @@
 package main
 
 import (
+	"go_final_project/db"
+	"go_final_project/handlers"
 	"log"
 	"net/http"
 	"os"
-	"strconv"
-
-	"github.com/go-chi/chi/v5"
-
-	"final/handlers"
-	"final/storage"
-	"final/tests"
+	"path/filepath"
 )
 
 func main() {
+	webDir := "./web"
+	http.Handle("/", http.FileServer(http.Dir(webDir)))
+
+	dbPath := os.Getenv("TODO_DBFILE")
+	if dbPath == "" {
+		workingDir, err := os.Getwd()
+		if err != nil {
+			log.Fatalf("Failed to get working directory: %v", err)
+		}
+		dbPath = filepath.Join(workingDir, "scheduler.db")
+	}
+
+	if err := db.SetupDatabase(dbPath); err != nil {
+		log.Fatalf("Error with database: %v", err)
+	}
+
+	dbConn, err := db.OpenDB()
+	if err != nil {
+		log.Fatalf("Failed to connect to database: %v", err)
+	}
+	defer dbConn.Close()
+
+	handler := handlers.NewHandler(dbConn)
+
+	http.HandleFunc("/api/tasks", handler.HandleTaskList)
+	http.HandleFunc("/api/task/add", handler.HandleAddTask)
+	http.HandleFunc("/api/task/get", handler.HandleGetTask)
+	http.HandleFunc("/api/task/update", handler.HandleUpdateTask)
+	http.HandleFunc("/api/task/delete", handler.HandleDeleteTask)
+	http.HandleFunc("/api/task/markdone", handler.HandleMarkTaskDone)
 
 	port := os.Getenv("TODO_PORT")
 	if port == "" {
-		port = strconv.Itoa(tests.Port)
+		port = "7540"
 	}
 
-	db, err := storage.Createdatabase()
-	if err != nil {
-		log.Fatalf("Ошибка инициализации базы данных: %v", err)
-	}
-
-	handlers := handlers.Handlers{db}
-
-	r := chi.NewRouter()
-	r.Delete("/api/task", handlers.DeleteTask())
-	r.Post("/api/task/done", handlers.TaskDone())
-	r.Get("/api/task", handlers.GetTask())
-	r.Put("/api/task", handlers.ChangeTask())
-	r.Get("/api/tasks", handlers.ReceiveTasks())
-	r.Post("/api/task", handlers.AddTask())
-	r.Get("/api/nextdate", handlers.NextDate())
-
-	r.Handle("/*", http.FileServer(http.Dir("./web")))
-
-	log.Printf("Сервер слушает порт %s", port)
-
-	if err := http.ListenAndServe(":"+port, r); err != nil {
-		log.Fatalf("Ошибка при запуске сервера: %v", err)
-		return
+	log.Printf("Starting server on :%s\n", port)
+	if err := http.ListenAndServe(":"+port, nil); err != nil {
+		log.Fatalf("Error starting server: %v\n", err)
 	}
 }
