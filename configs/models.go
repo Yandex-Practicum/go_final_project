@@ -1,7 +1,7 @@
 package configs
 
 const (
-	DateFormat = "20060102"
+	DateFormat = "20060102" //формат даты
 	MaxTasks   = 50
 )
 

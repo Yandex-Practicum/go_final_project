@@ -10,7 +10,7 @@ import (
 )
 
 // Обработчик DELETE для /task
-func TaskDeleteHandler(store storage.Store) http.HandlerFunc {
+func TaskDeleteHandler(store storage.Store) http.HandlerFunc { // хэндлер для удаления задачи
 	return func(res http.ResponseWriter, req *http.Request) {
 		id := req.URL.Query().Get("id")
 		err := store.DeleteTask(id)

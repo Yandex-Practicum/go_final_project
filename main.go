@@ -12,7 +12,7 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-func main() {
+func main() { //#
 	// Открываем/создаем базу данных
 	dataBase := storage.OpenDataBase()
 	defer dataBase.Close()
@@ -20,7 +20,7 @@ func main() {
 
 	// Определяем порт из окружения, если переменная окружения отсутствует - устанавливаем порт по умолчанию
 	port := configs.DefaultPort
-	envPort := os.Getenv("TODO_PORT") 
+	envPort := os.Getenv("TODO_PORT")
 	if len(envPort) != 0 {
 		port = envPort
 	}

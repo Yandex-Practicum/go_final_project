@@ -9,7 +9,7 @@ import (
 )
 
 // Обработчик POST для /task
-func TaskPostHandler(store storage.Store) http.HandlerFunc {
+func TaskPostHandler(store storage.Store) http.HandlerFunc { // хэндлер для создания задачи
 	return func(res http.ResponseWriter, req *http.Request) {
 		var t configs.Task
 		err := json.NewDecoder(req.Body).Decode(&t)

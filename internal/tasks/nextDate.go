@@ -9,7 +9,7 @@ import (
 	"github.com/lezhnevay/go_final_project_lezhnev/configs"
 )
 
-func NextDate(now time.Time, date string, repeat string) (string, error) {
+func NextDate(now time.Time, date string, repeat string) (string, error) { // функция возвращает следующую дату
 	//проверка на пустой repeat
 	if repeat == "" {
 		return "", fmt.Errorf("не указан repeat")

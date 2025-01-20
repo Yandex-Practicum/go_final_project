@@ -10,7 +10,7 @@ import (
 )
 
 // Обработчик GET для /task
-func TaskGetHandler(store storage.Store) http.HandlerFunc {
+func TaskGetHandler(store storage.Store) http.HandlerFunc { // хэндлер для получения задачи по id
 	return func(res http.ResponseWriter, req *http.Request) {
 		//var t configs.Task
 		id := req.URL.Query().Get("id")

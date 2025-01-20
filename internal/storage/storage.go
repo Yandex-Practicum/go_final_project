@@ -16,7 +16,7 @@ type Store struct {
 	db *sql.DB
 }
 
-// Открываем/создаем  БД
+// Открываем/создаем БД
 func OpenDataBase() *sql.DB {
 	// Определяем директорию приложения и проверяем наличие базы данных
 	filePath, err := os.Executable()

@@ -1,4 +1,5 @@
-FROM ubuntu:latest
+# ubuntu:latest is the latest version of ubuntu #
+FROM ubuntu:latest 
 
 ENV CGO_ENABLED=0
 ENV GOOS=linux

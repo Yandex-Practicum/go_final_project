@@ -10,7 +10,7 @@ import (
 )
 
 // Обработчик GET для /tasks
-func TasksGetHandler(store storage.Store) http.HandlerFunc {
+func TasksGetHandler(store storage.Store) http.HandlerFunc { // хэндлер для получения списка задач
 	return func(res http.ResponseWriter, req *http.Request) {
 		searchParams := req.URL.Query().Get("search")
 		tasks, err := store.GetTasks(searchParams)

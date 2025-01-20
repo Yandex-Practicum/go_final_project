@@ -9,7 +9,7 @@ import (
 )
 
 // Обработчик PUT для /task
-func TaskPutHandler(store storage.Store) http.HandlerFunc {
+func TaskPutHandler(store storage.Store) http.HandlerFunc { // хэндлер обновления задачи
 	return func(res http.ResponseWriter, req *http.Request) {
 		var t configs.Task
 		err := json.NewDecoder(req.Body).Decode(&t)

@@ -8,7 +8,7 @@ import (
 )
 
 // Обработчик для task/done
-func TaskDoneHandler(store storage.Store) http.HandlerFunc {
+func TaskDoneHandler(store storage.Store) http.HandlerFunc { // хэндлер для task/done
 	return func(res http.ResponseWriter, req *http.Request) {
 		id := req.URL.Query().Get("id")
 		err := store.TaskDone(id)

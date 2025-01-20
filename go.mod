@@ -1,4 +1,4 @@
-module github.com/lezhnevay/go_final_project_lezhnev
+module github.com/lezhnevay/go_final_project_lezhnev //#
 
 go 1.22.1
 

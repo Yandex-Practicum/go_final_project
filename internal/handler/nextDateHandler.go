@@ -10,7 +10,7 @@ import (
 )
 
 // Обработчик следующей даты
-func NextDateHandler(res http.ResponseWriter, req *http.Request) {
+func NextDateHandler(res http.ResponseWriter, req *http.Request) { // хэндлер обработчика следующей даты
 	now := req.FormValue("now")
 	date := req.FormValue("date")
 	repeat := req.FormValue("repeat")
