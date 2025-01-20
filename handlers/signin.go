@@ -150,6 +150,9 @@ func Authorization(next http.HandlerFunc) http.HandlerFunc {
 				http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
 				return
 			}
+		} else {
+			http.Error(w, `{"error":"TODO_PASSWORD is not set"}`, http.StatusBadRequest)
+			return
 		}
 		next(w, r)
 	})
