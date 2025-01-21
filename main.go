@@ -44,29 +44,30 @@ type TaskWithID struct {
 
 }
 
+// расчет следующей даты задачи
 func NextDate(now time.Time, date string, repeat string) (string, error) {
 
 	if repeat == "" {
 		return "", errors.New("не задано правило повтора")
 	}
 
-	// Парсим время
+	// парсим время
 	dateParse, err := time.Parse(dateConst, date)
 	if err != nil {
 		return "", err
 	}
 
-	// Ежедневное выполнение задачи
+	// ежедневное выполнение задачи
 	if repeat == "d 1" && !dateParse.After(now) {
 		return now.Format(dateConst), nil
 	}
 
 	for {
-		// Дополнение одного года
+		// добавление одного года
 		if repeat == "y" {
 			dateParse = dateParse.AddDate(1, 0, 0)
 
-			// Вычисление количества дней и их добавление
+			// вычисление количества дней и их добавление
 		} else if strings.HasPrefix(repeat, "d ") {
 			daysString := strings.Split(repeat, " ")
 			daysInt, err := strconv.Atoi(daysString[1])
@@ -78,32 +79,34 @@ func NextDate(now time.Time, date string, repeat string) (string, error) {
 			return "", errors.New("incorrect repeat rule")
 		}
 
-		//Проверка новой даты
+		//проверка новой даты
 		if dateParse.After(now) {
 			return dateParse.Format(dateConst), nil
 		}
 	}
 }
 
+// проектирование и создание базы данных
 func initDB() (*sql.DB, error) {
-	// Определяем путь к базе данных
+
+	// определяем путь к базе данных
 	appPath, err := os.Executable()
 	if err != nil {
 		return nil, err
 	}
 	dbFile := filepath.Join(filepath.Dir(appPath), "scheduler.db")
 
-	// Проверяем, существует ли файл базы данных
+	// проверяем, существует ли файл базы данных
 	_, err = os.Stat(dbFile)
 	install := os.IsNotExist(err)
 
-	// Открываем базу данных
+	// открываем базу данных
 	db, err := sql.Open("sqlite3", dbFile)
 	if err != nil {
 		return nil, err
 	}
 
-	// Создаем таблицу и индекс, если файл базы данных отсутствует
+	// создаем таблицу и индекс, если файл базы данных отсутствует
 	if install {
 		createTableQuery := `
             CREATE TABLE IF NOT EXISTS scheduler (
@@ -125,33 +128,37 @@ func initDB() (*sql.DB, error) {
 	return db, nil
 }
 
+// GET даты из запроса и расчет новой
 func nextDateHandler(w http.ResponseWriter, r *http.Request) {
 
-	// Получение параметров из строки запроса
+	// получение параметров из строки запроса
 	nowParam := r.URL.Query().Get("now")
 	repeatParam := r.URL.Query().Get("repeat")
 	dateParam := r.URL.Query().Get("date")
 
-	// Проверка и парсинг параметра now
+	// проверка и парсинг параметра now
 	now, err := time.Parse("20060102", nowParam)
 	if err != nil {
 		http.Error(w, "invalid 'now' date format", http.StatusBadRequest)
 		return
 	}
 
-	// Вызов функции NextDate для получения следующей даты задачи
+	// вызов функции NextDate для получения следующей даты задачи
 	nextDate, err := NextDate(now, dateParam, repeatParam)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	// Ответ с результатом
+	// ответ с результатом
 	w.Write([]byte(nextDate))
 }
 
+// добавление новой задачи
 func addTaskHandler(w http.ResponseWriter, r *http.Request) {
 	var task Task
+	now := time.Now()
+	nowFormat := now.Format(dateConst)
 
 	db, err := sql.Open("sqlite3", "scheduler.db")
 	if err != nil {
@@ -171,11 +178,9 @@ func addTaskHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	timeNow := time.Now()
-
 	// проверка пустого поля Date
 	if task.Date == "" {
-		task.Date = timeNow.Format(dateConst)
+		task.Date = nowFormat
 	} else {
 		// проверка парсинга даты в формате 20060102
 		dateParse, err := time.Parse(dateConst, task.Date)
@@ -184,28 +189,31 @@ func addTaskHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		dateParse = dateParse.Truncate(24 * time.Hour)
+		now = now.Truncate(24 * time.Hour)
+
 		// если дата меньше сегодняшнего числа
-		if dateParse.Before(timeNow) {
+		if dateParse.Before(now) {
 			// если правило Repeat "пустое" ставим сегодняшнюю дату
 			if task.Repeat == "" {
-				task.Date = timeNow.Format(dateConst)
+				task.Date = nowFormat
 			} else {
-				nextDate, err := NextDate(timeNow, task.Date, task.Repeat)
+				nextDate, err := NextDate(now, task.Date, task.Repeat)
 				if err != nil {
 					http.Error(w, `{"error":"Неверный формат правила"}`, http.StatusInternalServerError)
 					return
 				}
 				// проверяем правило повторения
 				if task.Repeat != "" {
-					_, err := NextDate(timeNow, task.Date, task.Repeat)
+					_, err := NextDate(now, task.Date, task.Repeat)
 					if err != nil {
 						http.Error(w, `{"error":"Неверный формат правила"}`, http.StatusInternalServerError)
 						return
 					}
 				}
 				// если задача ежедневная
-				if task.Repeat == "d 1" && nextDate == timeNow.Format(dateConst) {
-					task.Date = timeNow.Format(dateConst)
+				if task.Repeat == "d 1" && nextDate == nowFormat {
+					task.Date = nowFormat
 				} else {
 					task.Date = nextDate
 				}
@@ -213,6 +221,7 @@ func addTaskHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// добавление задачи в БД
 	res, err := db.Exec("INSERT INTO scheduler (date, title, comment, repeat) VALUES (?, ?, ?, ?)", task.Date, task.Title, task.Comment, task.Repeat)
 	if err != nil {
 		http.Error(w, `{"error":"Ошибка при добавлении задачи в базу данных"}`, http.StatusInternalServerError)
@@ -223,6 +232,7 @@ func addTaskHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"error":"Ошибка получения id задачи"}`, http.StatusInternalServerError)
 	}
 
+	// формируем ответ
 	response := map[string]string{"id": fmt.Sprintf("%d", id)}
 
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
@@ -236,7 +246,7 @@ func addTaskHandler(w http.ResponseWriter, r *http.Request) {
 
 func getTaskHandler(w http.ResponseWriter, r *http.Request) {
 	var count int
-	// подключение к бд
+	// подключение к БД
 	db, err := sql.Open("sqlite3", "scheduler.db")
 	if err != nil {
 		http.Error(w, `{"error":"Ошибка подключения к базе данных"}`, http.StatusInternalServerError)
@@ -289,8 +299,10 @@ func getTaskHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// получение задачи по Id
 func getTaskIdHandler(w http.ResponseWriter, r *http.Request) {
-	// подключение к бд
+
+	// подключение к БД
 	db, err := sql.Open("sqlite3", "scheduler.db")
 	if err != nil {
 		http.Error(w, `{"error":"Ошибка подключения к базе данных"}`, http.StatusInternalServerError)
@@ -301,11 +313,11 @@ func getTaskIdHandler(w http.ResponseWriter, r *http.Request) {
 	// получение Id из запроса
 	id := r.URL.Query().Get("id")
 	if id == "" {
-		http.Error(w, `{"error":"Ошибка запроса Id к бд"}`, http.StatusBadRequest)
+		http.Error(w, `{"error":"Ошибка запроса Id"}`, http.StatusBadRequest)
 		return
 	}
 
-	// получение задачи по Id из бд
+	// получение задачи по Id из БД
 	var task TaskWithID
 	err = db.QueryRow(`SELECT id, date, title, comment, repeat	
 		FROM scheduler 
@@ -331,9 +343,10 @@ func getTaskIdHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// изменение задачи
 func editTaskHandler(w http.ResponseWriter, r *http.Request) {
 
-	// подключение к бд
+	// подключение к БД
 	db, err := sql.Open("sqlite3", "scheduler.db")
 	if err != nil {
 		http.Error(w, `{"error":"Ошибка подключения к базе данных"}`, http.StatusInternalServerError)
@@ -379,6 +392,7 @@ func editTaskHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// редактируем задачу в БД
 	res, err := db.Exec(`UPDATE scheduler 
 		SET date = ?, title = ?, comment = ?, repeat = ? WHERE id = ?
 		`, task.Date, task.Title, task.Comment, task.Repeat, task.Id)
@@ -400,8 +414,114 @@ func editTaskHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("{}"))
 }
 
+func doneTaskHandler(w http.ResponseWriter, r *http.Request) {
+	// получение Id из запроса
+	id := r.URL.Query().Get("id")
+	if id == "" {
+		http.Error(w, `{"error":"Ошибка запроса Id"}`, http.StatusBadRequest)
+		return
+	}
+
+	// подключение к БД
+	db, err := sql.Open("sqlite3", "scheduler.db")
+	if err != nil {
+		http.Error(w, `{"error":"Ошибка подключения к базе данных"}`, http.StatusInternalServerError)
+		return
+	}
+	defer db.Close()
+
+	// получение задачи по Id из БД
+	var task TaskWithID
+	err = db.QueryRow(`SELECT id, date, title, comment, repeat	
+	FROM scheduler 
+	WHERE id = ?	`, id).Scan(&task.Id, &task.Date, &task.Title, &task.Comment, &task.Repeat)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			http.Error(w, `{"error":"Задача не найдена"}`, http.StatusInternalServerError)
+		} else {
+			http.Error(w, `{"error":"Ошибка запроса к базе данных"}`, http.StatusInternalServerError)
+		}
+		return
+	}
+
+	// удаление одноразовой задачи
+	if task.Repeat == "" {
+		_, err = db.Exec("DELETE FROM scheduler WHERE id = ?", id)
+		if err != nil {
+			log.Printf("Error deleting task: %v", err)
+			http.Error(w, `{"error":"Задача не удаляется"}`, http.StatusInternalServerError)
+			return
+		}
+	} else {
+		// вычисление даты для периодической задачи
+		now := time.Now()
+		nextDate, err := NextDate(now, task.Date, task.Repeat)
+		if err != nil {
+			log.Printf("Error calculating next date: %v", err)
+			http.Error(w, `{"error":"Ошибка расчета даты для повторяющейся задачи"}`, http.StatusInternalServerError)
+			return
+		}
+
+		// обновление даты выполнения задачи в базе данных
+		_, err = db.Exec("UPDATE scheduler SET date = ? WHERE id = ?", nextDate, id)
+		if err != nil {
+			log.Printf("Error updating task date: %v", err)
+			http.Error(w, `{"error":"Невозможно обновить дату для повторяющейся задачи"}`, http.StatusInternalServerError)
+			return
+		}
+	}
+
+	// возвращаем пустой JSON-ответ, если все хорошо
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.Write([]byte("{}"))
+}
+
+// удаление задачи
+func deleteTaskHandler(w http.ResponseWriter, r *http.Request) {
+
+	// получение Id из запроса
+	id := r.URL.Query().Get("id")
+	if id == "" {
+		http.Error(w, `{"error":"Ошибка запроса Id"}`, http.StatusBadRequest)
+		return
+	}
+
+	// подключение к БД
+	db, err := sql.Open("sqlite3", "scheduler.db")
+	if err != nil {
+		http.Error(w, `{"error":"Ошибка подключения к базе данных"}`, http.StatusInternalServerError)
+		return
+	}
+	defer db.Close()
+
+	// удаление задачи из БД
+	res, err := db.Exec("DELETE FROM scheduler WHERE id = ?", id)
+	if err != nil {
+		http.Error(w, `{"error":"Задача не удаляется"}`, http.StatusInternalServerError)
+		return
+	}
+
+	// проверка изменений в БД
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		http.Error(w, `{"error":"Ошибка подсчета удаленных строк"}`, http.StatusInternalServerError)
+		return
+	}
+	// если ни одна задача не удалена, возвращаем ошибку
+	if rowsAffected == 0 {
+		http.Error(w, `{"error":"Задача не найдена"}`, http.StatusInternalServerError)
+		return
+	}
+
+	// возвращаем пустой JSON-ответ, если все хорошо
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.Write([]byte("{}"))
+}
+
 func main() {
 
+	// инициализируем БД
 	db, err := initDB()
 	if err != nil {
 		log.Fatal("Ошибка инициализации БД:", err)
@@ -416,7 +536,8 @@ func main() {
 	r.Post("/api/task", addTaskHandler)
 	r.Put("/api/task", editTaskHandler)
 	r.Get("/api/tasks", getTaskHandler)
-
+	r.Post("/api/task/done", doneTaskHandler)
+	r.Delete("/api/task", deleteTaskHandler)
 	err = http.ListenAndServe(":"+port, r)
 	if err != nil {
 		panic(err)
