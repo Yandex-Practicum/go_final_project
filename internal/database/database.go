@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -63,11 +64,70 @@ func (s TaskStore) Add(task Scheduler) (int, error) {
 }
 
 func (s TaskStore) GetTasks() ([]Scheduler, error) {
-	// TODO Добавьте возможность выбрать задачи через строку поиска
 
 	// SQL-запрос для получения ближайших задач
-	query := `SELECT * FROM scheduler ORDER BY date LIMIT :limit`
+	query := `SELECT id, date, title, comment, repeat FROM scheduler ORDER BY date LIMIT :limit`
 	rows, err := s.db.Query(query, sql.Named("limit", TaskLimitShow))
+	if err != nil {
+		return []Scheduler{}, errors.New("ошибка в запросе к базе данных")
+	}
+	defer rows.Close()
+
+	// Массив для хранения задач
+	var tasks []Scheduler
+
+	// Чтение данных из базы данных и создание массива задач
+	for rows.Next() {
+		var task Scheduler
+		err = rows.Scan(&task.Id, &task.Date, &task.Title, &task.Comment, &task.Repeat)
+		if err != nil {
+			return []Scheduler{}, errors.New("ошибка при чтении (Rows.Scan) базы данных")
+		}
+		tasks = append(tasks, task)
+	}
+	if err = rows.Err(); err != nil {
+		return []Scheduler{}, err
+	}
+
+	return tasks, nil
+}
+func (s TaskStore) GetTasksByDate(date string) ([]Scheduler, error) {
+	// SQL-запрос для получения ближайших задач по дате
+	query := `SELECT * FROM scheduler WHERE date = :date LIMIT :limit`
+	rows, err := s.db.Query(query, sql.Named("date", date), sql.Named("limit", TaskLimitShow))
+	if err != nil {
+		return []Scheduler{}, errors.New("ошибка в запросе к базе данных")
+	}
+	defer rows.Close()
+
+	// Массив для хранения задач
+	var tasks []Scheduler
+
+	// Чтение данных из базы данных и создание массива задач
+	for rows.Next() {
+		var task Scheduler
+		err = rows.Scan(&task.Id, &task.Date, &task.Title, &task.Comment, &task.Repeat)
+		if err != nil {
+			return []Scheduler{}, errors.New("ошибка при чтении (Rows.Scan) базы данных")
+		}
+		tasks = append(tasks, task)
+	}
+	if err = rows.Err(); err != nil {
+		return []Scheduler{}, err
+	}
+
+	return tasks, nil
+}
+
+func (s TaskStore) GetTasksBySearch(search string) ([]Scheduler, error) {
+	// SQL-запрос для получения ближайших задач по поиску
+	likeString := strings.Replace(search, "*", "%", -1)
+	likeString = "%" + likeString + "%"
+	query := `SELECT * FROM scheduler WHERE title LIKE :search OR comment LIKE :search ORDER BY date LIMIT :limit`
+	rows, err := s.db.Query(query,
+		sql.Named("search", likeString),
+		sql.Named("limit", TaskLimitShow),
+	)
 	if err != nil {
 		return []Scheduler{}, errors.New("ошибка в запросе к базе данных")
 	}
@@ -110,7 +170,7 @@ func (s TaskStore) GetTask(id string) (Scheduler, error) {
 func (s TaskStore) Update(task Scheduler) error {
 	// обновляем данные задачи в базе
 	query := "UPDATE scheduler SET date = :date, title = :title, comment = :comment, repeat = :repeat WHERE id = :id"
-	_, err := s.db.Exec(query,
+	res, err := s.db.Exec(query,
 		sql.Named("date", task.Date),
 		sql.Named("title", task.Title),
 		sql.Named("comment", task.Comment),
@@ -119,6 +179,17 @@ func (s TaskStore) Update(task Scheduler) error {
 	)
 	if err != nil {
 		return errors.New("ошибка обновления задачи в базе")
+	}
+
+	// Получаем количество затронутых строк
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		return errors.New("ошибка при получении количества затронутых строк")
+	}
+
+	// Если количество затронутых строк равно 0, возвращаем ошибку
+	if rowsAffected == 0 {
+		return errors.New("задача не найдена")
 	}
 
 	return nil
@@ -130,24 +201,25 @@ func (s TaskStore) Delete(id string) error {
 	return err
 }
 
-// TaskExists Функция для проверки существования записи по Id в таблице scheduler
-func (s TaskStore) TaskExists(id string) (bool, error) {
-	// SQL-запрос для проверки существования записи
-	query := `SELECT COUNT(*) FROM scheduler WHERE id = ?`
-
-	// Выполняем запрос
-	var count int
-	err := s.db.QueryRow(query, id).Scan(&count)
-
-	switch {
-	case err == sql.ErrNoRows:
-		return false, nil
-	case err != nil:
-		return false, err
-	default:
-		return count > 0, nil
-	}
-}
+//// TaskExists Функция для проверки существования записи по Id в таблице scheduler
+//func (s TaskStore) TaskExists(id string) (bool, error) {
+//	// SQL-запрос для проверки существования записи
+//	query := `SELECT COUNT(*) FROM scheduler WHERE id = ?`
+//
+//	// Выполняем запрос
+//
+//	var count int
+//	err := s.db.QueryRow(query, id).Scan(&count)
+//
+//	switch {
+//	case err == sql.ErrNoRows:
+//		return false, nil
+//	case err != nil:
+//		return false, err
+//	default:
+//		return count > 0, nil
+//	}
+//}
 
 func Check() (string, bool, error) {
 	appPath, err := os.Executable()

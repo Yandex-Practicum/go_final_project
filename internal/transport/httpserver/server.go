@@ -1,6 +1,7 @@
 package httpserver
 
 import (
+	"github.com/joho/godotenv"
 	"log"
 	"net/http"
 	"os"
@@ -22,6 +23,10 @@ func NewTaskServer(s service.TaskService) *TaskServer {
 
 // Serve запускает сервер
 func (t *TaskServer) Serve() {
+	err := godotenv.Load(".env")
+	if err != nil {
+		log.Fatalf("Error loading .env file: %w", err)
+	}
 	// Настройка роутера
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
@@ -40,15 +45,21 @@ func (t *TaskServer) Serve() {
 		port = defaultPort
 	}
 
+	//// Получаем пароль из переменной окружения
+	//pass := os.Getenv("TODO_PASSWORD")
+	//if len(pass) > 0 {
+	////
+	//}
 	handler := newHTTPHandler(t.services) // handlers creating
 	// Маршруты
 	r.Get("/api/nextdate", handler.NextDate)
-	r.Post("/api/task", handler.AddTask)
-	r.Get("/api/tasks", handler.GetTasks)
-	r.Get("/api/task", handler.GetTask)
-	r.Put("/api/task", handler.EditTask)
-	r.Post("/api/task/done", handler.DoneTask)
-	r.Delete("/api/task", handler.DeleteTask)
+	r.Post("/api/task", auth(handler.AddTask))
+	r.Get("/api/tasks", auth(handler.GetTasks))
+	r.Get("/api/task", auth(handler.GetTask))
+	r.Put("/api/task", auth(handler.EditTask))
+	r.Post("/api/task/done", auth(handler.DoneTask))
+	r.Delete("/api/task", auth(handler.DeleteTask))
+	r.Post("/api/signin", handler.SignIn)
 
 	// Запускаем сервер на порту 7540
 	log.Printf("Serving files from %s on port %s", filesDir, port)

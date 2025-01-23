@@ -1,23 +1,32 @@
 package httpserver
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/ASHmanR17/go_final_project/internal/database"
-
 	"github.com/ASHmanR17/go_final_project/internal/service"
 	"github.com/go-chi/chi/v5"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 const (
 	DateLayout = "20060102"
 	JsonValue  = "application/json; charset=UTF-8"
 )
+
+// создаём секретный ключ для подписи.
+var secret = "my_secret_key"
+var req struct {
+	Password string `json:"password"`
+}
 
 type httpHandler struct {
 	taskService service.TaskService
@@ -126,8 +135,10 @@ func (h httpHandler) AddTask(w http.ResponseWriter, r *http.Request) {
 
 // GetTasks Обработчик для получения списка задач
 func (h httpHandler) GetTasks(w http.ResponseWriter, r *http.Request) {
+	// Получаем параметр search из строки запроса
+	search := r.URL.Query().Get("search")
 
-	tasks, err := h.taskService.GetTasks()
+	tasks, err := h.taskService.GetTasks(search)
 	if err != nil {
 		// Формируем ответ с ошибкой в формате JSON
 		response := map[string]string{
@@ -242,61 +253,11 @@ func (h httpHandler) EditTask(w http.ResponseWriter, r *http.Request) {
 // DoneTask Обработчик для завершения задачи
 func (h httpHandler) DoneTask(w http.ResponseWriter, r *http.Request) {
 
-	// создаем объект типа Scheduler
-	var task database.Scheduler
 	id := r.URL.Query().Get("id")
 
-	// Получим из базы задачу по Id
-	task, err := h.taskService.GetTask(id)
+	err := h.taskService.DoneTask(id)
 	if err != nil {
 		// Формируем ответ с ошибкой в формате JSON
-		response := map[string]string{
-			"error": err.Error(),
-		}
-		w.Header().Set("Content-Type", JsonValue)
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(response)
-		return
-	}
-
-	// Если правила повторения нет, удаляем задачу из базы
-	if task.Repeat == "" {
-		err := h.taskService.DeleteTask(task.Id)
-		if err != nil {
-			// Формируем ответ с ошибкой в формате JSON
-			response := map[string]string{
-				"error": err.Error(),
-			}
-			w.Header().Set("Content-Type", JsonValue)
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(response)
-			return
-		}
-		// Формируем ответ с пустым JSON
-		response := map[string]string{}
-		w.Header().Set("Content-Type", JsonValue)
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(response)
-		return
-	}
-	// Получаем текущую дату и время
-	currentDate := time.Now()
-	// вычисляем следующую дату и заодно проверим правила повторения
-	nextDate, err := service.NextDate(currentDate, task.Date, task.Repeat)
-	if err != nil {
-		response := map[string]string{
-			"error": err.Error(),
-		}
-		w.Header().Set("Content-Type", JsonValue)
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(response)
-		return
-	}
-
-	// обновим в базе задачу с новой датой
-	task.Date = nextDate
-	err = h.taskService.UpdateTask(task)
-	if err != nil {
 		response := map[string]string{
 			"error": err.Error(),
 		}
@@ -311,6 +272,108 @@ func (h httpHandler) DoneTask(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", JsonValue)
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(response)
+}
+
+func (h httpHandler) SignIn(w http.ResponseWriter, r *http.Request) {
+	// Получаем пароль из тела запроса
+
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		response := map[string]string{
+			"error": fmt.Sprintf("Неверный формат запроса"),
+		}
+		w.Header().Set("Content-Type", JsonValue)
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+	// Сравниваем пароль с хранимым в переменной окружения
+	pass := os.Getenv("TODO_PASSWORD")
+	if req.Password != pass {
+		http.Error(w, "Неверный пароль", http.StatusUnauthorized)
+		return
+	}
+	if req.Password == pass {
+		fmt.Println("Пароль введен верно")
+	}
+	// проверяем cookie
+	cookie, err := r.Cookie("token")
+	if err == nil {
+		tokenString := cookie.Value
+		token, err := jwt.ParseWithClaims(tokenString, jwt.MapClaims{
+			"pwd": hashPassword(req.Password),
+		}, func(token *jwt.Token) (interface{}, error) {
+			return []byte(secret), nil
+		})
+
+		if err == nil && token.Valid { // Возвращаем токен в формате JSON
+			response := map[string]string{
+				"token": tokenString,
+			}
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(response)
+			return
+		}
+	}
+
+	// Создаем JWT-токен
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"pwd": hashPassword(req.Password),
+	})
+	tokenString, err := token.SignedString([]byte(secret))
+	if err != nil {
+		http.Error(w, "Ошибка при создании токена", http.StatusInternalServerError)
+		return
+	}
+
+	// Возвращаем токен в формате JSON
+	response := map[string]string{
+		"token": tokenString,
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+func hashPassword(password string) string {
+	// Создаем хэш пароля
+	hash := sha256.New()
+	hash.Write([]byte(password))
+	return hex.EncodeToString(hash.Sum(nil))
+}
+
+func auth(next http.HandlerFunc) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// смотрим наличие пароля
+		pass := os.Getenv("TODO_PASSWORD")
+		if len(pass) > 0 {
+			var jwtCook string // JWT-токен из куки
+			// получаем куку
+			cookie, err := r.Cookie("token")
+			fmt.Println(cookie)
+			if err == nil {
+				jwtCook = cookie.Value
+			}
+			// здесь код для валидации и проверки JWT-токена
+			// Проверяем токен на валидность
+			token, err := jwt.ParseWithClaims(jwtCook, jwt.MapClaims{
+				"pwd": hashPassword(req.Password),
+			}, func(token *jwt.Token) (interface{}, error) {
+				if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+					return nil, fmt.Errorf("неверный метод подписи: %v", token.Header["alg"])
+				}
+				return []byte(secret), nil
+			})
+
+			if err != nil || !token.Valid {
+				// возвращаем ошибку авторизации 401
+				http.Error(w, "Authentification required", http.StatusUnauthorized)
+				fmt.Println("Authentification required", err)
+				return
+			}
+
+		}
+		next(w, r)
+	})
 }
 
 // DeleteTask Обработчик для удаления задачи
