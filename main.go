@@ -15,6 +15,12 @@ func main() {
 	logCreateDatabase := CreateDatabase()
 	log.Println(logCreateDatabase)
 
+	// Инициализация базы данных
+	if err := initDB(); err != nil {
+		log.Fatalf("Ошибка подключения к базе данных: %v", err)
+	}
+	defer db.Close() // Закрываем соединение при завершении работы приложения
+
 	http.HandleFunc("/api/nextdate", nextDateHandler)  // Обработчик для /api/nextdate
 	http.HandleFunc("/api/tasks", tasksHandler)        // Обработчик для /api/tasks
 	http.HandleFunc("/api/task", taskHandler)          // Обработчик для добавления, получения, обновления, удаления задачи
@@ -64,7 +70,7 @@ func CreateDatabase() string {
             date TEXT NOT NULL,
             title TEXT NOT NULL,
             comment TEXT,
-            repeat TEXT
+            repeat VARCHAR(128)
         );
 		CREATE INDEX date_idx ON scheduler (date);
 		COMMIT;`

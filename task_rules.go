@@ -14,26 +14,32 @@ func NextDate(now time.Time, date string, repeat string) (string, error) {
 	}
 
 	// Парсинг исходной даты
-	taskDate, err := time.Parse("20060102", date)
+	taskDate, err := time.Parse(dateLayout, date)
 	if err != nil {
 		return "", fmt.Errorf("некорректная дата: %v", err)
 	}
 
-	// Проверка, что задача должна быть запланирована после now
-	if taskDate.Before(now) {
-		return now.Format("20060102"), nil
-	}
-
 	switch {
 	case repeat == "y":
-		return taskDate.AddDate(1, 0, 0).Format("20060102"), nil
+		taskDate = taskDate.AddDate(1, 0, 0)
+		for taskDate.Before(now) || taskDate.Equal(now) {
+			taskDate = taskDate.AddDate(1, 0, 0)
+		}
+		return taskDate.Format(dateLayout), nil
 
 	case strings.HasPrefix(repeat, "d "):
 		days, err := strconv.Atoi(strings.TrimPrefix(repeat, "d "))
 		if err != nil || days <= 0 || days > 400 {
 			return "", fmt.Errorf("некорректное правило d: %v", repeat)
 		}
-		return taskDate.AddDate(0, 0, days).Format("20060102"), nil
+		if days == 1 && now.After(taskDate) {
+			return now.Format(dateLayout), nil
+		}
+		taskDate = taskDate.AddDate(0, 0, days)
+		for taskDate.Before(now) || taskDate.Equal(now) {
+			taskDate = taskDate.AddDate(0, 0, days)
+		}
+		return taskDate.Format(dateLayout), nil
 
 	case strings.HasPrefix(repeat, "w "):
 		daysOfWeek := strings.Split(strings.TrimPrefix(repeat, "w "), ",")
