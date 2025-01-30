@@ -30,6 +30,7 @@ func openDB(t *testing.T) *sqlx.DB {
 		dbfile = envFile
 	}
 	db, err := sqlx.Connect("sqlite3", dbfile)
+
 	assert.NoError(t, err)
 	return db
 }
