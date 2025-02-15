@@ -7,7 +7,6 @@ import (
 	"strconv"
 )
 
-// Обработчик для добавления задачи
 func addTaskHandler(w http.ResponseWriter, r *http.Request) {
 	var task Task
 	if err := json.NewDecoder(r.Body).Decode(&task); err != nil {
@@ -30,7 +29,6 @@ func addTaskHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, `{"id":"%d"}`, id)
 }
 
-// Обработчик для получения списка задач
 func getTasksHandler(w http.ResponseWriter, r *http.Request) {
 	tasks, err := getTasks()
 	if err != nil {
@@ -42,7 +40,6 @@ func getTasksHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]interface{}{"tasks": tasks})
 }
 
-// Обработчик для отметки задачи как выполненной
 func doneTaskHandler(w http.ResponseWriter, r *http.Request) {
 	idStr := r.URL.Query().Get("id")
 	id, err := strconv.Atoi(idStr)

@@ -12,7 +12,6 @@ import (
 
 var db *sql.DB
 
-// Инициализация базы данных
 func initDB() *sql.DB {
 	appPath, err := os.Executable()
 	if err != nil {
@@ -25,7 +24,6 @@ func initDB() *sql.DB {
 		log.Fatal(err)
 	}
 
-	// Создание таблицы, если её нет
 	_, err = db.Exec(`
 		CREATE TABLE IF NOT EXISTS scheduler (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -43,7 +41,6 @@ func initDB() *sql.DB {
 	return db
 }
 
-// Добавление задачи в базу данных
 func addTask(task Task) (int64, error) {
 	res, err := db.Exec(`
 		INSERT INTO scheduler (date, title, comment, repeat)
@@ -55,7 +52,6 @@ func addTask(task Task) (int64, error) {
 	return res.LastInsertId()
 }
 
-// Получение списка задач
 func getTasks() ([]Task, error) {
 	rows, err := db.Query(`
 		SELECT id, date, title, comment, repeat
@@ -79,7 +75,6 @@ func getTasks() ([]Task, error) {
 	return tasks, nil
 }
 
-// Отметка задачи как выполненной
 func doneTask(id int) error {
 	var date, repeat string
 	err := db.QueryRow(`
@@ -90,10 +85,10 @@ func doneTask(id int) error {
 	}
 
 	if repeat == "" {
-		// Удаление задачи, если она не повторяющаяся
+
 		_, err = db.Exec(`DELETE FROM scheduler WHERE id = ?`, id)
 	} else {
-		// Обновление даты для повторяющейся задачи
+
 		newDate, err := NextDate(time.Now(), date, repeat)
 		if err != nil {
 			return err
