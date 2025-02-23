@@ -3,6 +3,7 @@ package tests
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"testing"
@@ -118,6 +119,8 @@ func TestEditTask(t *testing.T) {
 		assert.Equal(t, newVals["repeat"], task.Repeat)
 		now := time.Now().Format(`20060102`)
 		if task.Date < now {
+			log.Printf("d= %s", task.Date)
+			log.Printf("now = %s", now)
 			t.Errorf("Дата не может быть меньше сегодняшней")
 		}
 	}

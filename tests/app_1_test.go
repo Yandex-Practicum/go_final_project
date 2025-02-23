@@ -3,12 +3,14 @@ package tests
 import (
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -26,12 +28,21 @@ func getURL(path string) string {
 }
 
 func getBody(path string) ([]byte, error) {
-	resp, err := http.Get(getURL(path))
+
+	client := http.Client{
+		Timeout: 10 * time.Second, // Устанавливаем таймаут на 10 секунд
+	}
+	log.Println("готов к отправке запроса ")
+
+	resp, err := client.Get(getURL(path))
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
+
+	log.Printf("ответ получен %s ", string(body))
+
 	return body, err
 }
 

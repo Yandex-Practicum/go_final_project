@@ -3,6 +3,7 @@ package tests
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"testing"
 	"time"
@@ -21,6 +22,7 @@ func addTask(t *testing.T, task task) string {
 	assert.NotNil(t, ret["id"])
 	id := fmt.Sprint(ret["id"])
 	assert.NotEmpty(t, id)
+	log.Printf("результат addTask: id= %s", id)
 	return id
 }
 
@@ -35,6 +37,7 @@ func getTasks(t *testing.T, search string) []map[string]string {
 	var m map[string][]map[string]string
 	err = json.Unmarshal(body, &m)
 	assert.NoError(t, err)
+	log.Printf("результат getTasks: %+v", m["tasks"])
 	return m["tasks"]
 }
 
@@ -71,6 +74,7 @@ func TestTasks(t *testing.T) {
 		repeat:  "d 30",
 	})
 	tasks = getTasks(t, "")
+	log.Printf("задач: %d, ожидается 3", len(tasks))
 	assert.Equal(t, len(tasks), 3)
 
 	now = now.AddDate(0, 0, 2)
@@ -95,6 +99,7 @@ func TestTasks(t *testing.T) {
 	})
 
 	tasks = getTasks(t, "")
+	log.Printf("задач: %d, ожидается 6", len(tasks))
 	assert.Equal(t, len(tasks), 6)
 
 	if !Search {
@@ -102,7 +107,9 @@ func TestTasks(t *testing.T) {
 	}
 	tasks = getTasks(t, "УК")
 	assert.Equal(t, len(tasks), 1)
+	log.Printf("задач: %d, ожидается 1", len(tasks))
 	tasks = getTasks(t, now.Format(`02.01.2006`))
+	log.Printf("задач: %d, ожидается 3", len(tasks))
 	assert.Equal(t, len(tasks), 3)
 
 }
