@@ -7,16 +7,8 @@ import (
 	"os"
 	"strconv"
 
-	_ "github.com/mattn/go-sqlite3"
+	_ "modernc.org/sqlite"
 )
-
-type Scheduler struct {
-	ID      int
-	Date    string
-	Title   string
-	Comment string
-	Repeat  string
-}
 
 func InsertAndReturnID(db *sql.DB, date, title, comment, repeat string) (string, error) {
 

@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-const f = "20060102"
+const Format = "20060102"
 
 // ф-я для M. если третий параметр сущ-т && в нем есть текущий месяц || третьего параметра нет - дата подходит
 func shouldReturnDate(month int, monthSlice []int) bool {
@@ -68,12 +68,12 @@ func GetLastDayOfMonth(year int, month time.Month) time.Time {
 // основная ф-я. Обрабатывает все правила
 func NextDate(nowTime string, date string, repeat string) (string, error) {
 
-	now, err := time.Parse(f, nowTime) //парсинг даты
+	now, err := time.Parse(Format, nowTime) //парсинг даты
 	if err != nil {
 		return "", fmt.Errorf("неверный формат даты 'now'")
 	}
 
-	d, err := time.Parse(f, date) //парсинг даты запроса
+	d, err := time.Parse(Format, date) //парсинг даты запроса
 	if err != nil {
 		return "", fmt.Errorf("неверный формат даты 'date'")
 	}
@@ -101,11 +101,11 @@ func NextDate(nowTime string, date string, repeat string) (string, error) {
 			NewDate = d
 			for {
 				NewDate = NewDate.AddDate(1, 0, 0)
-				if NewDate.Format(f) > now.Format(f) {
+				if NewDate.Format(Format) > now.Format(Format) {
 					break
 				}
 			}
-			return NewDate.Format(f), nil
+			return NewDate.Format(Format), nil
 		} else {
 			return "", fmt.Errorf("лишние параметры")
 		}
@@ -134,12 +134,12 @@ func NextDate(nowTime string, date string, repeat string) (string, error) {
 					for {
 						NewDate = NewDate.AddDate(0, 0, SecondInt)
 
-						if NewDate.Format(f) > now.Format(f) {
+						if NewDate.Format(Format) > now.Format(Format) {
 							break
 						}
 
 					}
-					return NewDate.Format(f), nil
+					return NewDate.Format(Format), nil
 				} else {
 					return "", fmt.Errorf("недопустимое количество дней")
 				}
@@ -184,9 +184,9 @@ func NextDate(nowTime string, date string, repeat string) (string, error) {
 				thisWeekDay = thisWeekDay - nowDay
 				newDate := time.Date(d.Year(), d.Month(), d.Day()+thisWeekDay, 0, 0, 0, 0, d.Location())
 				log.Printf("newDate создан")
-				if newDate.Format(f) > now.Format(f) {
+				if newDate.Format(Format) > now.Format(Format) {
 
-					return newDate.Format(f), nil
+					return newDate.Format(Format), nil
 				} else {
 				}
 
@@ -195,8 +195,8 @@ func NextDate(nowTime string, date string, repeat string) (string, error) {
 			smallestDay = (7 - nowDay) + smallestDay
 			newDate := time.Date(d.Year(), d.Month(), d.Day()+smallestDay, 0, 0, 0, 0, d.Location())
 			for {
-				if newDate.Format(f) > now.Format(f) {
-					return newDate.Format(f), nil
+				if newDate.Format(Format) > now.Format(Format) {
+					return newDate.Format(Format), nil
 				}
 				newDate = time.Date(newDate.Year(), newDate.Month(), newDate.Day()+7, 0, 0, 0, 0, newDate.Location())
 
@@ -276,39 +276,39 @@ func NextDate(nowTime string, date string, repeat string) (string, error) {
 			if closestDay > 0 {
 
 				// 1.1 closestDay сущ-т в текущем месяце и негатива нет
-				if closestDay == closestDate.Day() && firstNegativeDay+secondNegativeDay == 0 && closestDate.Format(f) > now.Format(f) && closestDate.Format(f) > d.Format(f) {
+				if closestDay == closestDate.Day() && firstNegativeDay+secondNegativeDay == 0 && closestDate.Format(Format) > now.Format(Format) && closestDate.Format(Format) > d.Format(Format) {
 					// если третий параметр сущ-т && в нем есть текущий месяц || третьего параметра нет - дата подходит
 
 					if shouldReturnDate(int(d.Month()), monthSlice) {
-						return closestDate.Format(f), nil
+						return closestDate.Format(Format), nil
 					}
 				}
 				// 1.2 closestDay сущ-т в этом месяце и есть secondNegativeDay (-2)
-				if closestDay == closestDate.Day() && secondNegativeDay < 0 && secondNegativeDate.Format(f) > now.Format(f) && secondNegativeDate.Format(f) > d.Format(f) {
+				if closestDay == closestDate.Day() && secondNegativeDay < 0 && secondNegativeDate.Format(Format) > now.Format(Format) && secondNegativeDate.Format(Format) > d.Format(Format) {
 
-					if secondNegativeDate.Format(f) > closestDate.Format(f) && secondNegativeDate.Day() > nowDay {
+					if secondNegativeDate.Format(Format) > closestDate.Format(Format) && secondNegativeDate.Day() > nowDay {
 						if shouldReturnDate(int(d.Month()), monthSlice) {
-							return secondNegativeDate.Format(f), nil
+							return secondNegativeDate.Format(Format), nil
 						}
 					}
-					if secondNegativeDate.Format(f) > closestDate.Format(f) && closestDate.Day() > nowDay {
+					if secondNegativeDate.Format(Format) > closestDate.Format(Format) && closestDate.Day() > nowDay {
 						if shouldReturnDate(int(d.Month()), monthSlice) {
-							return closestDate.Format(f), nil
+							return closestDate.Format(Format), nil
 						}
 					}
 
 				}
 				// 1.3 closestDay сущ-т в этом месяце и есть firstNegativeDay (-1)
-				if closestDay == closestDate.Day() && firstNegativeDay < 0 && firstNegativeDate.Format(f) > now.Format(f) && firstNegativeDate.Format(f) > d.Format(f) {
+				if closestDay == closestDate.Day() && firstNegativeDay < 0 && firstNegativeDate.Format(Format) > now.Format(Format) && firstNegativeDate.Format(Format) > d.Format(Format) {
 
-					if firstNegativeDate.Format(f) < closestDate.Format(f) && firstNegativeDate.Day() > nowDay {
+					if firstNegativeDate.Format(Format) < closestDate.Format(Format) && firstNegativeDate.Day() > nowDay {
 						if shouldReturnDate(int(d.Month()), monthSlice) {
-							return firstNegativeDate.Format(f), nil
+							return firstNegativeDate.Format(Format), nil
 						}
 					}
-					if firstNegativeDate.Format(f) > closestDate.Format(f) && closestDate.Day() > nowDay {
+					if firstNegativeDate.Format(Format) > closestDate.Format(Format) && closestDate.Day() > nowDay {
 						if shouldReturnDate(int(d.Month()), monthSlice) {
-							return closestDate.Format(f), nil
+							return closestDate.Format(Format), nil
 						}
 					}
 
@@ -319,15 +319,15 @@ func NextDate(nowTime string, date string, repeat string) (string, error) {
 			if firstNegativeDay+secondNegativeDay != 0 {
 
 				//второй негатив подходит
-				if secondNegativeDay < 0 && secondNegativeDate.Format(f) > now.Format(f) && secondNegativeDate.Format(f) > d.Format(f) {
+				if secondNegativeDay < 0 && secondNegativeDate.Format(Format) > now.Format(Format) && secondNegativeDate.Format(Format) > d.Format(Format) {
 					if shouldReturnDate(int(d.Month()), monthSlice) {
-						return secondNegativeDate.Format(f), nil
+						return secondNegativeDate.Format(Format), nil
 					}
 				}
 				//первый негатив подходит
-				if firstNegativeDay < 0 && firstNegativeDate.Format(f) > now.Format(f) && firstNegativeDate.Format(f) > d.Format(f) {
+				if firstNegativeDay < 0 && firstNegativeDate.Format(Format) > now.Format(Format) && firstNegativeDate.Format(Format) > d.Format(Format) {
 					if shouldReturnDate(int(d.Month()), monthSlice) {
-						return firstNegativeDate.Format(f), nil
+						return firstNegativeDate.Format(Format), nil
 					}
 				}
 			}
@@ -347,9 +347,9 @@ func NextDate(nowTime string, date string, repeat string) (string, error) {
 						needDay = GetLastDayOfMonth(secondNegativeDate.Year(), secondNegativeDate.Month()+1)
 						secondNegativeDate = time.Date(secondNegativeDate.Year(), secondNegativeDate.Month()+1, needDay.Day()-1, 0, 0, 0, 0, secondNegativeDate.Location())
 						//чекаю получившуюся дату
-						if secondNegativeDate.Format(f) > now.Format(f) && secondNegativeDate.Format(f) > d.Format(f) {
+						if secondNegativeDate.Format(Format) > now.Format(Format) && secondNegativeDate.Format(Format) > d.Format(Format) {
 							if shouldReturnDate(int(secondNegativeDate.Month()), monthSlice) {
-								return secondNegativeDate.Format(f), nil
+								return secondNegativeDate.Format(Format), nil
 							}
 						}
 					}
@@ -361,9 +361,9 @@ func NextDate(nowTime string, date string, repeat string) (string, error) {
 						needDay = GetLastDayOfMonth(firstNegativeDate.Year(), firstNegativeDate.Month()+1)
 						firstNegativeDate = time.Date(firstNegativeDate.Year(), firstNegativeDate.Month()+1, needDay.Day(), 0, 0, 0, 0, secondNegativeDate.Location())
 						//чекаю получившуюся дату
-						if firstNegativeDate.Format(f) > now.Format(f) && firstNegativeDate.Format(f) > d.Format(f) {
+						if firstNegativeDate.Format(Format) > now.Format(Format) && firstNegativeDate.Format(Format) > d.Format(Format) {
 							if shouldReturnDate(int(firstNegativeDate.Month()), monthSlice) {
-								return firstNegativeDate.Format(f), nil
+								return firstNegativeDate.Format(Format), nil
 							}
 						}
 					}
@@ -378,9 +378,9 @@ func NextDate(nowTime string, date string, repeat string) (string, error) {
 			for {
 				// если  значение smallestDay не поменялось при добавлении в дату - smallestDay существует в рассматр-м месяце
 				if smallestDay == smallestDate.Day() {
-					if smallestDate.Format(f) > now.Format(f) {
+					if smallestDate.Format(Format) > now.Format(Format) {
 						if shouldReturnDate(int(smallestDate.Month()), monthSlice) {
-							return smallestDate.Format(f), nil
+							return smallestDate.Format(Format), nil
 						}
 					}
 				}
