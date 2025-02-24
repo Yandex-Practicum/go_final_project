@@ -8,7 +8,7 @@ import (
 	//"path/filepath"
 
 	"github.com/joho/godotenv"
-	_ "github.com/mattn/go-sqlite3"
+	_ "modernc.org/sqlite"
 
 	database "github.com/sandrinasava/go_final_project/db"
 	"github.com/sandrinasava/go_final_project/handlers"

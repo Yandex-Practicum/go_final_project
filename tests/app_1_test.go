@@ -3,7 +3,6 @@ package tests
 import (
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -32,7 +31,6 @@ func getBody(path string) ([]byte, error) {
 	client := http.Client{
 		Timeout: 10 * time.Second, // Устанавливаем таймаут на 10 секунд
 	}
-	log.Println("готов к отправке запроса ")
 
 	resp, err := client.Get(getURL(path))
 	if err != nil {
@@ -40,8 +38,6 @@ func getBody(path string) ([]byte, error) {
 	}
 	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
-
-	log.Printf("ответ получен %s ", string(body))
 
 	return body, err
 }

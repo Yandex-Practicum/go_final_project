@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	_ "github.com/mattn/go-sqlite3"
 	database "github.com/sandrinasava/go_final_project/db"
 	"github.com/sandrinasava/go_final_project/services"
+	_ "modernc.org/sqlite"
 )
 
 func sendErrorResponse(res http.ResponseWriter, message string, statusCode int) {
