@@ -12,13 +12,13 @@ import (
 	"strings"
 	"time"
 
-	_ "github.com/mattn/go-sqlite3" // Импортируем драйвер sqlite3
+	_ "github.com/mattn/go-sqlite3"
 )
 
 const dateFormat = "20060102"
 
 type Task struct {
-	ID      int64  `json:"id"`
+	ID      string `json:"id"`
 	Date    string `json:"date"`
 	Title   string `json:"title"`
 	Comment string `json:"comment,omitempty"`
@@ -28,22 +28,17 @@ type Task struct {
 var db *sql.DB
 
 func initDB() error {
-	// Получаем текущий рабочий каталог
 	appPath, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("failed to get current working directory: %v", err)
 	}
 
-	// Определяем полный путь к файлу базы данных
 	dbFile := filepath.Join(appPath, "scheduler.db")
-
-	// Открываем или создаем базу данных
 	db, err = sql.Open("sqlite3", dbFile)
 	if err != nil {
 		return fmt.Errorf("failed to open database: %v", err)
 	}
 
-	// Проверяем, существует ли таблица scheduler
 	_, err = db.Exec(`
         CREATE TABLE IF NOT EXISTS scheduler (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -187,7 +182,8 @@ func addTaskHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := map[string]interface{}{"id": strconv.FormatInt(id, 10)}
+	task.ID = strconv.FormatInt(id, 10)
+	response := map[string]interface{}{"id": task.ID}
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	json.NewEncoder(w).Encode(response)
 }
@@ -203,13 +199,15 @@ func getTasksHandler(w http.ResponseWriter, r *http.Request) {
 	var tasks []map[string]string
 	for rows.Next() {
 		var task Task
-		err := rows.Scan(&task.ID, &task.Date, &task.Title, &task.Comment, &task.Repeat)
+		var id int64
+		err := rows.Scan(&id, &task.Date, &task.Title, &task.Comment, &task.Repeat)
 		if err != nil {
 			http.Error(w, fmt.Sprintf(`{"error": "Failed to scan task: %v"}`, err), http.StatusInternalServerError)
 			return
 		}
+		task.ID = strconv.FormatInt(id, 10)
 		taskMap := map[string]string{
-			"id":      strconv.FormatInt(task.ID, 10),
+			"id":      task.ID,
 			"date":    task.Date,
 			"title":   task.Title,
 			"comment": task.Comment,
@@ -252,7 +250,7 @@ func getTaskHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response := map[string]string{
-		"id":      strconv.FormatInt(task.ID, 10),
+		"id":      task.ID,
 		"date":    task.Date,
 		"title":   task.Title,
 		"comment": task.Comment,
@@ -270,7 +268,7 @@ func updateTaskHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if task.ID == 0 {
+	if task.ID == "" {
 		http.Error(w, `{"error": "ID is required"}`, http.StatusBadRequest)
 		return
 	}
@@ -303,8 +301,14 @@ func updateTaskHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	id, err := strconv.ParseInt(task.ID, 10, 64)
+	if err != nil {
+		http.Error(w, `{"error": "Invalid ID format"}`, http.StatusBadRequest)
+		return
+	}
+
 	query := `UPDATE scheduler SET date = ?, title = ?, comment = ?, repeat = ? WHERE id = ?`
-	res, err := db.Exec(query, task.Date, task.Title, task.Comment, task.Repeat, task.ID)
+	res, err := db.Exec(query, task.Date, task.Title, task.Comment, task.Repeat, id)
 	if err != nil {
 		http.Error(w, fmt.Sprintf(`{"error": "Failed to update task: %v"}`, err), http.StatusInternalServerError)
 		return
@@ -343,9 +347,9 @@ func main() {
 
 	http.Handle("/", http.FileServer(http.Dir("./web")))
 	http.HandleFunc("/api/nextdate", nextDateHandler)
-	http.HandleFunc("/api/task/add", addTaskHandler) // Маршрут для добавления задачи
-	http.HandleFunc("/api/tasks", getTasksHandler)   // Маршрут для получения списка задач
-	http.HandleFunc("/api/task", taskHandler)        // Маршрут для получения и обновления задачи
+	http.HandleFunc("/api/task/add", addTaskHandler)
+	http.HandleFunc("/api/tasks", getTasksHandler)
+	http.HandleFunc("/api/task", taskHandler)
 
 	port := 7540
 	addr := ":" + strconv.Itoa(port)
