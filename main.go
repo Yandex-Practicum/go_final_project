@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/mattn/go-sqlite3" // Импортируем драйвер sqlite3
 )
 
 const dateFormat = "20060102"
@@ -28,17 +28,22 @@ type Task struct {
 var db *sql.DB
 
 func initDB() error {
+	// Получаем текущий рабочий каталог
 	appPath, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("failed to get current working directory: %v", err)
 	}
 
+	// Определяем полный путь к файлу базы данных
 	dbFile := filepath.Join(appPath, "scheduler.db")
+
+	// Открываем или создаем базу данных
 	db, err = sql.Open("sqlite3", dbFile)
 	if err != nil {
 		return fmt.Errorf("failed to open database: %v", err)
 	}
 
+	// Проверяем, существует ли таблица scheduler
 	_, err = db.Exec(`
         CREATE TABLE IF NOT EXISTS scheduler (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -123,17 +128,11 @@ func nextDateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := map[string]string{"next_date": nextDate}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	w.Write([]byte(nextDate))
 }
 
 func addTaskHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, `{"error": "Method Not Allowed"}`, http.StatusMethodNotAllowed)
-		return
-	}
-
 	var task Task
 	err := json.NewDecoder(r.Body).Decode(&task)
 	if err != nil {
@@ -329,12 +328,93 @@ func updateTaskHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{})
 }
 
+func taskDoneHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, `{"error": "Method Not Allowed"}`, http.StatusMethodNotAllowed)
+		return
+	}
+
+	idStr := r.URL.Query().Get("id")
+	if idStr == "" {
+		http.Error(w, `{"error": "Не указан идентификатор"}`, http.StatusBadRequest)
+		return
+	}
+
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		http.Error(w, `{"error": "Неверный формат идентификатора"}`, http.StatusBadRequest)
+		return
+	}
+
+	var task Task
+	err = db.QueryRow("SELECT id, date, title, comment, repeat FROM scheduler WHERE id = ?", id).Scan(&task.ID, &task.Date, &task.Title, &task.Comment, &task.Repeat)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			http.Error(w, `{"error": "Задача не найдена"}`, http.StatusNotFound)
+		} else {
+			http.Error(w, fmt.Sprintf(`{"error": "Ошибка при поиске задачи: %v"}`, err), http.StatusInternalServerError)
+		}
+		return
+	}
+
+	if task.Repeat == "" {
+		_, err = db.Exec("DELETE FROM scheduler WHERE id = ?", id)
+		if err != nil {
+			http.Error(w, fmt.Sprintf(`{"error": "Failed to delete task: %v"}`, err), http.StatusInternalServerError)
+			return
+		}
+	} else {
+		now := time.Now()
+		nextDate, err := NextDate(now, task.Date, task.Repeat)
+		if err != nil {
+			http.Error(w, fmt.Sprintf(`{"error": "Failed to calculate next date: %v"}`, err), http.StatusInternalServerError)
+			return
+		}
+
+		_, err = db.Exec("UPDATE scheduler SET date = ? WHERE id = ?", nextDate, id)
+		if err != nil {
+			http.Error(w, fmt.Sprintf(`{"error": "Failed to update task: %v"}`, err), http.StatusInternalServerError)
+			return
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	json.NewEncoder(w).Encode(map[string]string{})
+}
+
+func deleteTaskHandler(w http.ResponseWriter, r *http.Request) {
+	idStr := r.URL.Query().Get("id")
+	if idStr == "" {
+		http.Error(w, `{"error": "Не указан идентификатор"}`, http.StatusBadRequest)
+		return
+	}
+
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		http.Error(w, `{"error": "Неверный формат идентификатора"}`, http.StatusBadRequest)
+		return
+	}
+
+	_, err = db.Exec("DELETE FROM scheduler WHERE id = ?", id)
+	if err != nil {
+		http.Error(w, fmt.Sprintf(`{"error": "Failed to delete task: %v"}`, err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	json.NewEncoder(w).Encode(map[string]string{})
+}
+
 func taskHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
+	case http.MethodPost:
+		addTaskHandler(w, r)
 	case http.MethodGet:
 		getTaskHandler(w, r)
 	case http.MethodPut:
 		updateTaskHandler(w, r)
+	case http.MethodDelete:
+		deleteTaskHandler(w, r)
 	default:
 		http.Error(w, `{"error": "Method Not Allowed"}`, http.StatusMethodNotAllowed)
 	}
@@ -347,9 +427,9 @@ func main() {
 
 	http.Handle("/", http.FileServer(http.Dir("./web")))
 	http.HandleFunc("/api/nextdate", nextDateHandler)
-	http.HandleFunc("/api/task/add", addTaskHandler)
 	http.HandleFunc("/api/tasks", getTasksHandler)
-	http.HandleFunc("/api/task", taskHandler)
+	http.HandleFunc("/api/task", taskHandler)          // этот хэндлер решит, куда отправить — на создание задачи, получение по айди или редактирование
+	http.HandleFunc("/api/task/done", taskDoneHandler) // Маршрут для выполнения задачи
 
 	port := 7540
 	addr := ":" + strconv.Itoa(port)
