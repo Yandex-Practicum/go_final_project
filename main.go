@@ -47,10 +47,10 @@ func initDB() error {
 	_, err = db.Exec(`
         CREATE TABLE IF NOT EXISTS scheduler (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            date TEXT NOT NULL,
-            title TEXT NOT NULL,
-            comment TEXT,
-            repeat TEXT
+            date TEXT NOT NULL CHECK (LENGTH(date) <= 8),
+            title TEXT NOT NULL CHECK (LENGTH(title) <= 255),
+            comment TEXT CHECK (LENGTH(comment) <= 1024),
+            repeat TEXT CHECK (LENGTH(repeat) <= 128)
         );
         CREATE INDEX IF NOT EXISTS idx_date ON scheduler(date);
     `)
@@ -213,6 +213,12 @@ func getTasksHandler(w http.ResponseWriter, r *http.Request) {
 			"repeat":  task.Repeat,
 		}
 		tasks = append(tasks, taskMap)
+	}
+
+	// Check for errors from iterating over rows.
+	if err = rows.Err(); err != nil {
+		http.Error(w, fmt.Sprintf(`{"error": "Error iterating over rows: %v"}`, err), http.StatusInternalServerError)
+		return
 	}
 
 	if tasks == nil {
