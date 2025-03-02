@@ -31,7 +31,6 @@ func OpenStorage(storagePath string) (*Storage, error) {
     	title TEXT NOT NULL DEFAULT '',
     	comment TEXT NOT NULL DEFAULT '',
     	repeat VARCHAR(128) NOT NULL DEFAULT '');
-	
 	`)
 	if err != nil {
 		return nil, fmt.Errorf("database create error: %w\n", err)

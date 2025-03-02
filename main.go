@@ -18,23 +18,23 @@ import (
 
 func init() {
 	if err := godotenv.Load(); err != nil {
-		log.Fatalf("no .env file found: %v\n", err)
+		fmt.Printf("init: no .env file found: %v\n", err)
 	}
 }
 
 func main() {
 
-	t, e := myfunctions.NextDate(time.Now(), "", "")
+	t, e := myfunctions.NextDate(time.Now(), "20250301", "")
 	fmt.Println(t, e)
 
 	port, exists := os.LookupEnv("TODO_PORT")
 	if !exists {
-		port = "8080"
+		port = ":7540"
 	}
 
 	storagePath, exists := os.LookupEnv("TODO_DBFILE")
 	if !exists {
-		storagePath = "scheduler.db"
+		storagePath = "./scheduler.db"
 	}
 
 	database, err := storage.OpenStorage(storagePath)
