@@ -1,6 +1,8 @@
 package main
 
 import (
+	"database/sql"
+	"go_final_project/internal/middleware"
 	"go_final_project/internal/taskhandlers"
 	"go_final_project/pkg/db"
 	"log"
@@ -10,6 +12,13 @@ import (
 )
 
 func main() {
+	password := os.Getenv("TODO_PASSWORD")
+	if password == "" {
+		log.Println("TODO_PASSWORD is not set, using default password")
+		os.Setenv("TODO_PASSWORD", "your_secret_password") // Устанавливаем значение по умолчанию
+	}
+	log.Println("Current TODO_PASSWORD:", os.Getenv("TODO_PASSWORD"))
+
 	// Connect to the database
 	database, err := db.InitDB(db.GetDBFile())
 	if err != nil {
@@ -20,38 +29,25 @@ func main() {
 	// Set up API routes
 	apiRouter := http.NewServeMux()
 
-	// Handler for all methods on /api/task
-	apiRouter.HandleFunc("/api/task", func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case http.MethodPost:
-			taskhandlers.AddTaskHandler(database)(w, r)
-		case http.MethodGet:
-			taskhandlers.GetTaskHandler(database)(w, r)
-		case http.MethodPut:
-			taskhandlers.EditTaskHandler(database)(w, r)
-		case http.MethodDelete:
-			taskhandlers.DeleteTaskHandler(database)(w, r)
-		default:
-			http.Error(w, `{"error":"Method not supported"}`, http.StatusMethodNotAllowed)
-		}
-	})
+	// Authentication route (public)
+	apiRouter.HandleFunc("/api/signin", taskhandlers.SignInHandler)
 
-	apiRouter.HandleFunc("/api/tasks", taskhandlers.GetTasksHandler(database))
+	// Task management (protected)
+	apiRouter.HandleFunc("/api/task", middleware.AuthMiddleware(taskHandler(database)))
+
+	// Fetch tasks (protected)
+	apiRouter.HandleFunc("/api/tasks", middleware.AuthMiddleware(taskhandlers.GetTasksHandler(database)))
+
+	// Mark task as done (protected)
+	apiRouter.HandleFunc("/api/task/done", middleware.AuthMiddleware(taskhandlers.DoneTaskHandler(database)))
+
+	// Date calculation (public)
 	apiRouter.HandleFunc("/api/nextdate", taskhandlers.NextDateHandler)
-
-	// Added task completion handler
-	apiRouter.HandleFunc("/api/task/done", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodPost {
-			taskhandlers.DoneTaskHandler(database)(w, r)
-		} else {
-			http.Error(w, `{"error":"Method not supported"}`, http.StatusMethodNotAllowed)
-		}
-	})
 
 	// Attach API routes
 	http.Handle("/api/", apiRouter)
 
-	// Serve static files (fixed path)
+	// Serve static files
 	webDir := getWebDir()
 	if _, err := os.Stat(webDir); os.IsNotExist(err) {
 		log.Fatalf("Directory %s not found!", webDir)
@@ -60,11 +56,31 @@ func main() {
 	fileServer := http.FileServer(http.Dir(webDir))
 	http.Handle("/", fileServer)
 
+	log.Println("Current TODO_PASSWORD:", os.Getenv("TODO_PASSWORD"))
+
 	// Start the server
 	port := getPort()
 	log.Printf("🚀 Server is running at http://localhost%s...", port)
 	if err := http.ListenAndServe(port, nil); err != nil {
 		log.Fatalf("Server startup error: %v", err)
+	}
+}
+
+// taskHandler processes different HTTP methods for /api/task
+func taskHandler(db *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodPost:
+			taskhandlers.AddTaskHandler(db)(w, r)
+		case http.MethodGet:
+			taskhandlers.GetTaskHandler(db)(w, r)
+		case http.MethodPut:
+			taskhandlers.EditTaskHandler(db)(w, r)
+		case http.MethodDelete:
+			taskhandlers.DeleteTaskHandler(db)(w, r)
+		default:
+			http.Error(w, `{"error":"Method not supported"}`, http.StatusMethodNotAllowed)
+		}
 	}
 }
 
@@ -76,7 +92,7 @@ func getPort() string {
 	return ":7540"
 }
 
-// getWebDir returns the path to `go_final_project_ref/web`
+// getWebDir returns the path to `go_final_project/web`
 func getWebDir() string {
 	if envDir := os.Getenv("WEB_DIR"); envDir != "" {
 		log.Printf("📂 Using web client directory from environment variable: %s", envDir)
@@ -89,11 +105,11 @@ func getWebDir() string {
 		log.Fatalf("Error getting the working directory: %v", err)
 	}
 
-	// Traverse up to find the project root (go_final_project_ref)
+	// Traverse up to find the project root (`go_final_project`)
 	for !isProjectRoot(baseDir) {
 		baseDir = filepath.Dir(baseDir)
 		if baseDir == "/" {
-			log.Fatal("Failed to locate the project root go_final_project_ref")
+			log.Fatal("Failed to locate the project root `go_final_project`")
 		}
 	}
 
