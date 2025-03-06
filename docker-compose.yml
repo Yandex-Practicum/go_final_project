@@ -1,0 +1,21 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "7540:7540"
+    environment:
+      - SERVER_PORT=7540
+      - TODO_DBFILE=/app/scheduler.db
+    restart: always
+
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder
+    command: sh -c "./go_final_project & sleep 5 && go test -v ./tests"
+    environment:
+      - SERVER_PORT=7540
+      - TODO_DBFILE=/app/scheduler.db
