@@ -10,16 +10,17 @@ import (
 	"path/filepath"
 )
 
-// Инициализация базы данных.
+// Initializing the database.
 func InitDB() (*sqlx.DB, func(), error) {
 	dbFile := pathFileDB()
-	log.Println("dbFile:", dbFile)
 
+	// Opening a database connection.
 	db, err := sqlx.Open("sqlite3", dbFile)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error to open database: %w", err)
 	}
 
+	// A function for closing the database.
 	closeDB := func() {
 		err := db.Close()
 		if err != nil {
@@ -27,56 +28,53 @@ func InitDB() (*sqlx.DB, func(), error) {
 		}
 	}
 
-	if _, err := os.Stat(dbFile); os.IsNotExist(err) {
-		log.Println("Database file doesn't exist, creating...")
+	// Checking if the scheduler table exists.
+	var exists int
+	err = db.Get(&exists, "SELECT count(*) FROM sqlite_master WHERE type='table' AND name='scheduler'")
+	if err != nil || exists == 0 {
+		log.Println("Table 'scheduler' not found. Creating new database structure.")
 		err = createTableAndIndex(db)
 		if err != nil {
 			closeDB()
-			return nil, nil, fmt.Errorf("createTableAndIndex: %w", err)
+			return nil, nil, fmt.Errorf("error to create table: %w", err)
 		}
-		log.Println("Database created successfully")
 	}
+	log.Println("Database initialized successfully")
 	return db, closeDB, nil
 }
 
-// Путь к файлу базы данных.
+// The path to the database file.
 func pathFileDB() string {
+	// Checking the environment variable.
 	dbFile := os.Getenv("TODO_DBFILE")
 	if dbFile != "" {
-		log.Printf("The database file from the environment variable TODO_DBFILE: %s", dbFile)
 		return dbFile
 	}
 
+	// We get the path to the executable file and create the path to the database.
 	appPath, err := os.Executable()
 	if err != nil {
 		log.Fatalf("The file path is missing: %v", err)
 	}
-	dbFile = filepath.Join(filepath.Dir(appPath), "scheduler.db")
-	log.Printf("File database default: %s", dbFile)
-	return dbFile
+	return filepath.Join(filepath.Dir(appPath), "scheduler.db")
 }
 
-// Создание таблицы scheduler и индекса по полю date
+// Creating a scheduler table and an index for the date field
 func createTableAndIndex(db *sqlx.DB) error {
-	log.Println("Creating table scheduler")
 	// Создание таблицы по полю date
 	createTable := `CREATE TABLE scheduler (id INTEGER PRIMARY KEY AUTOINCREMENT, date TEXT NOT NULL, title TEXT NOT NULL, comment TEXT, repeat TEXT);`
 	// Создание индекса по полю ate
 	createIndex := `CREATE INDEX idx_date ON scheduler (date);`
 	_, err := db.Exec(createTable)
 	if err != nil {
-		log.Printf("error to create table: %v", err)
 		return fmt.Errorf("error to create table: %w", err)
 	}
-	log.Println("Table scheduler created successfully.")
-
-	log.Println("Creating indexes")
 	_, err = db.Exec(createIndex)
 	if err != nil {
-		log.Printf("error to create indexes: %v", err)
 		return fmt.Errorf("error to create index: %w", err)
 	}
-	log.Println("Indexes created successfully.")
+
+	log.Println("Table 'scheduler' and index 'idx_date' created successfully")
 	return nil
 }
 

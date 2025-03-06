@@ -35,13 +35,15 @@ func main() {
 	// Обработчик файлов
 	http.Handle("/", http.FileServer(http.Dir("web")))
 
-	http.HandleFunc("/tasks", handlers.GetTasksHandler(database))
-	http.HandleFunc("/addTask", handlers.AddTaskHandler(database))
+	http.HandleFunc("/api/tasks", handlers.GetTasksHandler(database))
+	http.HandleFunc("/api/task", handlers.AddTaskHandler(database))
+	http.HandleFunc("/api/nextdate", handlers.NextDateHandler(database))
 
 	// Запуск сервера
 	addrPort := fmt.Sprintf(":%d", port)
+	log.Printf("Server started on http://localhost: %s\n", addrPort)
 	err = http.ListenAndServe(addrPort, nil)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Failed to start server on port %s: %v", addrPort, err)
 	}
 }
