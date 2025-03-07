@@ -5,16 +5,17 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/joho/godotenv"
-	"todo_restapi/internal/myfunctions"
+	"todo_restapi/internal/handlers"
 	"todo_restapi/internal/storage"
 )
 
 // go test -run ^TestApp$ ./tests
 // go test -run ^TestDB$ ./tests
+// go test -run ^TestNextDate$ ./tests
+// go test -run ^TestAddTask$ ./tests
 
 func init() {
 	if err := godotenv.Load(); err != nil {
@@ -23,9 +24,6 @@ func init() {
 }
 
 func main() {
-
-	t, e := myfunctions.NextDate(time.Now(), "20250301", "")
-	fmt.Println(t, e)
 
 	port, exists := os.LookupEnv("TODO_PORT")
 	if !exists {
@@ -39,10 +37,10 @@ func main() {
 
 	database, err := storage.OpenStorage(storagePath)
 	if err != nil {
-		log.Fatalf("OpenStorage: %v\n", err)
+		log.Fatalf("OpenStorage: %v", err)
 	}
 
-	_ = database
+	taskHandler := handlers.NewTaskHandler(database)
 
 	router := chi.NewRouter()
 
@@ -51,6 +49,9 @@ func main() {
 	})
 
 	router.Handle("/*", http.StripPrefix("/", http.FileServer(http.Dir("web"))))
+
+	router.Get("/api/nextdate", handlers.NextDateHandler)
+	router.HandleFunc("/api/task", taskHandler.AddTask)
 
 	fmt.Printf("Server is running on port%s...\n", port)
 	if err := http.ListenAndServe(port, router); err != nil {

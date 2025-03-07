@@ -5,21 +5,26 @@ import (
 	"fmt"
 
 	_ "github.com/mattn/go-sqlite3"
+	"todo_restapi/internal/dto"
 )
 
 type Storage struct {
 	db *sql.DB
 }
 
+func NewStorage(db *sql.DB) *Storage {
+	return &Storage{db: db}
+}
+
 func OpenStorage(storagePath string) (*Storage, error) {
 
 	db, err := sql.Open("sqlite3", storagePath)
 	if err != nil {
-		return nil, fmt.Errorf("database open error: %w\n", err)
+		return nil, fmt.Errorf("database open error: %w", err)
 	}
 
 	if pingErr := db.Ping(); pingErr != nil {
-		return nil, fmt.Errorf("database connection error: %w\n", pingErr)
+		return nil, fmt.Errorf("database connection error: %w", pingErr)
 	} else {
 		fmt.Println("Connected to database!")
 	}
@@ -33,12 +38,32 @@ func OpenStorage(storagePath string) (*Storage, error) {
     	repeat VARCHAR(128) NOT NULL DEFAULT '');
 	`)
 	if err != nil {
-		return nil, fmt.Errorf("database create error: %w\n", err)
+		return nil, fmt.Errorf("database create error: %w", err)
 	}
 
 	_, err = db.Exec(`CREATE INDEX IF NOT EXISTS scheduler_date on scheduler(date);`)
 	if err != nil {
-		return nil, fmt.Errorf("index create error: %w\n", err)
+		return nil, fmt.Errorf("index create error: %w", err)
 	}
-	return &Storage{db: db}, nil
+	return NewStorage(db), nil
+}
+func (s *Storage) AddTask(task models.Task) (int64, error) {
+
+	statement, err := s.db.Prepare("INSERT INTO scheduler(date, title, comment, repeat) VALUES(?, ?, ?, ?)")
+	if err != nil {
+		return 0, fmt.Errorf("statement prepration error: %w", err)
+	}
+
+	defer statement.Close()
+
+	result, err := statement.Exec(task.Date, task.Title, task.Comment, task.Repeat)
+	if err != nil {
+		return 0, fmt.Errorf("statement execution error: %w", err)
+	}
+
+	taskID, err := result.LastInsertId()
+	if err != nil {
+		return 0, fmt.Errorf("getting ID error: %w", err)
+	}
+	return taskID, nil
 }
