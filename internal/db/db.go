@@ -85,12 +85,27 @@ func createTableAndIndex(db *sqlx.DB) error {
 	return nil
 }
 
-func GetTasks(db *sqlx.DB) ([]task.Task, error) {
+func GetTasks(db *sqlx.DB, search string, dateSearch string) ([]task.Task, error) {
 	var tasks []task.Task
-	err := db.Select(&tasks, "SELECT id, date, title, comment, repeat FROM scheduler ORDER BY date")
-	if err != nil {
-		return nil, fmt.Errorf("error to get tasks: %w", err)
+	var query string
+	var args []interface{}
+
+	if dateSearch != "" {
+		query = "SELECT * FROM scheduler WHERE date = ? ORDER BY date LIMIT 50"
+		args = append(args, dateSearch)
+	} else if search != "" {
+		searchPattern := "%" + search + "%"
+		query = `SELECT * FROM scheduler WHERE title LIKE ? OR comment LIKE ? ORDER BY date LIMIT 50`
+		args = append(args, searchPattern, searchPattern)
+	} else {
+		query = `SELECT * FROM scheduler ORDER BY date LIMIT 50`
 	}
+
+	err := db.Select(&tasks, query, args...)
+	if err != nil {
+		return nil, err
+	}
+
 	return tasks, nil
 }
 

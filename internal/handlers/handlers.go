@@ -14,15 +14,40 @@ import (
 
 func GetTasksHandler(dbase *sqlx.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		tasks, err := db.GetTasks(dbase)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
-		w.Header().Set("Content-Type", "application/json")
-		err = json.NewEncoder(w).Encode(tasks)
-		if err != nil {
+		if req.Method != http.MethodGet {
+			http.Error(w, `{"error":"Only GET method is supported"}`, http.StatusMethodNotAllowed)
 			return
 		}
+		search := req.URL.Query().Get("search")
+		var dateSearch string
+
+		if parsedDate, err := time.Parse("02.01.2006", search); err == nil {
+			dateSearch = parsedDate.Format("20060102")
+		}
+
+		tasks, err := db.GetTasks(dbase, search, dateSearch)
+		if err != nil {
+			http.Error(w, fmt.Sprintf(`{"error":"%s"}`, err.Error()), http.StatusInternalServerError)
+			return
+		}
+
+		if tasks == nil {
+			tasks = []task.Task{}
+		}
+
+		tasksList := make([]map[string]string, len(tasks))
+		for i, t := range tasks {
+			tasksList[i] = map[string]string{
+				"id":      strconv.FormatInt(t.ID, 10),
+				"date":    t.Date,
+				"title":   t.Title,
+				"comment": t.Comment,
+				"repeat":  t.Repeat,
+			}
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{"tasks": tasksList})
 	}
 }
 
