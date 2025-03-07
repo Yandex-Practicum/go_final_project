@@ -14,6 +14,10 @@ import (
 func InitDB() (*sqlx.DB, func(), error) {
 	dbFile := pathFileDB()
 
+	if _, err := os.Stat(dbFile); os.IsNotExist(err) {
+		log.Println("Database file not found, creating new one:", dbFile)
+	}
+
 	// Opening a database connection.
 	db, err := sqlx.Open("sqlite3", dbFile)
 	if err != nil {
@@ -28,18 +32,20 @@ func InitDB() (*sqlx.DB, func(), error) {
 		}
 	}
 
-	// Checking if the scheduler table exists.
-	var exists int
-	err = db.Get(&exists, "SELECT count(*) FROM sqlite_master WHERE type='table' AND name='scheduler'")
-	if err != nil || exists == 0 {
-		log.Println("Table 'scheduler' not found. Creating new database structure.")
+	rows, err := db.Query("SELECT name FROM sqlite_master WHERE type='table' AND name='scheduler';")
+	if err != nil {
+		closeDB()
+		return nil, nil, fmt.Errorf("error checking table existence: %w", err)
+	}
+	defer rows.Close()
+
+	if !rows.Next() {
 		err = createTableAndIndex(db)
 		if err != nil {
 			closeDB()
-			return nil, nil, fmt.Errorf("error to create table: %w", err)
+			return nil, nil, fmt.Errorf("error creating table and index: %w", err)
 		}
 	}
-	log.Println("Database initialized successfully")
 	return db, closeDB, nil
 }
 
@@ -51,12 +57,13 @@ func pathFileDB() string {
 		return dbFile
 	}
 
-	// We get the path to the executable file and create the path to the database.
-	appPath, err := os.Executable()
+	// Get the path to the executable file and create the path to the database.
+	currentDir, err := os.Getwd()
 	if err != nil {
 		log.Fatalf("The file path is missing: %v", err)
 	}
-	return filepath.Join(filepath.Dir(appPath), "scheduler.db")
+	dbFile = filepath.Join(filepath.Join(currentDir), "scheduler.db")
+	return dbFile
 }
 
 // Creating a scheduler table and an index for the date field
@@ -88,13 +95,15 @@ func GetTasks(db *sqlx.DB) ([]task.Task, error) {
 }
 
 func AddTask(db *sqlx.DB, task *task.Task) (int64, error) {
-	res, err := db.NamedExec("INSERT INTO scheduler (date, title, comment, repeat) VALUES (:date, :title, :comment, :repeat)", task)
+	query := "INSERT INTO scheduler (date, title, comment, repeat) VALUES (:date, :title, :comment, :repeat)"
+
+	res, err := db.NamedExec(query, task)
 	if err != nil {
-		return 0, fmt.Errorf("error to add task: %w", err)
+		return 0, fmt.Errorf("error inserting task: %w", err)
 	}
 	id, err := res.LastInsertId()
 	if err != nil {
-		return 0, fmt.Errorf("error to get ID: %w", err)
+		return 0, fmt.Errorf("error getting last insert ID: %w", err)
 	}
 	return id, nil
 }

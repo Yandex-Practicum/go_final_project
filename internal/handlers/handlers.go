@@ -6,7 +6,6 @@ import (
 	"github.com/jmoiron/sqlx"
 	"go_final-project/internal/db"
 	"go_final-project/internal/task"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -36,21 +35,51 @@ func AddTaskHandler(dbase *sqlx.DB) http.HandlerFunc {
 		var newTask task.Task
 		err := json.NewDecoder(req.Body).Decode(&newTask)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			http.Error(w, `{"error":"Invalid JSON format"}`, http.StatusBadRequest)
 			return
+		}
+
+		if newTask.Title == "" {
+			http.Error(w, `{"error":"Title is required"}`, http.StatusBadRequest)
+			return
+		}
+
+		now := time.Now()
+		today := now.Format("20060102")
+
+		if newTask.Date == "" {
+			newTask.Date = today
+		} else {
+			_, err := time.Parse("20060102", newTask.Date)
+			if err != nil {
+				http.Error(w, `{"error":"Invalid date format, use YYYYMMDD"}`, http.StatusBadRequest)
+				return
+			}
+		}
+
+		taskDate, _ := time.Parse("20060102", newTask.Date)
+
+		if taskDate.Before(now) {
+			if newTask.Repeat == "" {
+				newTask.Date = today
+			} else {
+				nextDate, err := NextDate(now, newTask.Date, newTask.Repeat)
+				if err != nil || nextDate == "" {
+					http.Error(w, `{"error":"Invalid repeat format or no valid next date found"}`, http.StatusBadRequest)
+					return
+				}
+				newTask.Date = nextDate
+			}
 		}
 
 		id, err := db.AddTask(dbase, &newTask)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			http.Error(w, `{"error":"Failed to save task"}`, http.StatusInternalServerError)
 			return
 		}
-		newTask.ID = id
+
 		w.Header().Set("Content-Type", "application/json")
-		err = json.NewEncoder(w).Encode(newTask)
-		if err != nil {
-			return
-		}
+		json.NewEncoder(w).Encode(map[string]int64{"id": id})
 	}
 }
 
@@ -59,21 +88,18 @@ func NextDateHandler(dbase *sqlx.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		now, err := parseDate(req.URL.Query().Get("now"), time.Now())
 		if err != nil {
-			log.Printf("invalid 'now' date format: %v", err)
 			http.Error(w, "Invalid 'now' date format. Use YYYYMMDD.", http.StatusBadRequest)
 			return
 		}
 
 		dateStr := req.URL.Query().Get("date")
 		if _, err := parseDate(dateStr, time.Time{}); err != nil {
-			log.Printf("invalid 'date' format: %v", err)
 			http.Error(w, "Invalid 'date' format. Use YYYYMMDD.", http.StatusBadRequest)
 			return
 		}
 
 		nextDate, err := NextDate(now, dateStr, req.URL.Query().Get("repeat"))
 		if err != nil {
-			log.Printf("NextDate calculation error: %v", err)
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
@@ -106,17 +132,19 @@ func NextDate(now time.Time, dateStr string, repeatStr string) (string, error) {
 		return "", fmt.Errorf("the repeat parameter is not specified")
 	}
 
-	switch repeatStr[0] {
-	case 'd':
+	firstRepeatLetter := string(repeatStr[0])
+
+	switch firstRepeatLetter {
+	case "d":
 		return dailyRepeat(now, date, repeatStr)
-	case 'y':
+	case "y":
 		return yearlyRepeat(now, date)
-	case 'w':
+	case "w":
 		return weeklyRepeat(now, date, repeatStr)
-	case 'm':
+	case "m":
 		return monthlyRepeat(now, date, repeatStr)
 	default:
-		return "", fmt.Errorf("unsupported repeat parameter")
+		return "", fmt.Errorf("unsupported repeat parameter: %s", repeatStr)
 	}
 }
 
@@ -136,7 +164,7 @@ func dailyRepeat(now, date time.Time, repeatStr string) (string, error) {
 
 	var nextDate time.Time
 	nextDate = date.AddDate(0, 0, days)
-	for nextDate.Before(now) || nextDate.Equal(now) {
+	for nextDate.Before(now) {
 		nextDate = nextDate.AddDate(0, 0, days)
 	}
 	return nextDate.Format("20060102"), nil
@@ -146,7 +174,7 @@ func dailyRepeat(now, date time.Time, repeatStr string) (string, error) {
 func yearlyRepeat(now, date time.Time) (string, error) {
 	var nextDate time.Time
 	nextDate = date.AddDate(1, 0, 0)
-	for nextDate.Before(now) || nextDate.Equal(now) {
+	for nextDate.Before(now) {
 		nextDate = nextDate.AddDate(1, 0, 0)
 	}
 	return nextDate.Format("20060102"), nil
@@ -173,7 +201,7 @@ func weeklyRepeat(now, date time.Time, repeatStr string) (string, error) {
 
 	var nextDate time.Time
 	nextDate = date
-	if nextDate.Before(now) || nextDate.Equal(now) {
+	if nextDate.Before(now) {
 		nextDate = now.AddDate(0, 0, 1)
 	}
 	for {
