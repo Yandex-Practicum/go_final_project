@@ -75,25 +75,24 @@ func ActionTask(w http.ResponseWriter, r *http.Request) {
 		id := r.FormValue("id")
 
 		// Проверяем не пустой ли id
-		switch {
-		case id == "":
+		if id == "" {
 			fmt.Println("Не указан идентификатор")
-			JSONError(w, "Не указан идентификатор", http.StatusNotFound)
+			JSONError(w, "Не указан идентификатор", http.StatusBadRequest)
 			return
-		default:
-			task, err = database.GetTaskByID(id)
-			if err != nil {
-				fmt.Println("Ошибка получения задачи по id: ", err.Error())
-				JSONError(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
+		}
 
-			resp, err = json.Marshal(task)
-			if err != nil {
-				fmt.Println("Не удалось упаковать ошибку в JSON: ", err.Error())
-				JSONError(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
+		task, err = database.GetTaskByID(id)
+		if err != nil {
+			fmt.Println("Ошибка получения задачи по id: ", err.Error())
+			JSONError(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		resp, err = json.Marshal(task)
+		if err != nil {
+			fmt.Println("Не удалось упаковать ошибку в JSON: ", err.Error())
+			JSONError(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
 
 		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
@@ -106,7 +105,7 @@ func ActionTask(w http.ResponseWriter, r *http.Request) {
 		// проверяем, что передан json
 		if !strings.HasPrefix(r.Header.Get("Content-Type"), "application/json") {
 			fmt.Println("Необходимо передать json в запросе")
-			JSONError(w, "Необходимо передать json в запросе", http.StatusUnsupportedMediaType)
+			JSONError(w, "Необходимо передать json в запросе", http.StatusBadRequest)
 			return
 		}
 
@@ -133,7 +132,7 @@ func ActionTask(w http.ResponseWriter, r *http.Request) {
 		// проверяем, что дата корректно передана
 		if _, err = time.Parse(dateFormat, task.Date); err != nil {
 			fmt.Println("Ошибка преобразования параметра date в дату")
-			JSONError(w, "Ошибка преобразования параметра date в дату", http.StatusUnprocessableEntity)
+			JSONError(w, "Ошибка преобразования параметра date в дату", http.StatusBadRequest)
 			return
 		}
 
@@ -156,7 +155,7 @@ func ActionTask(w http.ResponseWriter, r *http.Request) {
 		// проверяем, что заголовок задачи обязательно передан
 		if task.Title == "" {
 			fmt.Println("Заголовок задачи title обязателен, но не передан")
-			JSONError(w, "Заголовок задачи title обязателен, но не передан", http.StatusUnprocessableEntity)
+			JSONError(w, "Заголовок задачи title обязателен, но не передан", http.StatusBadRequest)
 			return
 		}
 
@@ -187,7 +186,7 @@ func ActionTask(w http.ResponseWriter, r *http.Request) {
 		// проверяем, что передан json
 		if !strings.HasPrefix(r.Header.Get("Content-Type"), "application/json") {
 			fmt.Println("Необходимо передать json в запросе")
-			JSONError(w, "Необходимо передать json в запросе", http.StatusUnsupportedMediaType)
+			JSONError(w, "Необходимо передать json в запросе", http.StatusBadRequest)
 			return
 		}
 
@@ -209,7 +208,7 @@ func ActionTask(w http.ResponseWriter, r *http.Request) {
 		// проверяем, что id передан
 		if task.Id == "" {
 			fmt.Println("Идентификатор задачи id обязателен, но не передан")
-			JSONError(w, "Идентификатор задачи id обязателен, но не передан", http.StatusUnprocessableEntity)
+			JSONError(w, "Идентификатор задачи id обязателен, но не передан", http.StatusBadRequest)
 			return
 		}
 
@@ -221,7 +220,7 @@ func ActionTask(w http.ResponseWriter, r *http.Request) {
 		// проверяем, что дата корректно передана
 		if _, err = time.Parse(dateFormat, task.Date); err != nil {
 			fmt.Println("Ошибка преобразования параметра date в дату")
-			JSONError(w, "Ошибка преобразования параметра date в дату", http.StatusUnprocessableEntity)
+			JSONError(w, "Ошибка преобразования параметра date в дату", http.StatusBadRequest)
 			return
 		}
 
@@ -244,7 +243,7 @@ func ActionTask(w http.ResponseWriter, r *http.Request) {
 		// проверяем, что заголовок задачи обязательно передан
 		if task.Title == "" {
 			fmt.Println("Заголовок задачи title обязателен, но не передан")
-			JSONError(w, "Заголовок задачи title обязателен, но не передан", http.StatusUnprocessableEntity)
+			JSONError(w, "Заголовок задачи title обязателен, но не передан", http.StatusBadRequest)
 			return
 		}
 
@@ -270,7 +269,7 @@ func ActionTask(w http.ResponseWriter, r *http.Request) {
 		// проверяем не пустой ли id
 		if id == "" {
 			fmt.Println("Не указан идентификатор")
-			JSONError(w, "Не указан идентификатор", http.StatusNotFound)
+			JSONError(w, "Не указан идентификатор", http.StatusBadRequest)
 			return
 		}
 
@@ -327,7 +326,7 @@ func DoneTask(w http.ResponseWriter, r *http.Request) {
 	// проверяем не пустой ли id
 	if id == "" {
 		fmt.Println("Не указан идентификатор")
-		JSONError(w, "Не указан идентификатор", http.StatusNotFound)
+		JSONError(w, "Не указан идентификатор", http.StatusBadRequest)
 		return
 	}
 

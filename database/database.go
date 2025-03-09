@@ -46,8 +46,7 @@ func ConnectDB() (*sqlx.DB, error) {
 	// настройка подключения к БД
 	db, err := sqlx.Open("sqlite3", "scheduler.db")
 	if err != nil {
-		fmt.Println(err)
-		return nil, err
+		log.Fatal(err)
 	}
 
 	// если БД отсутствовала, то создаём таблицу и индекс
@@ -58,20 +57,17 @@ func ConnectDB() (*sqlx.DB, error) {
 
 		// создание таблицы
 		if _, err = db.Exec(createTableSQL); err != nil {
-			fmt.Println("ERROR: create table - ", err)
-			return nil, err
+			log.Fatal(err)
 		}
 
 		// создание индекса
 		if _, err = db.Exec(createIndexSQL); err != nil {
-			fmt.Println("ERROR: create index - ", err)
-			return nil, err
+			log.Fatal(err)
 		}
 
 		// вставка записи
 		/*if _, err = db.Exec("INSERT INTO scheduler (date, title, comment, repeat) VALUES('20250218', 'Тест title', 'Тест comment', 'Тест repeat')"); err != nil {
-			fmt.Println("ERROR: insert into - ", err)
-			return nil, err
+			log.Fatal(err)
 		}*/
 	}
 
@@ -89,17 +85,15 @@ func PostTask(tsk model.Task) (int, error) {
 		sql.Named("comment", tsk.Comment),
 		sql.Named("repeat", tsk.Repeat))
 	if err != nil {
-		fmt.Println("ERROR: insert into - ", err)
-		return 0, err
+		return 0, fmt.Errorf("ошибка вставки задачи: %w", err)
 	}
 
 	id, err := res.LastInsertId()
 	if err != nil {
-		fmt.Println("ERROR: не удалось получить последний id - ", err)
-		return 0, err
+		return 0, fmt.Errorf("ошибка получения последнего id: %w", err)
 	}
 
-	return int(id), err
+	return int(id), nil
 }
 
 func ListTasks(cnt int) (model.TasksType, error) {
@@ -110,8 +104,7 @@ func ListTasks(cnt int) (model.TasksType, error) {
 	rows, err := Db.Query("SELECT id, date, title, comment, repeat FROM scheduler ORDER BY date LIMIT :limit",
 		sql.Named("limit", cnt))
 	if err != nil {
-		fmt.Println("ERROR: select - ", err)
-		return retData, err
+		return retData, fmt.Errorf("ошибка чтения списка задач: %w", err)
 	}
 
 	defer rows.Close()
@@ -121,7 +114,7 @@ func ListTasks(cnt int) (model.TasksType, error) {
 
 		err := rows.Scan(&p.Id, &p.Date, &p.Title, &p.Comment, &p.Repeat)
 		if err != nil {
-			return retData, err
+			return retData, fmt.Errorf("ошибка чтения очередной задачи из списка: %w", err)
 		}
 
 		retData.Tasks = append(retData.Tasks, p)
@@ -143,15 +136,14 @@ func GetTaskByID(id string) (model.Task, error) {
 		sql.Named("id", id))
 
 	err := row.Scan(&retData.Id, &retData.Date, &retData.Title, &retData.Comment, &retData.Repeat)
-	if err != nil && err != sql.ErrNoRows {
-		fmt.Println("ERROR: scan by select - ", err)
-		return retData, err
-	}
-
 	// проверка, что задача найдена в БД
-	if retData.Id == "" {
+	if errors.Is(err, sql.ErrNoRows) {
 		fmt.Println("ERROR: задача не найдена")
 		return retData, errors.New("задача не найдена")
+	}
+
+	if err != nil {
+		return retData, fmt.Errorf("ошибка чтения задачи по id: %w", err)
 	}
 
 	return retData, nil
@@ -166,19 +158,16 @@ func UpdateTask(tsk model.Task) error {
 		sql.Named("repeat", tsk.Repeat),
 		sql.Named("id", tsk.Id))
 	if err != nil {
-		fmt.Println("ERROR: update - ", err)
-		return err
+		return fmt.Errorf("ошибка редактирования задачи: %w", err)
 	}
 
 	cnt, err := res.RowsAffected()
 	if err != nil {
-		fmt.Println("ERROR: не удалось получить количество обновленных записей - ", err)
-		return err
+		return fmt.Errorf("не удалось получить количество обновленных записей: %w", err)
 	}
 
 	// проверка, что задачу обновили в БД
 	if cnt == 0 {
-		fmt.Println("ERROR: обновление не прошло, задача не найдена")
 		return errors.New("задача не найдена")
 	}
 
@@ -189,19 +178,16 @@ func DeleteTask(id string) error {
 	// удаление задачи из БД
 	res, err := Db.Exec("DELETE FROM scheduler WHERE id = :id", sql.Named("id", id))
 	if err != nil {
-		fmt.Println("ERROR: update - ", err)
-		return err
+		return fmt.Errorf("ошибка удаления задачи: %w", err)
 	}
 
 	cnt, err := res.RowsAffected()
 	if err != nil {
-		fmt.Println("ERROR: не удалось получить количество удаленных записей - ", err)
-		return err
+		return fmt.Errorf("не удалось получить количество удаленных записей: %w", err)
 	}
 
 	// проверка, что задачу удалили в БД
 	if cnt == 0 {
-		fmt.Println("ERROR: удаление не прошло, задача не найдена")
 		return errors.New("задача не найдена")
 	}
 
@@ -213,16 +199,14 @@ func DoneTask(id string) error {
 	// получаем задачу
 	task, err := GetTaskByID(id)
 	if err != nil {
-		fmt.Println("ERROR: GetTaskByID - ", err)
-		return err
+		return fmt.Errorf("ошибка получения задачи по id: %w", err)
 	}
 
 	// если задача без повторения, то удаляем ее
 	if task.Repeat == "" {
 		err = DeleteTask(id)
 		if err != nil {
-			fmt.Println("ERROR: DeleteTask - ", err)
-			return err
+			return fmt.Errorf("ошибка удаления задачи: %w", err)
 		}
 		return nil
 	}
@@ -232,14 +216,12 @@ func DoneTask(id string) error {
 
 	task.Date, err = date.NextDate(now, task.Date, task.Repeat)
 	if err != nil {
-		fmt.Println("ERROR: NextDate - ", err)
-		return err
+		return fmt.Errorf("ошибка получения даты следующего выполнения задачи: %w", err)
 	}
 
 	err = UpdateTask(task)
 	if err != nil {
-		fmt.Println("ERROR: UpdateTask - ", err)
-		return err
+		return fmt.Errorf("ошибка обновления задачи: %w", err)
 	}
 
 	return nil

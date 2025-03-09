@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 
@@ -16,8 +17,7 @@ func main() {
 	// подключаемся к БД
 	_, err := database.ConnectDB()
 	if err != nil {
-		fmt.Println(err)
-		return
+		log.Fatal(err)
 	}
 
 	// отключаемся по завершении функции
@@ -39,7 +39,7 @@ func main() {
 	http.HandleFunc("/api/tasks", handlers.GetTasks)
 	http.HandleFunc("/api/task/done", handlers.DoneTask)
 
-	fmt.Println("Server is listening...")
+	fmt.Println("Server is listening...", port)
 
 	if err := http.ListenAndServe(port, nil); err != nil {
 		fmt.Printf("Ошибка при запуске сервера: %s", err.Error())
