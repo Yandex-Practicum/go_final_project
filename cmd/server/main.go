@@ -38,8 +38,7 @@ func main() {
 	// API маршруты
 	http.HandleFunc("/api/tasks", handlers.GetTasksHandler(database))
 	http.HandleFunc("/api/task", handlers.TaskHandler(database))
-
-	// Обработчик расчета следующей даты
+	http.HandleFunc("/api/task/done", handlers.MarkTaskDoneHandler(database))
 	http.HandleFunc("/api/nextdate", handlers.NextDateHandler(database))
 
 	// Запуск сервера

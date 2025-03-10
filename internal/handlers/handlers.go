@@ -256,6 +256,62 @@ func updateTask(dbase *sqlx.DB, w http.ResponseWriter, req *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{})
 }
 
+func MarkTaskDoneHandler(dbase *sqlx.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		if req.Method != "POST" {
+			sendJSONError(w, "Invalid method", http.StatusMethodNotAllowed)
+			return
+		}
+
+		idStr := req.URL.Query().Get("id")
+		if idStr == "" {
+			sendJSONError(w, "id is required", http.StatusBadRequest)
+			return
+		}
+
+		id, err := strconv.ParseInt(idStr, 10, 64)
+		if err != nil || id <= 0 {
+			sendJSONError(w, "id error format", http.StatusBadRequest)
+			return
+		}
+
+		// Получаю задачу из БД
+		task, err := db.GetTaskByID(dbase, id)
+		if err != nil {
+			sendJSONError(w, "task not found", http.StatusNotFound)
+			return
+		}
+
+		// Если у задачи нет повторения - удаляем
+		if task.Repeat == "" {
+			err = db.DeleteTask(dbase, id)
+			if err != nil {
+				sendJSONError(w, "Failed to delete task", http.StatusInternalServerError)
+				return
+			}
+		} else {
+			// Рассчитываю новую дату выполнения
+			nextDate, err := NextDate(time.Now(), task.Date, task.Repeat)
+			if err != nil {
+				sendJSONError(w, "Failed to calculate next date", http.StatusBadRequest)
+				return
+			}
+			task.Date = nextDate
+
+			// Обновляю задачу
+			err = db.UpdateTask(dbase, task)
+			if err != nil {
+				sendJSONError(w, "Failed to update task", http.StatusInternalServerError)
+				return
+			}
+		}
+
+		// Отправляю успешный JSON-ответ
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{})
+	}
+}
+
 func deleteTask(dbase *sqlx.DB, w http.ResponseWriter, req *http.Request) {
 	// Проверяю, передан ли ID
 	idStr := req.URL.Query().Get("id")

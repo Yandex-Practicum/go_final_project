@@ -77,7 +77,7 @@ func createTableAndIndex(db *sqlx.DB) error {
     comment TEXT,
     repeat TEXT
                        );`
-	// Создание индекса по полю ate
+	// Создание индекса по полю date
 	createIndex := `CREATE INDEX idx_date ON scheduler (date);`
 	_, err := db.Exec(createTable)
 	if err != nil {
