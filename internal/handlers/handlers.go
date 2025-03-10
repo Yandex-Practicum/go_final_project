@@ -35,9 +35,9 @@ func GetTasksHandler(dbase *sqlx.DB) http.HandlerFunc {
 			tasks = []task.Task{}
 		}
 
-		tasksList := make([]map[string]string, len(tasks))
+		tasksList := make([]map[string]interface{}, len(tasks))
 		for i, t := range tasks {
-			tasksList[i] = map[string]string{
+			tasksList[i] = map[string]interface{}{
 				"id":      strconv.FormatInt(t.ID, 10),
 				"date":    t.Date,
 				"title":   t.Title,
@@ -51,61 +51,242 @@ func GetTasksHandler(dbase *sqlx.DB) http.HandlerFunc {
 	}
 }
 
-func AddTaskHandler(dbase *sqlx.DB) http.HandlerFunc {
+func TaskHandler(dbase *sqlx.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		if req.Method != http.MethodPost {
-			http.Error(w, "Only POST method is supported.", http.StatusMethodNotAllowed)
+		switch req.Method {
+		case http.MethodGet:
+			getTask(dbase, w, req)
+		case http.MethodPost:
+			addTask(dbase, w, req)
+		case http.MethodPut:
+			updateTask(dbase, w, req)
+		case http.MethodDelete:
+			deleteTask(dbase, w, req)
+		default:
+			sendJSONError(w, "Only GET, POST, PUT, DELETE methods are supported.", http.StatusMethodNotAllowed)
+		}
+	}
+}
+
+func getTask(dbase *sqlx.DB, w http.ResponseWriter, req *http.Request) {
+	// Проверяем наличие параметра id
+	idStr := req.URL.Query().Get("id")
+	if idStr == "" {
+		sendJSONError(w, "id is required", http.StatusBadRequest)
+		return
+	}
+
+	// Преобразую id в число
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		sendJSONError(w, "id error format", http.StatusBadRequest)
+		return
+	}
+
+	// Получаем задачу из БД
+	task, err := db.GetTaskByID(dbase, id)
+	if err != nil {
+		sendJSONError(w, "issue not found", http.StatusBadRequest)
+		return
+	}
+
+	response := map[string]interface{}{
+		"id":      strconv.FormatInt(task.ID, 10),
+		"date":    task.Date,
+		"title":   task.Title,
+		"comment": task.Comment,
+		"repeat":  task.Repeat,
+	}
+
+	// Отправляю JSON-ответ
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+func addTask(dbase *sqlx.DB, w http.ResponseWriter, req *http.Request) {
+	var newTask task.Task
+
+	// Декодирую JSON
+	err := json.NewDecoder(req.Body).Decode(&newTask)
+	if err != nil {
+		sendJSONError(w, "Invalid JSON format", http.StatusBadRequest)
+		return
+	}
+
+	// Проверяю есть ли заголовок
+	if newTask.Title == "" {
+		sendJSONError(w, "Title is required", http.StatusBadRequest)
+		return
+	}
+	now := time.Now().Truncate(24 * time.Hour)
+	today := now.Format("20060102")
+
+	// Если дата не передана, ставим сегодняшнюю
+	if newTask.Date == "" {
+		newTask.Date = today
+	} else {
+		if _, err := time.Parse("20060102", newTask.Date); err != nil {
+			sendJSONError(w, "date error format", http.StatusBadRequest)
 			return
 		}
-		var newTask task.Task
-		err := json.NewDecoder(req.Body).Decode(&newTask)
-		if err != nil {
-			http.Error(w, `{"error":"Invalid JSON format"}`, http.StatusBadRequest)
-			return
-		}
+	}
+	taskDate, _ := time.Parse("20060102", newTask.Date)
 
-		if newTask.Title == "" {
-			http.Error(w, `{"error":"Title is required"}`, http.StatusBadRequest)
-			return
-		}
-
-		now := time.Now()
-		today := now.Format("20060102")
-
-		if newTask.Date == "" {
-			newTask.Date = today
-		} else {
-			_, err := time.Parse("20060102", newTask.Date)
-			if err != nil {
-				http.Error(w, `{"error":"Invalid date format, use YYYYMMDD"}`, http.StatusBadRequest)
+	// Обрабатываю повторяющиеся задачи
+	if newTask.Repeat != "" {
+		if taskDate.Before(now) {
+			nextDate, err := NextDate(now, newTask.Date, newTask.Repeat)
+			if err != nil || nextDate == "" {
+				sendJSONError(w, "Invalid repeat format or no valid next date found", http.StatusBadRequest)
 				return
 			}
+			newTask.Date = nextDate
 		}
+	} else if taskDate.Before(now) {
+		newTask.Date = today
+	}
 
-		taskDate, _ := time.Parse("20060102", newTask.Date)
+	// Добавляю задачу в БД
+	id, err := db.AddTask(dbase, &newTask)
+	if err != nil {
+		sendJSONError(w, "Failed to save task", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"id": strconv.FormatInt(id, 10)})
+}
 
-		if taskDate.Before(now) {
-			if newTask.Repeat == "" {
-				newTask.Date = today
-			} else {
-				nextDate, err := NextDate(now, newTask.Date, newTask.Repeat)
-				if err != nil || nextDate == "" {
-					http.Error(w, `{"error":"Invalid repeat format or no valid next date found"}`, http.StatusBadRequest)
-					return
-				}
-				newTask.Date = nextDate
-			}
-		}
+func updateTask(dbase *sqlx.DB, w http.ResponseWriter, req *http.Request) {
+	// Декодирую JSON в промежуточную структуру
+	var rawData map[string]interface{}
+	err := json.NewDecoder(req.Body).Decode(&rawData)
+	if err != nil {
+		sendJSONError(w, "Invalid JSON format", http.StatusBadRequest)
+		return
+	}
 
-		id, err := db.AddTask(dbase, &newTask)
+	// Проверяю и конвертирую ID
+	idValue, ok := rawData["id"]
+	if !ok {
+		sendJSONError(w, "id is required", http.StatusBadRequest)
+		return
+	}
+
+	var id int64
+	switch v := idValue.(type) {
+	case string:
+		id, err = strconv.ParseInt(v, 10, 64)
 		if err != nil {
-			http.Error(w, `{"error":"Failed to save task"}`, http.StatusInternalServerError)
+			sendJSONError(w, "id error format", http.StatusBadRequest)
 			return
 		}
-
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]int64{"id": id})
+	case float64:
+		id = int64(v)
+	default:
+		sendJSONError(w, "id error format", http.StatusBadRequest)
+		return
 	}
+
+	// Удаляю строковый ID из исходного JSON и подставляю int64 ID
+	rawData["id"] = id
+
+	// Преобразую обратно в JSON
+	updatedJSON, err := json.Marshal(rawData)
+	if err != nil {
+		sendJSONError(w, "Server error", http.StatusInternalServerError)
+		return
+	}
+
+	// Декодирую JSON в Task
+	var updatedTask task.Task
+	err = json.Unmarshal(updatedJSON, &updatedTask)
+	if err != nil {
+		sendJSONError(w, "Invalid JSON format", http.StatusBadRequest)
+		return
+	}
+
+	// Загружаю текущую версию задачи из базы
+	existingTask, err := db.GetTaskByID(dbase, id)
+	if err != nil {
+		sendJSONError(w, "Task not found", http.StatusNotFound)
+		return
+	}
+
+	// Проверяю, что title передан и не пустой
+	if updatedTask.Title == "" {
+		sendJSONError(w, "Title is required", http.StatusBadRequest)
+		return
+	}
+
+	// Обновляю только переданные поля, сохраняя старые значения
+	if updatedTask.Date == "" {
+		updatedTask.Date = existingTask.Date
+	}
+	if updatedTask.Comment == "" {
+		updatedTask.Comment = existingTask.Comment
+	}
+	if updatedTask.Repeat == "" {
+		updatedTask.Repeat = existingTask.Repeat
+	}
+
+	// Проверяю корректность даты
+	if _, err := time.Parse("20060102", updatedTask.Date); err != nil {
+		sendJSONError(w, "Invalid date format", http.StatusBadRequest)
+		return
+	}
+
+	// Проверяю корректность repeat
+	if updatedTask.Repeat != "" {
+		_, err := NextDate(time.Now(), updatedTask.Date, updatedTask.Repeat)
+		if err != nil {
+			sendJSONError(w, "Invalid repeat format", http.StatusBadRequest)
+			return
+		}
+	}
+
+	// Обновляю задачу в БД
+	err = db.UpdateTask(dbase, &updatedTask)
+	if err != nil {
+		sendJSONError(w, "issue not found", http.StatusBadRequest)
+		return
+	}
+
+	// Отправляю пустой JSON (успешное выполнение)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{})
+}
+
+func deleteTask(dbase *sqlx.DB, w http.ResponseWriter, req *http.Request) {
+	// Проверяю, передан ли ID
+	idStr := req.URL.Query().Get("id")
+	if idStr == "" {
+		sendJSONError(w, "id is required", http.StatusBadRequest)
+		return
+	}
+
+	// Преобразую ID в число
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil || id <= 0 {
+		sendJSONError(w, "id error format", http.StatusBadRequest)
+		return
+	}
+
+	// Удаляю задачу
+	err = db.DeleteTask(dbase, id)
+	if err != nil {
+		sendJSONError(w, "Task not found", http.StatusNotFound)
+		return
+	}
+
+	// Отправляю пустой JSON (успешное выполнение)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{})
+}
+
+func sendJSONError(w http.ResponseWriter, message string, statusCode int) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(statusCode)
+	json.NewEncoder(w).Encode(map[string]string{"error": message})
 }
 
 // NextDateHandler determines the next date according to the request parameters.
@@ -187,10 +368,11 @@ func dailyRepeat(now, date time.Time, repeatStr string) (string, error) {
 		return "", fmt.Errorf("the minimum and maximum allowed number of days is 1 and 400")
 	}
 
-	var nextDate time.Time
-	nextDate = date.AddDate(0, 0, days)
-	for nextDate.Before(now) {
-		nextDate = nextDate.AddDate(0, 0, days)
+	nextDate := date.AddDate(0, 0, days)
+	if nextDate.Before(now) {
+		for !nextDate.After(now) {
+			nextDate = nextDate.AddDate(0, 0, days)
+		}
 	}
 	return nextDate.Format("20060102"), nil
 }

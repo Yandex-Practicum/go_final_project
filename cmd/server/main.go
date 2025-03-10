@@ -35,8 +35,11 @@ func main() {
 	// Обработчик файлов
 	http.Handle("/", http.FileServer(http.Dir("web")))
 
+	// API маршруты
 	http.HandleFunc("/api/tasks", handlers.GetTasksHandler(database))
-	http.HandleFunc("/api/task", handlers.AddTaskHandler(database))
+	http.HandleFunc("/api/task", handlers.TaskHandler(database))
+
+	// Обработчик расчета следующей даты
 	http.HandleFunc("/api/nextdate", handlers.NextDateHandler(database))
 
 	// Запуск сервера

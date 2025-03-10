@@ -1,6 +1,7 @@
 package db
 
 import (
+	"database/sql"
 	"fmt"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
@@ -69,7 +70,13 @@ func pathFileDB() string {
 // Creating a scheduler table and an index for the date field
 func createTableAndIndex(db *sqlx.DB) error {
 	// Создание таблицы по полю date
-	createTable := `CREATE TABLE scheduler (id INTEGER PRIMARY KEY AUTOINCREMENT, date TEXT NOT NULL, title TEXT NOT NULL, comment TEXT, repeat TEXT);`
+	createTable := `CREATE TABLE scheduler (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    date TEXT NOT NULL,
+    title TEXT NOT NULL,
+    comment TEXT,
+    repeat TEXT
+                       );`
 	// Создание индекса по полю ate
 	createIndex := `CREATE INDEX idx_date ON scheduler (date);`
 	_, err := db.Exec(createTable)
@@ -91,7 +98,7 @@ func GetTasks(db *sqlx.DB, search string, dateSearch string) ([]task.Task, error
 	var args []interface{}
 
 	if dateSearch != "" {
-		query = "SELECT * FROM scheduler WHERE date = ? ORDER BY date LIMIT 50"
+		query = `SELECT * FROM scheduler WHERE date = ? ORDER BY date LIMIT 50`
 		args = append(args, dateSearch)
 	} else if search != "" {
 		searchPattern := "%" + search + "%"
@@ -109,8 +116,21 @@ func GetTasks(db *sqlx.DB, search string, dateSearch string) ([]task.Task, error
 	return tasks, nil
 }
 
+func GetTaskByID(db *sqlx.DB, id int64) (*task.Task, error) {
+	var t task.Task
+	query := "SELECT * FROM scheduler WHERE id = ?"
+	err := db.Get(&t, query, id)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("task not found")
+		}
+		return nil, fmt.Errorf("database error: %w", err)
+	}
+	return &t, nil
+}
+
 func AddTask(db *sqlx.DB, task *task.Task) (int64, error) {
-	query := "INSERT INTO scheduler (date, title, comment, repeat) VALUES (:date, :title, :comment, :repeat)"
+	query := `INSERT INTO scheduler (date, title, comment, repeat) VALUES (:date, :title, :comment, :repeat)`
 
 	res, err := db.NamedExec(query, task)
 	if err != nil {
@@ -121,4 +141,37 @@ func AddTask(db *sqlx.DB, task *task.Task) (int64, error) {
 		return 0, fmt.Errorf("error getting last insert ID: %w", err)
 	}
 	return id, nil
+}
+
+func UpdateTask(db *sqlx.DB, t *task.Task) error {
+	query := `UPDATE scheduler
+	SET date=:date, title=:title, comment=:comment, repeat=:repeat
+	WHERE id = :id`
+
+	res, err := db.NamedExec(query, t)
+	if err != nil {
+		return fmt.Errorf("error updating task: %w", err)
+	}
+
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("error checking changes: %w", err)
+	}
+	if rowsAffected == 0 {
+		return fmt.Errorf("issue not found")
+	}
+	return nil
+}
+
+func DeleteTask(db *sqlx.DB, id int64) error {
+	query := "DELETE FROM scheduler WHERE id = ?"
+	res, err := db.Exec(query, id)
+	if err != nil {
+		return err
+	}
+	rowsAffected, _ := res.RowsAffected()
+	if rowsAffected == 0 {
+		return fmt.Errorf("issue not found")
+	}
+	return nil
 }
