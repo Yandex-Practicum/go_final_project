@@ -1,11 +1,10 @@
 module github.com/Sclea3/go_final_project
 
-go 1.23.5
+go 1.22.2
 
 require (
 	github.com/jmoiron/sqlx v1.4.0
-	github.com/joho/godotenv v1.5.1
-	github.com/mattn/go-sqlite3 v1.14.22
+	github.com/mattn/go-sqlite3 v1.14.24
 	github.com/stretchr/testify v1.10.0
 )
 

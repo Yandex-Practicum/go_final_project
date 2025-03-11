@@ -2,40 +2,49 @@ package db
 
 import (
 	"database/sql"
-	"fmt"
 	"log"
+	"os"
+	"path/filepath"
 
 	_ "github.com/mattn/go-sqlite3"
 )
 
-// InitDB открывает или создаёт базу данных по указанному пути,
-// создаёт таблицу scheduler и индекс по полю date.
-func InitDB(dbPath string) (*sql.DB, error) {
-	log.Printf("Создание базы данных")
-	db, err := sql.Open("sqlite3", dbPath)
-	if err != nil {
-		return nil, fmt.Errorf("ошибка открытия БД: %w", err)
+// InitDB открывает или создаёт базу данных и инициализирует таблицу scheduler.
+func InitDB() (*sql.DB, error) {
+	// Если переменная окружения TODO_DBFILE указана, используем её; иначе scheduler.db в папке приложения.
+	dbFile := os.Getenv("TODO_DBFILE")
+	if dbFile == "" {
+		exe, err := os.Executable()
+		if err != nil {
+			return nil, err
+		}
+		dbFile = filepath.Join(filepath.Dir(exe), "scheduler.db")
 	}
 
-	createTable := `
-	CREATE TABLE IF NOT EXISTS scheduler (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		date TEXT NOT NULL,
-		title TEXT NOT NULL,
-		comment TEXT,
-		repeat TEXT
-	);
-	`
-	_, err = db.Exec(createTable)
+	// Если файл базы данных отсутствует, нужно создать таблицу.
+	_, err := os.Stat(dbFile)
+	install := err != nil
+
+	database, err := sql.Open("sqlite3", dbFile)
 	if err != nil {
-		return nil, fmt.Errorf("ошибка создания таблицы: %w", err)
+		return nil, err
 	}
 
-	createIndex := `CREATE INDEX IF NOT EXISTS idx_date ON scheduler(date);`
-	_, err = db.Exec(createIndex)
-	if err != nil {
-		return nil, fmt.Errorf("ошибка создания индекса: %w", err)
+	if install {
+		createTable := `
+		CREATE TABLE scheduler (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			date TEXT NOT NULL,
+			title TEXT NOT NULL,
+			comment TEXT,
+			repeat TEXT
+		);
+		CREATE INDEX idx_date ON scheduler(date);
+		`
+		if _, err := database.Exec(createTable); err != nil {
+			return nil, err
+		}
+		log.Println("База данных создана:", dbFile)
 	}
-
-	return db, nil
+	return database, nil
 }
