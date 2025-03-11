@@ -66,17 +66,17 @@ func (h *TaskHandler) AddTask(write http.ResponseWriter, request *http.Request) 
 			return
 		}
 
-		if newTask.Date == "" || newTask.Date == "today" {
+		if newTask.Date == "" {
 			newTask.Date = now
 		}
 
-		newDate, err := time.Parse(constants.DateFormat, newTask.Date)
+		_, err := time.Parse(constants.DateFormat, newTask.Date)
 		if err != nil {
 			myfunctions.WriteJSONError(write, http.StatusBadRequest, "invalid date format")
 			return
 		}
 
-		if newDate.Before(time.Now()) {
+		if newTask.Date < now {
 			if newTask.Repeat == "" {
 				newTask.Date = now
 			} else {

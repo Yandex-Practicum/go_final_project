@@ -87,10 +87,6 @@ func NextDate(now time.Time, date string, repeat string) (string, error) {
 			return "", errors.New("invalid \"d\" value (400 is max)")
 		}
 
-		//if firstRepeatPattern[0] == 1 && !dateParse.Before(now) {
-		//	return dateParse.Format(constants.DateFormat), nil
-		//}
-
 		dateParse = dateParse.AddDate(0, 0, firstRepeatPattern[0])
 		for dateParse.Before(now) {
 			dateParse = dateParse.AddDate(0, 0, firstRepeatPattern[0])

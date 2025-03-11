@@ -67,3 +67,7 @@ func (s *Storage) AddTask(task models.Task) (int64, error) {
 	}
 	return taskID, nil
 }
+
+func (s *Storage) GetAllTasks() ([]models.Task, error) {
+	
+}
