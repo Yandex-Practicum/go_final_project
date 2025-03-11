@@ -51,7 +51,8 @@ func NextDateHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // TaskHandler обрабатывает запросы по маршруту /api/task.
-// Поддерживает GET (получение задачи по id), POST (добавление задачи) и PUT (редактирование задачи).
+// Поддерживает GET (получение задачи по id), POST (добавление задачи),
+// PUT (редактирование задачи) и DELETE (удаление задачи).
 func TaskHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
@@ -60,6 +61,8 @@ func TaskHandler(w http.ResponseWriter, r *http.Request) {
 		addTask(w, r)
 	case http.MethodPut:
 		editTask(w, r)
+	case http.MethodDelete:
+		deleteTask(w, r)
 	default:
 		respondWithError(w, http.StatusMethodNotAllowed, "Метод не поддерживается")
 	}
@@ -94,9 +97,9 @@ func addTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Если дата не указана, берём сегодняшнюю дату.
 	today := time.Now().Format(DateLayout)
-	if strings.TrimSpace(task.Date) == "" {
+	// Если поле date пустое или равно "today" (регистр не важен) – используем сегодняшнюю дату.
+	if strings.TrimSpace(task.Date) == "" || strings.ToLower(task.Date) == "today" {
 		task.Date = today
 	} else {
 		parsedDate, err := time.Parse(DateLayout, task.Date)
@@ -183,14 +186,34 @@ func editTask(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusOK, map[string]string{})
 }
 
-// TasksHandler возвращает список задач. Поддерживается фильтрация по параметру search.
+// deleteTask удаляет задачу по id.
+func deleteTask(w http.ResponseWriter, r *http.Request) {
+	id := r.URL.Query().Get("id")
+	if id == "" {
+		respondWithError(w, http.StatusBadRequest, "Не указан идентификатор")
+		return
+	}
+	res, err := DB.Exec("DELETE FROM scheduler WHERE id = ?", id)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	rows, err := res.RowsAffected()
+	if err != nil || rows == 0 {
+		respondWithError(w, http.StatusNotFound, "Задача не найдена")
+		return
+	}
+	respondWithJSON(w, http.StatusOK, map[string]string{})
+}
+
+// TasksHandler возвращает список задач с опциональной фильтрацией по параметру search.
 func TasksHandler(w http.ResponseWriter, r *http.Request) {
 	search := r.URL.Query().Get("search")
 	var rows *sql.Rows
 	var err error
 	limit := 50
 
-	// Если параметр search соответствует формату даты "02.01.2006", преобразуем его в формат DateLayout.
+	// Если параметр search соответствует формату даты "02.01.2006", преобразуем его в DateLayout.
 	if t, errParse := time.Parse("02.01.2006", search); errParse == nil {
 		search = t.Format(DateLayout)
 		rows, err = DB.Query("SELECT id, date, title, comment, repeat FROM scheduler WHERE date = ? ORDER BY date LIMIT ?", search, limit)
@@ -218,21 +241,20 @@ func TasksHandler(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusOK, map[string]interface{}{"tasks": tasks})
 }
 
-// DoneHandler обрабатывает запросы по маршруту /api/task/done для отметки задачи как выполненной (POST)
-// или удаления задачи (DELETE).
+// DoneHandler обрабатывает запросы по маршруту /api/task/done для отметки задачи как выполненной (POST).
+// Для повторяющихся задач вычисляется новая дата, для одноразовых – задача удаляется.
 func DoneHandler(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Query().Get("id")
 	if id == "" {
 		respondWithError(w, http.StatusBadRequest, "Не указан идентификатор")
 		return
 	}
+
 	switch r.Method {
 	case http.MethodPost:
-		// Отметить задачу как выполненную.
 		row := DB.QueryRow("SELECT id, date, repeat FROM scheduler WHERE id = ?", id)
 		var task models.Task
-		err := row.Scan(&task.ID, &task.Date, &task.Repeat)
-		if err != nil {
+		if err := row.Scan(&task.ID, &task.Date, &task.Repeat); err != nil {
 			respondWithError(w, http.StatusNotFound, "Задача не найдена")
 			return
 		}
@@ -245,7 +267,6 @@ func DoneHandler(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		} else {
-			// Повторяющаяся задача – вычисляем новую дату.
 			newDate, err := scheduler.NextDate(todayTime, task.Date, task.Repeat)
 			if err != nil {
 				respondWithError(w, http.StatusBadRequest, err.Error())
@@ -256,13 +277,6 @@ func DoneHandler(w http.ResponseWriter, r *http.Request) {
 				respondWithError(w, http.StatusInternalServerError, err.Error())
 				return
 			}
-		}
-		respondWithJSON(w, http.StatusOK, map[string]string{})
-	case http.MethodDelete:
-		_, err := DB.Exec("DELETE FROM scheduler WHERE id = ?", id)
-		if err != nil {
-			respondWithError(w, http.StatusInternalServerError, err.Error())
-			return
 		}
 		respondWithJSON(w, http.StatusOK, map[string]string{})
 	default:

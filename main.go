@@ -10,7 +10,6 @@ import (
 )
 
 func main() {
-	// Инициализируем базу данных и сохраняем подключение в глобальной переменной пакета api.
 	var err error
 	api.DB, err = db.InitDB()
 	if err != nil {

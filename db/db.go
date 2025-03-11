@@ -9,42 +9,50 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-// InitDB открывает или создаёт базу данных и инициализирует таблицу scheduler.
+// InitDB удаляет существующий файл базы данных (если он есть) и создаёт новую базу в указанном месте.
 func InitDB() (*sql.DB, error) {
-	// Если переменная окружения TODO_DBFILE указана, используем её; иначе scheduler.db в папке приложения.
+	// Если переменная окружения TODO_DBFILE указана, используем её; иначе база будет храниться в корневой директории проекта.
 	dbFile := os.Getenv("TODO_DBFILE")
 	if dbFile == "" {
-		exe, err := os.Executable()
-		if err != nil {
-			return nil, err
+		dbFile = "scheduler.db"
+	} else {
+		absPath, err := filepath.Abs(dbFile)
+		if err == nil {
+			dbFile = absPath
 		}
-		dbFile = filepath.Join(filepath.Dir(exe), "scheduler.db")
 	}
 
-	// Если файл базы данных отсутствует, нужно создать таблицу.
-	_, err := os.Stat(dbFile)
-	install := err != nil
+	// Если файл базы данных существует, удаляем его.
+	if _, err := os.Stat(dbFile); err == nil {
+		if err := os.Remove(dbFile); err != nil {
+			return nil, err
+		}
+	}
 
 	database, err := sql.Open("sqlite3", dbFile)
 	if err != nil {
 		return nil, err
 	}
 
-	if install {
-		createTable := `
-		CREATE TABLE scheduler (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			date TEXT NOT NULL,
-			title TEXT NOT NULL,
-			comment TEXT,
-			repeat TEXT
-		);
-		CREATE INDEX idx_date ON scheduler(date);
-		`
-		if _, err := database.Exec(createTable); err != nil {
-			return nil, err
-		}
-		log.Println("База данных создана:", dbFile)
+	// Создаем таблицу, если её нет.
+	createTableStmt := `
+	CREATE TABLE IF NOT EXISTS scheduler (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		date TEXT NOT NULL,
+		title TEXT NOT NULL,
+		comment TEXT,
+		repeat TEXT
+	);`
+	if _, err := database.Exec(createTableStmt); err != nil {
+		return nil, err
 	}
+
+	// Создаем индекс, если его нет.
+	createIndexStmt := `CREATE INDEX IF NOT EXISTS idx_date ON scheduler(date);`
+	if _, err := database.Exec(createIndexStmt); err != nil {
+		return nil, err
+	}
+
+	log.Println("База данных инициализирована:", dbFile)
 	return database, nil
 }
