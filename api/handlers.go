@@ -38,16 +38,19 @@ func NextDateHandler(w http.ResponseWriter, r *http.Request) {
 
 	now, err := time.Parse(DateLayout, nowStr)
 	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "Неверный формат параметра now")
+		http.Error(w, "Неверный формат параметра now", http.StatusBadRequest)
 		return
 	}
 
 	next, err := scheduler.NextDate(now, dateStr, repeat)
 	if err != nil {
-		respondWithError(w, http.StatusBadRequest, err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	respondWithJSON(w, http.StatusOK, map[string]string{"date": next})
+
+	w.Header().Set("Content-Type", "text/plain; charset=UTF-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(next))
 }
 
 // TaskHandler обрабатывает запросы по маршруту /api/task.
