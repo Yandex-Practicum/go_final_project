@@ -47,7 +47,7 @@ func TestDB(t *testing.T) {
 	VALUES (?, 'Todo', 'Комментарий', '')`, today)
 	assert.NoError(t, err)
 
-	id, err := res.LastInsertId()
+	id, _ := res.LastInsertId()
 
 	var task Task
 	err = db.Get(&task, `SELECT * FROM scheduler WHERE id=?`, id)
