@@ -1,29 +1,30 @@
-FROM golang:1.23.1 AS builder
+FROM golang:1.23.1-alpine3.20 AS builder
 
 WORKDIR /app
 
 COPY go.mod go.sum ./
-
 RUN go mod download
 
 COPY . .
 
-COPY .env .
+RUN apk add --no-cache gcc musl-dev sqlite
 
-RUN apk add --no-cache gcc musl-dev
-
-RUN CGO_ENABLED=1 GOOS=linux go build -o go_final_project
+RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -o /app/server cmd/server/main.go
 
 FROM alpine:latest
 
 WORKDIR /app
 
-COPY --from=build /app/go_final_project ./
+RUN apk add --no-cache ca-certificates sqlite
 
-COPY --from=build /app/web ./web
+COPY .env /app/.env
 
-COPY --from=build /app/.env ./
+COPY --from=builder /app/server /app/server
+
+COPY --from=builder /app/web ./web/
+
+RUN chmod +x /app/server
 
 EXPOSE 7540
 
-CMD ["./go_final_project"]
+CMD ["/app/server"]

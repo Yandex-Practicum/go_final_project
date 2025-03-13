@@ -14,25 +14,23 @@ func GetSecretKey(key string) {
 	secretKey = []byte(key)
 }
 
-// GenerateToken создает JWT токен для аутентификации
+// GenerateToken creates a new JWT token with an 8-hour expiration time.
 func GenerateToken() (string, error) {
-	// Проверяю, установлен ли пароль
 	if len(secretKey) == 0 {
 		return "", errors.New("secret key is empty")
 	}
 
-	// Создаю токен с временем жизни 8 часов
+	// Creating a token with a lifetime of 8 hours
 	expirationTime := time.Now().Add(8 * time.Hour)
 	claims := &jwt.RegisteredClaims{
 		ExpiresAt: jwt.NewNumericDate(expirationTime),
 	}
-	// Генерирую токен
+	// Token generation
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-
 	return token.SignedString(secretKey)
 }
 
-// ValidateToken проверяет валидность токена
+// ValidateToken checks if the given JWT token is valid.
 func ValidateToken(tokenString string) error {
 	if len(secretKey) == 0 {
 		return errors.New("secret key is empty")
@@ -47,23 +45,30 @@ func ValidateToken(tokenString string) error {
 	return nil
 }
 
-// AuthMiddleware проверяет JWT перед доступом к API
+// AuthMiddleware ensures authentication before granting API access.
 func AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		if len(secretKey) == 0 {
-			// Если пароль не задан, то без авторизации
 			next(w, req)
 			return
 		}
 		cookie, err := req.Cookie("token")
 		if err != nil {
-			http.Error(w, `{"error":"token is invalid"}`, http.StatusUnauthorized)
+			sendAuthError(w, "token is invalid")
 			return
 		}
 		if err := ValidateToken(cookie.Value); err != nil {
-			http.Error(w, `{"error":"token is invalid"}`, http.StatusUnauthorized)
+			sendAuthError(w, "token is invalid")
 			return
 		}
 		next(w, req)
 	}
+}
+
+// sendAuthError sends a JSON-formatted authentication error response.
+func sendAuthError(w http.ResponseWriter, message string) {
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.WriteHeader(http.StatusUnauthorized)
+	jsonResponse := `{"error":"` + message + `"}`
+	w.Write([]byte(jsonResponse))
 }

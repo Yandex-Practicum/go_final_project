@@ -14,6 +14,7 @@ import (
 	"time"
 )
 
+// GetTasksHandler handles retrieving a list of tasks, supporting search and filtering.
 func GetTasksHandler(dbase *sqlx.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		if req.Method != http.MethodGet {
@@ -48,11 +49,12 @@ func GetTasksHandler(dbase *sqlx.DB) http.HandlerFunc {
 			}
 		}
 
-		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 		json.NewEncoder(w).Encode(map[string]interface{}{"tasks": tasksList})
 	}
 }
 
+// TaskHandler handles task operations: GET (retrieve), POST (create), PUT (update), DELETE (remove).
 func TaskHandler(dbase *sqlx.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		switch req.Method {
@@ -70,22 +72,20 @@ func TaskHandler(dbase *sqlx.DB) http.HandlerFunc {
 	}
 }
 
+// getTask retrieves a task from the database by its ID.
 func getTask(dbase *sqlx.DB, w http.ResponseWriter, req *http.Request) {
-	// Проверяем наличие параметра id
 	idStr := req.URL.Query().Get("id")
 	if idStr == "" {
 		sendJSONError(w, "id is required", http.StatusBadRequest)
 		return
 	}
 
-	// Преобразую id в число
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
 		sendJSONError(w, "id error format", http.StatusBadRequest)
 		return
 	}
 
-	// Получаем задачу из БД
 	task, err := db.GetTaskByID(dbase, id)
 	if err != nil {
 		sendJSONError(w, "issue not found", http.StatusBadRequest)
@@ -100,22 +100,20 @@ func getTask(dbase *sqlx.DB, w http.ResponseWriter, req *http.Request) {
 		"repeat":  task.Repeat,
 	}
 
-	// Отправляю JSON-ответ
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	json.NewEncoder(w).Encode(response)
 }
 
+// addTask inserts a new task into the database, ensuring valid input.
 func addTask(dbase *sqlx.DB, w http.ResponseWriter, req *http.Request) {
 	var newTask task.Task
 
-	// Декодирую JSON
 	err := json.NewDecoder(req.Body).Decode(&newTask)
 	if err != nil {
 		sendJSONError(w, "Invalid JSON format", http.StatusBadRequest)
 		return
 	}
 
-	// Проверяю есть ли заголовок
 	if newTask.Title == "" {
 		sendJSONError(w, "Title is required", http.StatusBadRequest)
 		return
@@ -123,7 +121,6 @@ func addTask(dbase *sqlx.DB, w http.ResponseWriter, req *http.Request) {
 	now := time.Now().Truncate(24 * time.Hour)
 	today := now.Format("20060102")
 
-	// Если дата не передана, ставим сегодняшнюю
 	if newTask.Date == "" {
 		newTask.Date = today
 	} else {
@@ -134,7 +131,6 @@ func addTask(dbase *sqlx.DB, w http.ResponseWriter, req *http.Request) {
 	}
 	taskDate, _ := time.Parse("20060102", newTask.Date)
 
-	// Обрабатываю повторяющиеся задачи
 	if newTask.Repeat != "" {
 		if taskDate.Before(now) {
 			nextDate, err := logic.NextDate(now, newTask.Date, newTask.Repeat)
@@ -148,18 +144,19 @@ func addTask(dbase *sqlx.DB, w http.ResponseWriter, req *http.Request) {
 		newTask.Date = today
 	}
 
-	// Добавляю задачу в БД
 	id, err := db.AddTask(dbase, &newTask)
 	if err != nil {
 		sendJSONError(w, "Failed to save task", http.StatusInternalServerError)
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	json.NewEncoder(w).Encode(map[string]string{"id": strconv.FormatInt(id, 10)})
 }
 
+// updateTask handles updating an existing task in the database.
+// It reads the request body, validates input data, and updates the task if it exists.
+// If the task is not found or the input is invalid, it returns an appropriate error response.
 func updateTask(dbase *sqlx.DB, w http.ResponseWriter, req *http.Request) {
-	// Декодирую JSON в промежуточную структуру
 	var rawData map[string]interface{}
 	err := json.NewDecoder(req.Body).Decode(&rawData)
 	if err != nil {
@@ -167,7 +164,6 @@ func updateTask(dbase *sqlx.DB, w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// Проверяю и конвертирую ID
 	idValue, ok := rawData["id"]
 	if !ok {
 		sendJSONError(w, "id is required", http.StatusBadRequest)
@@ -189,17 +185,14 @@ func updateTask(dbase *sqlx.DB, w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// Удаляю строковый ID из исходного JSON и подставляю int64 ID
 	rawData["id"] = id
 
-	// Преобразую обратно в JSON
 	updatedJSON, err := json.Marshal(rawData)
 	if err != nil {
 		sendJSONError(w, "Server error", http.StatusInternalServerError)
 		return
 	}
 
-	// Декодирую JSON в Task
 	var updatedTask task.Task
 	err = json.Unmarshal(updatedJSON, &updatedTask)
 	if err != nil {
@@ -207,20 +200,17 @@ func updateTask(dbase *sqlx.DB, w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// Загружаю текущую версию задачи из базы
 	existingTask, err := db.GetTaskByID(dbase, id)
 	if err != nil {
 		sendJSONError(w, "Task not found", http.StatusNotFound)
 		return
 	}
 
-	// Проверяю, что title передан и не пустой
 	if updatedTask.Title == "" {
 		sendJSONError(w, "Title is required", http.StatusBadRequest)
 		return
 	}
 
-	// Обновляю только переданные поля, сохраняя старые значения
 	if updatedTask.Date == "" {
 		updatedTask.Date = existingTask.Date
 	}
@@ -231,13 +221,11 @@ func updateTask(dbase *sqlx.DB, w http.ResponseWriter, req *http.Request) {
 		updatedTask.Repeat = existingTask.Repeat
 	}
 
-	// Проверяю корректность даты
 	if _, err := time.Parse("20060102", updatedTask.Date); err != nil {
 		sendJSONError(w, "Invalid date format", http.StatusBadRequest)
 		return
 	}
 
-	// Проверяю корректность repeat
 	if updatedTask.Repeat != "" {
 		_, err := logic.NextDate(time.Now(), updatedTask.Date, updatedTask.Repeat)
 		if err != nil {
@@ -246,18 +234,20 @@ func updateTask(dbase *sqlx.DB, w http.ResponseWriter, req *http.Request) {
 		}
 	}
 
-	// Обновляю задачу в БД
 	err = db.UpdateTask(dbase, &updatedTask)
 	if err != nil {
 		sendJSONError(w, "issue not found", http.StatusBadRequest)
 		return
 	}
 
-	// Отправляю пустой JSON (успешное выполнение)
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	json.NewEncoder(w).Encode(map[string]string{})
 }
 
+// MarkTaskDoneHandler marks a task as completed based on its ID.
+// - If the task is non-recurring, it is deleted from the database.
+// - If the task is recurring, its next execution date is calculated and updated.
+// Returns an appropriate JSON response indicating success or failure.
 func MarkTaskDoneHandler(dbase *sqlx.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		if req.Method != http.MethodPost {
@@ -277,14 +267,12 @@ func MarkTaskDoneHandler(dbase *sqlx.DB) http.HandlerFunc {
 			return
 		}
 
-		// Получаю задачу из БД
 		task, err := db.GetTaskByID(dbase, id)
 		if err != nil {
 			sendJSONError(w, "task not found", http.StatusNotFound)
 			return
 		}
 
-		// Если у задачи нет повторения - удаляем
 		if task.Repeat == "" {
 			err = db.DeleteTask(dbase, id)
 			if err != nil {
@@ -292,7 +280,6 @@ func MarkTaskDoneHandler(dbase *sqlx.DB) http.HandlerFunc {
 				return
 			}
 		} else {
-			// Рассчитываю новую дату выполнения
 			nextDate, err := logic.NextDate(time.Now(), task.Date, task.Repeat)
 			if err != nil {
 				sendJSONError(w, "Failed to calculate next date", http.StatusBadRequest)
@@ -300,7 +287,6 @@ func MarkTaskDoneHandler(dbase *sqlx.DB) http.HandlerFunc {
 			}
 			task.Date = nextDate
 
-			// Обновляю задачу
 			err = db.UpdateTask(dbase, task)
 			if err != nil {
 				sendJSONError(w, "Failed to update task", http.StatusInternalServerError)
@@ -308,46 +294,45 @@ func MarkTaskDoneHandler(dbase *sqlx.DB) http.HandlerFunc {
 			}
 		}
 
-		// Отправляю успешный JSON-ответ
-		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 		json.NewEncoder(w).Encode(map[string]string{})
 	}
 }
 
+// deleteTask handles the deletion of a task from the database by its ID.
+// It reads the "id" parameter from the request, validates it, and removes the task if it exists.
+// If the task is not found or the ID is invalid, it returns an appropriate JSON error response.
 func deleteTask(dbase *sqlx.DB, w http.ResponseWriter, req *http.Request) {
-	// Проверяю, передан ли ID
 	idStr := req.URL.Query().Get("id")
 	if idStr == "" {
 		sendJSONError(w, "id is required", http.StatusBadRequest)
 		return
 	}
 
-	// Преобразую ID в число
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil || id <= 0 {
 		sendJSONError(w, "id error format", http.StatusBadRequest)
 		return
 	}
 
-	// Удаляю задачу
 	err = db.DeleteTask(dbase, id)
 	if err != nil {
 		sendJSONError(w, "Task not found", http.StatusNotFound)
 		return
 	}
 
-	// Отправляю пустой JSON (успешное выполнение)
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	json.NewEncoder(w).Encode(map[string]string{})
 }
 
+// sendJSONError sends a structured JSON response with an error message.
 func sendJSONError(w http.ResponseWriter, message string, statusCode int) {
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(statusCode)
 	json.NewEncoder(w).Encode(map[string]string{"error": message})
 }
 
-// SignInHandler обработчик аутентификации
+// SignInHandler authentication handler
 func SignInHandler(w http.ResponseWriter, req *http.Request) {
 	if req.Method != http.MethodPost {
 		http.Error(w, `{"error": "Invalid method"}`, http.StatusMethodNotAllowed)
@@ -374,6 +359,6 @@ func SignInHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	json.NewEncoder(w).Encode(map[string]string{"token": token})
 }

@@ -34,6 +34,9 @@ func NextDateHandler(dbase *sqlx.DB) http.HandlerFunc {
 	}
 }
 
+// parseDate converts a string in the "YYYYMMDD" format into a time.Time object.
+// If the input string is empty, it returns the provided defaultDate.
+// Returns an error if the date format is invalid.
 func parseDate(dateStr string, defaultDate time.Time) (time.Time, error) {
 	if dateStr == "" {
 		return defaultDate, nil
@@ -41,13 +44,16 @@ func parseDate(dateStr string, defaultDate time.Time) (time.Time, error) {
 	return time.Parse("20060102", dateStr)
 }
 
+// jsonResponse sends a JSON response with the given string data.
+// It sets the "Content-Type" header to "application/json; charset=UTF-8"
+// and writes the response body with an HTTP 200 status.
 func jsonResponse(w http.ResponseWriter, response string) {
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte(response))
 }
 
-// NextDate determines the next date according to the passed parameters.
+// NextDate calculates the next occurrence date for a task based on the given repeat rule.
 func NextDate(now time.Time, dateStr string, repeatStr string) (string, error) {
 	date, err := parseDate(dateStr, time.Time{})
 	if err != nil {
@@ -74,7 +80,7 @@ func NextDate(now time.Time, dateStr string, repeatStr string) (string, error) {
 	}
 }
 
-// dailyRepeat daily repetition processing 'd'.
+// dailyRepeat processes the 'd <days>' repetition rule, ensuring valid intervals.
 func dailyRepeat(now, date time.Time, repeatStr string) (string, error) {
 	parts := strings.Fields(repeatStr)
 	if len(parts) < 2 {
@@ -97,7 +103,7 @@ func dailyRepeat(now, date time.Time, repeatStr string) (string, error) {
 	return nextDate.Format("20060102"), nil
 }
 
-// yearlyRepeat processing the annual recurrence 'y'.
+// yearlyRepeat processing the annual recurrence 'y <year>'.
 func yearlyRepeat(now, date time.Time) (string, error) {
 	var nextDate time.Time
 	nextDate = date.AddDate(1, 0, 0)
@@ -107,7 +113,7 @@ func yearlyRepeat(now, date time.Time) (string, error) {
 	return nextDate.Format("20060102"), nil
 }
 
-// weeklyRepeat processing weekly repetition 'w'.
+// weeklyRepeat processes the 'w <days>' repetition rule for specific weekdays.
 func weeklyRepeat(now, date time.Time, repeatStr string) (string, error) {
 	parts := strings.Fields(repeatStr)
 	if len(parts) < 2 {
@@ -145,7 +151,7 @@ func weeklyRepeat(now, date time.Time, repeatStr string) (string, error) {
 	}
 }
 
-// monthlyRepeat monthly repeat processing 'm'.
+// monthlyRepeat processes the 'm <days> <months>' repetition rule for specific days in selected months.
 func monthlyRepeat(now, date time.Time, repeatStr string) (string, error) {
 	parts := strings.Fields(repeatStr[2:])
 	if len(parts) < 1 {

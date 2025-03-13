@@ -19,7 +19,7 @@ const Port = 7540
 func main() {
 	err := godotenv.Load(".env")
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		log.Fatalf("Error loading .env file: %v", err)
 	}
 	password := os.Getenv("TODO_PASSWORD")
 	if password == "" {
@@ -27,7 +27,7 @@ func main() {
 	}
 	auth.GetSecretKey(password)
 
-	// Порт для прослушивания
+	// port defines the server port, default is 7540, but can be overridden by TODO_PORT
 	port := Port
 	if envPort := os.Getenv("TODO_PORT"); envPort != "" {
 		p, err := strconv.Atoi(envPort)
@@ -38,24 +38,24 @@ func main() {
 		}
 	}
 
-	// Инициализация базы данных
+	// Initializing the database
 	database, closeDB, err := db.InitDB()
 	if err != nil {
 		log.Fatalf("Error to initialize db: %v", err)
 	}
 	defer closeDB()
 
-	// Обработчик файлов
+	// Serve static files from the "web" directory
 	http.Handle("/", http.FileServer(http.Dir("web")))
 
-	// API маршруты
+	// API routes
 	http.HandleFunc("/api/signin", handlers.SignInHandler)
 	http.HandleFunc("/api/tasks", auth.AuthMiddleware(handlers.GetTasksHandler(database)))
 	http.HandleFunc("/api/task", auth.AuthMiddleware(handlers.TaskHandler(database)))
 	http.HandleFunc("/api/task/done", auth.AuthMiddleware(handlers.MarkTaskDoneHandler(database)))
 	http.HandleFunc("/api/nextdate", logic.NextDateHandler(database))
 
-	// Запуск сервера
+	// Starting the server
 	addrPort := fmt.Sprintf(":%d", port)
 	log.Printf("Server started on http://localhost: %s\n", addrPort)
 	err = http.ListenAndServe(addrPort, nil)

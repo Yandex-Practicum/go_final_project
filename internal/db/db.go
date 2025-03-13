@@ -11,7 +11,7 @@ import (
 	"path/filepath"
 )
 
-// Initializing the database.
+// InitDB initializing the database.
 func InitDB() (*sqlx.DB, func(), error) {
 	dbFile := pathFileDB()
 
@@ -50,7 +50,7 @@ func InitDB() (*sqlx.DB, func(), error) {
 	return db, closeDB, nil
 }
 
-// The path to the database file.
+// pathFileDB returns the path to the SQLite database file, either from an environment variable or default.
 func pathFileDB() string {
 	// Checking the environment variable.
 	dbFile := os.Getenv("TODO_DBFILE")
@@ -67,9 +67,10 @@ func pathFileDB() string {
 	return dbFile
 }
 
-// Creating a scheduler table and an index for the date field
+// createTableAndIndex initializes the "scheduler" table and creates an index on the "date" field.
 func createTableAndIndex(db *sqlx.DB) error {
-	// Создание таблицы по полю date
+	// createTable defines the schema for the "scheduler" table,
+	// where tasks are stored with an ID, date, title, optional comment, and repeat rule.
 	createTable := `CREATE TABLE scheduler (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     date TEXT NOT NULL,
@@ -77,7 +78,8 @@ func createTableAndIndex(db *sqlx.DB) error {
     comment TEXT,
     repeat TEXT
                        );`
-	// Создание индекса по полю date
+	// createIndex improves query performance by creating an index on the "date" field.
+	// This allows for faster searches and sorting of tasks by their due date.
 	createIndex := `CREATE INDEX idx_date ON scheduler (date);`
 	_, err := db.Exec(createTable)
 	if err != nil {
@@ -92,6 +94,7 @@ func createTableAndIndex(db *sqlx.DB) error {
 	return nil
 }
 
+// GetTasks retrieves a list of tasks from the database, optionally filtered by date or search query.
 func GetTasks(db *sqlx.DB, search string, dateSearch string) ([]task.Task, error) {
 	var tasks []task.Task
 	var query string
@@ -116,6 +119,7 @@ func GetTasks(db *sqlx.DB, search string, dateSearch string) ([]task.Task, error
 	return tasks, nil
 }
 
+// GetTaskByID retrieves a task from the "scheduler" table by its unique ID.
 func GetTaskByID(db *sqlx.DB, id int64) (*task.Task, error) {
 	var t task.Task
 	query := "SELECT * FROM scheduler WHERE id = ?"
@@ -129,6 +133,8 @@ func GetTaskByID(db *sqlx.DB, id int64) (*task.Task, error) {
 	return &t, nil
 }
 
+// AddTask inserts a new task into the "scheduler" table.
+// It returns the unique ID of the newly created task or an error if the insertion fails.
 func AddTask(db *sqlx.DB, task *task.Task) (int64, error) {
 	query := `INSERT INTO scheduler (date, title, comment, repeat) VALUES (:date, :title, :comment, :repeat)`
 
@@ -143,6 +149,9 @@ func AddTask(db *sqlx.DB, task *task.Task) (int64, error) {
 	return id, nil
 }
 
+// UpdateTask updates an existing task in the "scheduler" table by its ID.
+// It modifies the task's date, title, comment, and repeat rule.
+// Returns an error if the update fails or if the task does not exist.
 func UpdateTask(db *sqlx.DB, t *task.Task) error {
 	query := `UPDATE scheduler
 	SET date=:date, title=:title, comment=:comment, repeat=:repeat
@@ -163,6 +172,8 @@ func UpdateTask(db *sqlx.DB, t *task.Task) error {
 	return nil
 }
 
+// DeleteTask removes a task from the "scheduler" table by its ID.
+// If the task does not exist, it returns an error.
 func DeleteTask(db *sqlx.DB, id int64) error {
 	query := "DELETE FROM scheduler WHERE id = ?"
 	res, err := db.Exec(query, id)
