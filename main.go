@@ -12,6 +12,7 @@ import (
 )
 
 const bdName = "scheduler.db" // Имя файла базы данных
+var db *sql.DB                // переменная БД
 
 // createTable создает базу данных и таблицу scheduler
 func createTable() error {
@@ -46,15 +47,21 @@ const webDir = "./web"
 func taskHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		getTaskHandler(w, r) // Получение задачи по ID
+		getTaskHandler(w, r, db) // Получение задачи по ID
 	case http.MethodPost:
-		addTaskHandler(w, r) // Добавление задачи
+		addTaskHandler(w, r, db) // Добавление задачи
 	case http.MethodPut:
-		updateTaskHandler(w, r) //Добавили обработку PUT-запроса
+		updateTaskHandler(w, r, db) //Добавили обработку PUT-запроса
 	case http.MethodDelete:
-		deleteTaskHandler(w, r) // Удаление задачи
+		deleteTaskHandler(w, r, db) // Удаление задачи
 	default:
 		JSONError(w, "Метод не поддерживается", http.StatusMethodNotAllowed)
+	}
+}
+
+func dbDB(db *sql.DB, handler func(http.ResponseWriter, *http.Request, *sql.DB)) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		handler(w, r, db)
 	}
 }
 
@@ -79,14 +86,20 @@ func main() {
 		}
 	}
 
+	// Подключаемся к БД
+	db, err = sql.Open("sqlite", bdName) // Открываем БД один раз
+	if err != nil {
+		log.Fatalf("Ошибка подключения к БД: %v", err)
+	}
+	defer db.Close() // Закрываем БД при завершении работы
 	// Обработчик для API
 
 	http.Handle("/", http.FileServer(http.Dir(webDir)))
 	http.HandleFunc("/api/nextdate", NextDateHandler)
 	http.HandleFunc("/api/task", taskHandler)
 
-	http.HandleFunc("/api/tasks", tasksHandler)
-	http.HandleFunc("/api/task/done", taskDoneHandler)
+	http.HandleFunc("/api/tasks", dbDB(db, tasksHandler))
+	http.HandleFunc("/api/task/done", dbDB(db, taskDoneHandler))
 
 	// Запуск сервера
 	fmt.Printf("Сервер запущен на [http://localhost:%s]\n", port)
