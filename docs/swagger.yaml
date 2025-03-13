@@ -1,0 +1,249 @@
+basePath: /
+definitions:
+  api.errResponse:
+    properties:
+      error:
+        type: string
+    type: object
+  middleware.bodyRequest:
+    properties:
+      password:
+        type: string
+    type: object
+  middleware.errResponse:
+    properties:
+      error:
+        type: string
+    type: object
+  middleware.getAuthByPassword:
+    properties:
+      token:
+        type: string
+    type: object
+  model.Task:
+    properties:
+      comment:
+        type: string
+      date:
+        type: string
+      id:
+        type: string
+      repeat:
+        type: string
+      title:
+        type: string
+    type: object
+  model.TaskResp:
+    properties:
+      id:
+        type: integer
+    type: object
+  model.TasksResp:
+    properties:
+      tasks:
+        items:
+          $ref: '#/definitions/model.Task'
+        type: array
+    type: object
+host: localhost:7540
+info:
+  contact:
+    email: spdante@mail.ru
+    name: Alexey Yudin
+  description: Итоговая работа по курсу "Go-разработчик с нуля" (Яндекс Практикум)
+  termsOfService: spdante@mail.ru
+  title: Пользовательская документация API
+  version: 1.0.0
+paths:
+  /api/signin:
+    post:
+      consumes:
+      - application/json
+      description: Получение токена по паролю
+      parameters:
+      - description: Пароль профиля
+        in: body
+        name: password
+        required: true
+        schema:
+          $ref: '#/definitions/middleware.bodyRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/middleware.getAuthByPassword'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/middleware.errResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/middleware.errResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/middleware.errResponse'
+      summary: Получение токена по паролю
+  /api/task:
+    delete:
+      consumes:
+      - application/json
+      description: Удалить задачу
+      parameters:
+      - description: Идентификатор задачи
+        in: query
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.TaskResp'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.errResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.errResponse'
+      summary: Удалить задачу
+      tags:
+      - Task
+    get:
+      consumes:
+      - application/json
+      description: Получить задачу
+      parameters:
+      - description: Идентификатор задачи
+        in: query
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.TaskResp'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.errResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.errResponse'
+      summary: Получить задачу
+      tags:
+      - Task
+    post:
+      consumes:
+      - application/json
+      description: Добавить новую задачу
+      parameters:
+      - description: Параметры задачи
+        in: body
+        name: Body
+        required: true
+        schema:
+          $ref: '#/definitions/model.Task'
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/model.TaskResp'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.errResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.errResponse'
+      summary: Добавить новую задачу
+      tags:
+      - Task
+    put:
+      consumes:
+      - application/json
+      description: Редактировать задачу
+      parameters:
+      - description: Параметры задачи
+        in: body
+        name: Body
+        required: true
+        schema:
+          $ref: '#/definitions/model.Task'
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.errResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.errResponse'
+      summary: Редактировать задачу
+      tags:
+      - Task
+  /api/task/done:
+    post:
+      consumes:
+      - application/json
+      description: Выполнить задачу
+      parameters:
+      - description: Идентификатор задачи
+        in: query
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.TaskResp'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.errResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.errResponse'
+      summary: Выполнить задачу
+      tags:
+      - Task
+  /api/tasks:
+    get:
+      consumes:
+      - application/json
+      description: Получить список ближайших задач
+      parameters:
+      - description: Строка поиска
+        in: query
+        name: search
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.TasksResp'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.errResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.errResponse'
+      summary: Получить список ближайших задач
+      tags:
+      - Task
+swagger: "2.0"
