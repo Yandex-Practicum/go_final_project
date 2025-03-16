@@ -4,11 +4,36 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	_ "net/http"
 	"os"
 	"strconv"
 
+	"github.com/sandrinasava/go_final_project/internal/models"
 	_ "modernc.org/sqlite"
 )
+
+func FindTasks(db *sql.DB, selectTask string, args ...any) ([]models.Task, error) {
+
+	rows, err := db.Query(selectTask, args...)
+	if err != nil {
+		return nil, fmt.Errorf("неудачный selectTask %v", err)
+	}
+	tasksSlice := []models.Task{}
+
+	defer rows.Close()
+	for rows.Next() {
+		t := models.Task{}
+		err = rows.Scan(&t.ID, &t.Date, &t.Title, &t.Comment, &t.Repeat)
+		if err != nil {
+			return nil, fmt.Errorf("неудачный selectTask %v", err)
+		}
+		tasksSlice = append(tasksSlice, t)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("неудачный selectTask %v", err)
+	}
+	return tasksSlice, nil
+}
 
 func InsertAndReturnID(db *sql.DB, date, title, comment, repeat string) (string, error) {
 
@@ -33,7 +58,7 @@ func InsertAndReturnID(db *sql.DB, date, title, comment, repeat string) (string,
 
 // Функция для создания базы данных
 func CreateDatabase(dbFile string) {
-	db, err := sql.Open("sqlite3", dbFile)
+	db, err := sql.Open("sqlite", dbFile)
 	if err != nil {
 		log.Fatalf("Не удалось создать базу данных: %v", err)
 	}
@@ -84,7 +109,7 @@ func ConnectDB() *sql.DB {
 		CreateDatabase(DBFILE)
 	}
 	// Подключение к базе данных
-	db, err := sql.Open("sqlite3", DBFILE)
+	db, err := sql.Open("sqlite", DBFILE)
 	if err != nil {
 		log.Fatalf("Не удалось подключиться к бд: %v", err)
 	}

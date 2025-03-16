@@ -1,4 +1,4 @@
-package handlers
+package internal
 
 import (
 	"database/sql"
@@ -9,8 +9,9 @@ import (
 	"strings"
 	"time"
 
-	database "github.com/sandrinasava/go_final_project/db"
-	"github.com/sandrinasava/go_final_project/services"
+	database "github.com/sandrinasava/go_final_project/internal/db"
+	"github.com/sandrinasava/go_final_project/internal/models"
+	"github.com/sandrinasava/go_final_project/internal/services"
 	_ "modernc.org/sqlite"
 )
 
@@ -43,15 +44,6 @@ func NextDateHandle(res http.ResponseWriter, req *http.Request) {
 	fmt.Fprintf(res, nextDate)
 }
 
-// структура для select запроса
-type Task struct {
-	ID      string `json:"id"`
-	Date    string `json:"date"`
-	Title   string `json:"title"`
-	Comment string `json:"comment"`
-	Repeat  string `json:"repeat"`
-}
-
 // oбработчик  для api/tasks
 func TasksHandler(db *sql.DB) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
@@ -61,15 +53,7 @@ func TasksHandler(db *sql.DB) http.HandlerFunc {
 		}
 
 		// Инициализирую слайс как пустой слайс
-		tasksSlice := []Task{}
-
-		// Структура для ответа
-		type TasksResponse struct {
-			Tasks []Task `json:"tasks"`
-		}
-
-		selectTask := `
-	    SELECT * FROM scheduler ORDER BY date ASC LIMIT ?`
+		tasksSlice := []models.Task{}
 
 		search := req.FormValue("search")
 		if search != "" {
@@ -78,30 +62,15 @@ func TasksHandler(db *sql.DB) http.HandlerFunc {
 			if err != nil {
 				log.Printf("парсинг даты не удался")
 				//если это не дата, ищу соответствие в столбцах title и comment
-				selectTask = `
+				selectTask := `
 	              SELECT * FROM scheduler
                   WHERE title LIKE '%' || ? || '%'
                   OR comment LIKE '%' || ? || '%'
                   ORDER BY date ASC LIMIT ?;`
-				rows, err := db.Query(selectTask, search, search, limit)
-				if err != nil {
-					log.Printf("неудачный selectTask")
-					sendErrorResponse(res, "неудачный selectTask", http.StatusBadRequest)
-					return
-				}
-				defer rows.Close()
-				for rows.Next() {
-					t := Task{}
-					err = rows.Scan(&t.ID, &t.Date, &t.Title, &t.Comment, &t.Repeat)
-					if err != nil {
-						sendErrorResponse(res, "неудачный selectTask", http.StatusBadRequest)
-						return
-					}
-					tasksSlice = append(tasksSlice, t)
 
-				}
-				if err = rows.Err(); err != nil {
-					sendErrorResponse(res, "ошибка при rows.Next()", http.StatusBadRequest)
+				tasksSlice, err = database.FindTasks(db, selectTask, search, search, limit)
+				if err != nil {
+					sendErrorResponse(res, err.Error(), http.StatusBadRequest)
 					return
 				}
 				log.Printf("tasksSlice = %+v", tasksSlice)
@@ -110,50 +79,29 @@ func TasksHandler(db *sql.DB) http.HandlerFunc {
 				Dstr := D.Format(services.Format)
 
 				log.Printf("searchDate = %s", Dstr)
-				selectTask = `
+				selectTask := `
 	            SELECT * FROM scheduler WHERE date LIKE ? ORDER BY date ASC LIMIT ?`
-				rows, err := db.Query(selectTask, Dstr, limit)
+				tasksSlice, err = database.FindTasks(db, selectTask, Dstr, limit)
 				if err != nil {
-					sendErrorResponse(res, "неудачный selectTask", http.StatusBadRequest)
-					return
-				}
-				defer rows.Close()
-				for rows.Next() {
-					t := Task{}
-					err = rows.Scan(&t.ID, &t.Date, &t.Title, &t.Comment, &t.Repeat)
-					if err != nil {
-						sendErrorResponse(res, "неудачный selectTask", http.StatusBadRequest)
-						return
-					}
-					tasksSlice = append(tasksSlice, t)
-				}
-				if err = rows.Err(); err != nil {
-					sendErrorResponse(res, "ошибка при rows.Next()", http.StatusBadRequest)
+					sendErrorResponse(res, err.Error(), http.StatusBadRequest)
 					return
 				}
 			}
 
-			// если параметра search нет
+			// если параметра search нет, ищу все ближайшие задачи
 		} else {
-			rows, err := db.Query(selectTask, limit)
+			selectTask := `
+	         SELECT * FROM scheduler ORDER BY date ASC LIMIT ?`
+			var err error
+			tasksSlice, err = database.FindTasks(db, selectTask, limit)
 			if err != nil {
-				sendErrorResponse(res, "неудачный selectTask", http.StatusBadRequest)
+				sendErrorResponse(res, err.Error(), http.StatusBadRequest)
 				return
 			}
-			defer rows.Close()
-			for rows.Next() {
-				t := Task{}
-				err = rows.Scan(&t.ID, &t.Date, &t.Title, &t.Comment, &t.Repeat)
-				if err != nil {
-					sendErrorResponse(res, "неудачный selectTask", http.StatusBadRequest)
-					return
-				}
-				tasksSlice = append(tasksSlice, t)
-			}
-			if err = rows.Err(); err != nil {
-				sendErrorResponse(res, "ошибка при rows.Next()", http.StatusBadRequest)
-				return
-			}
+		}
+		// Структура для ответа
+		type TasksResponse struct {
+			Tasks []models.Task `json:"tasks"`
 		}
 
 		response := TasksResponse{Tasks: tasksSlice}
@@ -198,68 +146,28 @@ func TaskHandler(db *sql.DB) http.HandlerFunc {
 
 		case http.MethodPost:
 
-			contentType := req.Header.Get("Content-Type")
-			log.Println("Content-Type:", contentType)
 			if !strings.HasPrefix(req.Header.Get("Content-Type"), "application/json") {
-				log.Printf("запрос не содержит json")
 				sendErrorResponse(res, "запрос не содержит json", http.StatusUnsupportedMediaType)
 				return
 			}
 
-			var task Task
+			var task models.Task
 
 			// декод-ю тело запроса
 			err := json.NewDecoder(req.Body).Decode(&task)
 			if err != nil {
-				log.Printf("неудачное декодир-е json")
 				sendErrorResponse(res, "неудачное декодир-е json", http.StatusBadRequest)
 				return
 			}
 
-			// проверяю валидность запроса
-			if task.Title == "" {
-				log.Printf("параметр Title пустой")
-				sendErrorResponse(res, "параметр Title пустой", http.StatusBadRequest)
+			// ищу новую дату
+			date, err := CheckTaskAndFindDate(task)
+			if err != nil {
+				sendErrorResponse(res, err.Error(), http.StatusBadRequest)
 				return
 			}
-
-			// ищу новую дату при необходимости
-			var date time.Time
-
-			if task.Date != "" {
-				date, err = time.Parse(services.Format, task.Date) //парсинг даты запроса
-				if err != nil {
-					sendErrorResponse(res, "неверный формат даты 'date'", http.StatusBadRequest)
-					return
-				}
-				if date.Format(services.Format) < time.Now().Format(services.Format) {
-
-					if task.Repeat != "" {
-
-						now := time.Now().Format(services.Format)
-						dateStr, err := services.NextDate(now, task.Date, task.Repeat)
-						if err != nil {
-
-							sendErrorResponse(res, err.Error(), http.StatusBadRequest)
-							return
-						}
-
-						log.Printf("следующая дата = %s", dateStr)
-						date, err = time.Parse(services.Format, dateStr)
-						if err != nil {
-							sendErrorResponse(res, "Ошибка при парсинге даты", http.StatusBadRequest)
-							return
-						}
-
-					} else {
-						date = time.Now()
-					}
-				}
-			} else {
-				date = time.Now()
-			}
-
-			ID, err := database.InsertAndReturnID(db, date.Format(services.Format), task.Title, task.Comment, task.Repeat)
+			//добавляю задачу в бд
+			ID, err := database.InsertAndReturnID(db, date, task.Title, task.Comment, task.Repeat)
 			if err != nil {
 				log.Printf("ошибка при добавлении задачи")
 				sendErrorResponse(res, "ошибка при добавлении задачи", http.StatusBadRequest)
@@ -269,7 +177,6 @@ func TaskHandler(db *sql.DB) http.HandlerFunc {
 			response := map[string]interface{}{"id": ID}
 			err = json.NewEncoder(res).Encode(response)
 			if err != nil {
-				log.Printf("Ошибка кодирования в JSON")
 				sendErrorResponse(res, "Ошибка кодирования в JSON", http.StatusBadRequest)
 				return
 			}
@@ -281,7 +188,7 @@ func TaskHandler(db *sql.DB) http.HandlerFunc {
 			if id != "" {
 				selectTask := `
 		        SELECT * FROM scheduler WHERE id = ?`
-				t := Task{}
+				t := models.Task{}
 				err := db.QueryRow(selectTask, id).Scan(&t.ID, &t.Date, &t.Title, &t.Comment, &t.Repeat)
 				if err != nil {
 					sendErrorResponse(res, "неуспешный select запрос", http.StatusBadRequest)
@@ -300,8 +207,8 @@ func TaskHandler(db *sql.DB) http.HandlerFunc {
 			}
 
 		case http.MethodPut:
-			var task Task
-			var date time.Time
+			var task models.Task
+
 			contentType := req.Header.Get("Content-Type")
 			log.Println("Content-Type:", contentType)
 			if !strings.HasPrefix(req.Header.Get("Content-Type"), "application/json") {
@@ -317,48 +224,10 @@ func TaskHandler(db *sql.DB) http.HandlerFunc {
 				return
 			}
 
-			// если дата указана
-
-			date = time.Now()
-
-			if task.Date != "" {
-				date, err = time.Parse(services.Format, task.Date) //парсинг даты запроса
-				if err != nil {
-					sendErrorResponse(res, "неверный формат даты 'date'", http.StatusBadRequest)
-					return
-				}
-				if date.Format(services.Format) < time.Now().Format(services.Format) {
-
-					if task.Repeat != "" {
-
-						now := time.Now().Format(services.Format)
-						dateStr, err := services.NextDate(now, task.Date, task.Repeat)
-						if err != nil {
-
-							sendErrorResponse(res, err.Error(), http.StatusBadRequest)
-							return
-						}
-
-						log.Printf("следующая дата = %s", dateStr)
-						date, err = time.Parse(services.Format, dateStr)
-						if err != nil {
-							sendErrorResponse(res, "Ошибка при парсинге даты", http.StatusBadRequest)
-							return
-						}
-
-					} else {
-						date = time.Now()
-
-					}
-				}
-			} else {
-				date = time.Now()
-
-			}
-
-			if task.Title == "" {
-				log.Printf("параметр Title пустой")
-				sendErrorResponse(res, "параметр Title пустой", http.StatusBadRequest)
+			// ищу новую дату
+			date, err := CheckTaskAndFindDate(task)
+			if err != nil {
+				sendErrorResponse(res, err.Error(), http.StatusBadRequest)
 				return
 			}
 
@@ -373,7 +242,7 @@ func TaskHandler(db *sql.DB) http.HandlerFunc {
 			selectTask := `
 	              UPDATE scheduler SET date = $1, title = $2, comment = $3, repeat = $4 where id = $5;
                   `
-			_, err = db.Exec(selectTask, date.Format(services.Format), task.Title, task.Comment, task.Repeat, task.ID)
+			_, err = db.Exec(selectTask, date, task.Title, task.Comment, task.Repeat, task.ID)
 			if err != nil {
 				sendErrorResponse(res, "неудачный update запрос", http.StatusBadRequest)
 				return
@@ -406,7 +275,7 @@ func TaskDoneHandler(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		var t Task
+		var t models.Task
 		//нахожу задачу
 		err = db.QueryRow("SELECT date, repeat FROM scheduler WHERE id = ?;", id).Scan(&t.Date, &t.Repeat)
 		if err != nil {
