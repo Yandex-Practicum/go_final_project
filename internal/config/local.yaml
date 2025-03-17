@@ -1,0 +1,5 @@
+storage_path: "./scheduler.db"
+http_server:
+  address: "0.0.0.0:7540"
+  timeout: 4s
+  idle_timeout: 60s 
