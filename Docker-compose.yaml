@@ -1,0 +1,63 @@
+# See: https://taskfile.dev/
+
+version: "3"
+
+env:
+  TestsPath: ./tests
+
+tasks:
+  run:
+    desc: "runs our app"
+    cmds:
+      - go run cmd/main.go --config=./internal/config/local.yaml
+  testall:
+    desc: "run all unit tests"
+    cmds:
+      - go test -v $TestsPath
+    silent: false
+  testallnocache:
+    desc: "run all unit tests with not cached test results"
+    cmds:
+      - go test -v -count=1 $TestsPath
+    silent: false
+
+  test1:
+    desc: "run tests to check server functionality"
+    cmds:
+      - go test -v -count=1 -run  TestApp ./tests
+    silent: false
+  test2:
+    desc: "run tests to check database functionality"
+    cmds:
+      - go test -v -count=1 -run  TestDB ./tests
+    silent: false
+  test3:
+    desc: "run tests to check next date calculation"
+    cmds:
+      - go test -v -count=1 -run  TestNextDate ./tests
+    silent: false
+  test4:
+    desc: "run tests to check entity creation"
+    cmds:
+      - go test -v -count=1 -run  TestAddTask ./tests
+    silent: false
+  test5:
+    desc: "run tests to check entities list"
+    cmds:
+      - go test -v -count=1 -run  TestTasks ./tests
+    silent: false
+  test6:
+    desc: "run tests to check entity update"
+    cmds:
+      - go test -v -count=1 -run  TestEditTask ./tests
+    silent: false
+  test7:
+    desc: "run tests to check entity marked as done"
+    cmds:
+      - go test -v -count=1 -run  TestDone ./tests
+    silent: false
+  test8:
+    desc: "run tests to check entity deletion"
+    cmds:
+      - go test -v -count=1 -run  TestDelTask ./tests
+    silent: false
