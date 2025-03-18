@@ -1,17 +1,153 @@
 package myfunctions
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/golang-jwt/jwt/v5"
+	"todo_restapi/internal/dto"
 	"todo_restapi/pkg/constants"
 )
+
+func ValidateJWT(request *http.Request) error {
+
+	cookie, err := request.Cookie("token")
+	if err != nil {
+		return errors.New("token not found")
+	}
+
+	tokenString := cookie.Value
+
+	secret, exists := os.LookupEnv("TODO_SECRET")
+	if !exists {
+		return errors.New("TODO_SECRET is not set")
+	}
+
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, errors.New("invalid signing method")
+		}
+		return []byte(secret), nil
+	})
+	if err != nil {
+		return err
+	}
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok || !token.Valid {
+		return errors.New("invalid token")
+	}
+
+	if exp, ok := claims["exp"].(float64); ok {
+		if time.Now().Unix() > int64(exp) {
+			return errors.New("token expired")
+		}
+	} else {
+		return errors.New("missing exp claim")
+	}
+
+	hashFromToken, ok := claims["pwd"].(string)
+	if !ok {
+		return errors.New("missing password hash in token")
+	}
+
+	storedPassword, exists := os.LookupEnv("TODO_PASSWORD")
+	if !exists {
+		return errors.New("TODO_PASSWORD is not set")
+	}
+
+	hash := sha256.New()
+	hash.Write([]byte(storedPassword))
+	hashPassword := hex.EncodeToString(hash.Sum(nil))
+
+	if hashFromToken != hashPassword {
+		return errors.New("invalid token: password hash mismatch")
+	}
+
+	return nil
+}
+
+func PwdValidateGenerateJWT(password string) (string, error) {
+
+	secret, exists := os.LookupEnv("TODO_SECRET")
+	if !exists {
+		return "", errors.New("TODO_SECRET is not set")
+	}
+
+	storedPassword, exists := os.LookupEnv("TODO_PASSWORD")
+	if !exists {
+		return "", errors.New("TODO_PASSWORD is not set")
+	}
+
+	if password != storedPassword {
+		return "", errors.New("invalid password")
+	}
+
+	hash := sha256.New()
+	hash.Write([]byte(password))
+	hashPassword := hex.EncodeToString(hash.Sum(nil))
+
+	payload := jwt.MapClaims{
+		"exp": time.Now().Add(time.Hour * 8).Unix(),
+		"pwd": hashPassword,
+	}
+
+	jwtToken := jwt.NewWithClaims(jwt.SigningMethodHS256, payload)
+	signedToken, err := jwtToken.SignedString([]byte(secret))
+	if err != nil {
+		return "", fmt.Errorf("cannot sign JWT: %w", err)
+	}
+
+	return signedToken, nil
+}
+
+func IsDate(searchQuery string) (string, error) {
+
+	isTime, err := time.Parse("02.01.2006", searchQuery)
+	if err != nil {
+		return "", errors.New("invalid date format")
+	}
+
+	return isTime.Format(constants.DateFormat), nil
+}
+
+func ValidateTaskRequest(newTask *models.Task, now string) error {
+
+	if newTask.Title == "" {
+		return errors.New("title is empty")
+	}
+
+	if newTask.Date == "" {
+		newTask.Date = now
+	}
+
+	_, err := time.Parse(constants.DateFormat, newTask.Date)
+	if err != nil {
+		return errors.New("invalid date format")
+	}
+
+	if newTask.Date < now {
+		if newTask.Repeat == "" {
+			newTask.Date = now
+		} else {
+			dateCalculation, err := NextDate(time.Now(), newTask.Date, newTask.Repeat)
+			if err != nil {
+				return fmt.Errorf("NextDate: function error: %w", err)
+			}
+			newTask.Date = dateCalculation
+		}
+	}
+	return nil
+}
 
 func WriteJSONError(write http.ResponseWriter, statusCode int, errMsg string) {
 
@@ -71,8 +207,6 @@ func NextDate(now time.Time, date string, repeat string) (string, error) {
 		return "", fmt.Errorf("date parse error: %w", err)
 	}
 
-	now = now.Truncate(24 * time.Hour)
-
 	repeatType, firstRepeatPattern, _ := parseRepeat(repeat)
 
 	switch repeatType {
@@ -94,17 +228,11 @@ func NextDate(now time.Time, date string, repeat string) (string, error) {
 
 		return dateParse.Format(constants.DateFormat), nil
 
-	// case "w":
-
-	// case "m":
-
 	case "y":
 
-		for {
+		dateParse = dateParse.AddDate(1, 0, 0)
+		for dateParse.Before(now) {
 			dateParse = dateParse.AddDate(1, 0, 0)
-			if dateParse.After(now) {
-				break
-			}
 		}
 
 		return dateParse.Format(constants.DateFormat), nil
