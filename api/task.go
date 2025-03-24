@@ -5,68 +5,68 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"time"
 )
 
 // Task представляет структуру задачи
 type Task struct {
-	ID      int64  `json:"id"`
+	ID      string `json:"id"`
 	Date    string `json:"date"`
 	Title   string `json:"title"`
 	Comment string `json:"comment"`
 	Repeat  string `json:"repeat"`
 }
 
-// GetTasksHandler обрабатывает GET-запросы для получения списка задач
 func GetTasksHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 
-	rows, err := db.Query("SELECT id, date, title, comment, repeat FROM scheduler ORDER BY date LIMIT 50")
+	var tasks []Task
+	limit := 10 // Максимальное количество задач для возврата
+
+	// Получаем все задачи из базы данных
+	query := "SELECT id, date, title, comment, repeat FROM scheduler ORDER BY date LIMIT ?;"
+	rows, err := db.Query(query, limit) // Используем limit в запросе
 	if err != nil {
-		http.Error(w, `{"error": "Ошибка при получении задач"}`, http.StatusInternalServerError)
-		log.Println(`{"Ошибка при выполнении запроса:"}`, err)
+		log.Printf("Ошибка при выполнении запроса: %v\n", err)
+		http.Error(w, `{"error": "Ошибка при получении задач: `+err.Error()+`"}`, http.StatusInternalServerError)
 		return
 	}
 	defer rows.Close()
 
-	var tasks []Task
-
+	// Считываем результаты
 	for rows.Next() {
 		var task Task
-		if err := rows.Scan(&task.ID, &task.Date, &task.Title, &task.Comment, &task.Repeat); err != nil {
-			http.Error(w, `{"error": "Ошибка при обработке задач"}`, http.StatusInternalServerError)
-			log.Println(`{"Ошибка при сканировании строки:"}`, err)
+		var dateStr string
+
+		if err := rows.Scan(&task.ID, &dateStr, &task.Title, &task.Comment, &task.Repeat); err != nil {
+			log.Printf("Ошибка при считывании задач: %v\n", err)
+			http.Error(w, `{"error": "Ошибка при считывании задач: `+err.Error()+`"}`, http.StatusInternalServerError)
 			return
+		}
+
+		// Проверяем формат даты
+		now := time.Now().Truncate(24 * time.Hour) // Убираем время, оставляем только дату
+		if dateStr == "" {
+			task.Date = now.Format("20060102") // Если дата пустая, устанавливаем текущую дату
+		} else {
+			// Преобразуем строку даты в time.Time
+			date, err := time.Parse("20060102", dateStr) // Используем правильный формат
+			if err != nil {
+				log.Printf("Ошибка при парсинге даты: %v\n", err)
+				http.Error(w, `{"error": "Неверный формат даты"}`, http.StatusBadRequest)
+				return
+			}
+			task.Date = date.Format("20060102") // Форматируем дату в нужный формат
 		}
 		tasks = append(tasks, task)
 	}
 
-	if err := rows.Err(); err != nil {
-		http.Error(w, `{"error": "Ошибка при чтении результатов"}`, http.StatusInternalServerError)
-		return
-	}
-
-	// Обработка пустого результата
-	if len(tasks) == 0 {
-		response := map[string]interface{}{
-			"tasks": []Task{}, // Возвращаем пустой массив задач
-		}
-		if err := json.NewEncoder(w).Encode(response); err != nil {
-			http.Error(w, `{"error": "Ошибка при формировании ответа"}`, http.StatusInternalServerError)
-			log.Println(`{"Ошибка при кодировании JSON:"}`, err)
-			return
-		}
-		return
-	}
-
-	response := map[string]interface{}{
-		"tasks": tasks,
-	}
-
-	log.Println("Формируемый ответ:", response) // Логирование ответа
+	// Формируем ответ
+	response := map[string]interface{}{"tasks": tasks}
 
 	if err := json.NewEncoder(w).Encode(response); err != nil {
-		http.Error(w, `{"error": "Ошибка при формировании ответа"}`, http.StatusInternalServerError)
-		log.Println(`{"Ошибка при кодировании JSON:"}`, err)
+		log.Printf("Ошибка при формировании ответа: %v\n", err)
+		http.Error(w, `{"error": "Ошибка при формировании ответа: `+err.Error()+`"}`, http.StatusInternalServerError)
 		return
 	}
 }

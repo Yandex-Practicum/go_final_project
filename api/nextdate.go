@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -13,6 +14,7 @@ import (
 
 // AddTaskHandler обрабатывает POST-запросы для добавления задачи
 func AddTaskHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
+	log.Printf("Получен запрос: %s %s", r.Method, r.URL.Path)
 	if r.Method != http.MethodPost {
 		http.Error(w, `{"error": "Метод не разрешен"}`, http.StatusMethodNotAllowed)
 		return
@@ -32,7 +34,7 @@ func AddTaskHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	}
 
 	// Проверяем формат даты
-	now := time.Now()
+	now := time.Now().Truncate(24 * time.Hour) // Убираем время, оставляем только дату
 	var taskDate time.Time
 	var err error
 
@@ -48,22 +50,10 @@ func AddTaskHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 
 	// Проверяем, не меньше ли дата сегодняшнего числа
 	if taskDate.Before(now) {
-		if task.Repeat == "" {
-			taskDate = now
-		} else {
-			nextDate, err := NextDate(now, task.Date, task.Repeat)
-			if err != nil {
-				http.Error(w, `{"error": "Неверное правило повторения"}`, http.StatusBadRequest)
-				return
-
-			}
-
-			taskDate, err = time.Parse("20060102", nextDate)
-			if err != nil {
-				http.Error(w, `{"error": "Неверное правило повторения"}`, http.StatusBadRequest)
-				return
-			}
-		}
+		taskDate = now // Устанавливаем на сегодняшнюю дату
+	} else if taskDate.Equal(now) {
+		// Если дата равна текущей, оставляем её
+		taskDate = now
 	}
 
 	// Если правило повторения указано как еженедельное или ежемесячное, возвращаем ошибку
@@ -77,7 +67,7 @@ func AddTaskHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 
 	// Добавляем задачу в базу данных
 	query := `INSERT INTO scheduler (date, title, comment, repeat) VALUES (?, ?, ?, ?)`
-	res, err := db.Exec(query, taskDate.Format("20060102"), task.Title, task.Comment, task.Repeat)
+	res, err := db.Exec(query, task.Date, task.Title, task.Comment, task.Repeat)
 	if err != nil {
 		http.Error(w, `{"error": "Ошибка при добавлении задачи"}`, http.StatusInternalServerError)
 		return
