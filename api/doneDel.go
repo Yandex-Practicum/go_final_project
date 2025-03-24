@@ -23,7 +23,7 @@ func MarkTaskDone(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Получаем задачу из базы данных
-	task, err := db.GetTaskByID(strconv.Itoa(id)) // Предполагается, что у вас есть такая функция
+	task, err := db.GetTaskByID(strconv.Itoa(id))
 	if err != nil {
 		http.Error(w, `{"error":"Задача не найдена"}`, http.StatusNotFound)
 		return
@@ -56,7 +56,7 @@ func MarkTaskDone(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Обновляем задачу в базе данных
-	err = db.UpdateTask(task) // Убедитесь, что у вас есть такая функция
+	err = db.UpdateTask(task)
 	if err != nil {
 		http.Error(w, `{"error":"Ошибка при обновлении задачи"}`, http.StatusInternalServerError)
 		return
@@ -80,7 +80,7 @@ func DeleteTask(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Удаляем задачу из базы данных
-	err = db.DeleteTaskByID(id) // Убедитесь, что у вас есть такая функция
+	err = db.DeleteTaskByID(id)
 	if err != nil {
 		http.Error(w, `{"error":"Ошибка при удалении задачи"}`, http.StatusInternalServerError)
 		return

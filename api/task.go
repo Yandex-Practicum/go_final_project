@@ -61,6 +61,11 @@ func GetTasksHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		tasks = append(tasks, task)
 	}
 
+	// Чтобы избежать {"tasks":null} в ответе JSON
+	if len(tasks) < 1 {
+		tasks = make([]Task, 0)
+	}
+
 	// Формируем ответ
 	response := map[string]interface{}{"tasks": tasks}
 

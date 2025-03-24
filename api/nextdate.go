@@ -33,6 +33,12 @@ func AddTaskHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		return
 	}
 
+	// Проверяем поле repeat
+	if task.Repeat != "" && !isValidRepeat(task.Repeat) {
+		http.Error(w, `{"error": "Недопустимое значение для поля repeat"}`, http.StatusBadRequest)
+		return
+	}
+
 	// Проверяем формат даты
 	now := time.Now().Truncate(24 * time.Hour) // Убираем время, оставляем только дату
 	var taskDate time.Time

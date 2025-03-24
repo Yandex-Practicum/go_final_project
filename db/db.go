@@ -115,7 +115,7 @@ func UpdateTask(task Task) error {
 }
 
 func DeleteTaskByID(id int) error {
-	db, err := GetDB() // Получите соединение с базой данных
+	db, err := GetDB() // Получаем соединение с базой данных
 	if err != nil {
 		return err
 	}

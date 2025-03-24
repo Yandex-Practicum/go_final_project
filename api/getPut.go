@@ -137,7 +137,7 @@ func updateTask(w http.ResponseWriter, r *http.Request) {
 
 // isValidRepeat проверяет, является ли значение repeat допустимым
 func isValidRepeat(repeat string) bool {
-	// Регулярное выражение для проверки, что строка состоит из цифр и пробелов
-	re := regexp.MustCompile(`^[0-9\s]+$`)
+	// Регулярное выражение для проверки допустимых форматов
+	re := regexp.MustCompile(`^(d \d{1,3}|y)$`)
 	return re.MatchString(repeat)
 }
