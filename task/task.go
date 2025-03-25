@@ -67,7 +67,7 @@ func NextDate(now time.Time, date string, repeat string) (string, error) {
 			return "", err
 		}
 		//Вычисляем новую дату
-		if days == 1 {
+		if days == 1 || dateForm.Day() == time.Now().Day() {
 			return now.Format(DateFormat), nil
 		}
 		for {
@@ -286,4 +286,39 @@ func GetTasks(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, `{"error": "Ошибка при формировании ответа: `+err.Error()+`"}`, http.StatusInternalServerError)
 		return
 	}
+}
+
+func GetTask(w http.ResponseWriter, req *http.Request) {
+	log.Printf("Получен запрос: %s %s", req.Method, req.URL.Path)
+	if req.Method != http.MethodGet {
+		http.Error(w, `{"error": "Метод не разрешен"}`, http.StatusMethodNotAllowed)
+		return
+	}
+	id := req.URL.Query().Get("id")
+
+	// Подключаемся к БД
+	db, err := sql.Open("sqlite", "scheduler.db")
+	if err != nil {
+		fmt.Println(err)
+		return
+
+	}
+	defer db.Close()
+
+	var t Task
+	// Формируем запрос к БД
+	row := db.QueryRow("SELECT  id, date, title, comment, repeat FROM scheduler WHERE id = ?", id)
+	err = row.Scan(&t.ID, &t.Date, &t.Title, &t.Comment, &t.Repeat)
+	if err != nil {
+		http.Error(w, `{"error":"Не указан идентификатор"}`, http.StatusInternalServerError)
+		return
+	}
+	if t.Date == "" {
+		t.Date = time.Now().Format(DateFormat)
+	}
+	log.Printf("Запрашиваем задачу с ID: %s", id)
+
+	// Формируем ответ
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	json.NewEncoder(w).Encode(t)
 }

@@ -59,7 +59,8 @@ func nextDateHandler(w http.ResponseWriter, req *http.Request) {
 func taskHandler(w http.ResponseWriter, req *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	switch req.Method {
-	//case http.MethodGet: getTask(w, req)
+	case http.MethodGet:
+		task.GetTask(w, req)
 	case http.MethodPost:
 		task.AddTask(w, req)
 	default:
