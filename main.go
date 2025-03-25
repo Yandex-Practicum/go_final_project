@@ -7,35 +7,12 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"strconv"
 	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/joho/godotenv"
 	_ "github.com/mattn/go-sqlite3"
 )
-
-type Task struct {
-	ID      string `json:"id"`
-	Date    string `json:"date"`
-	Title   string `json:"title"`
-	Comment string `json:"comment"`
-	Repeat  string `json:"repeat"`
-}
-
-type Response struct {
-	ID    string `json:"id,omitempty"`
-	Token string `json:"token,omitempty"`
-	Error string `json:"error,omitempty"`
-}
-
-type TasksResponse struct {
-	Tasks []Task `json:"tasks"`
-}
-
-type Password struct {
-	Pass string `json:"password"`
-}
 
 var db *sql.DB
 
@@ -71,45 +48,8 @@ func init() {
 	}
 }
 
-func addTaskRules(t *Task) (int, error) {
-	if t.Date == "" {
-		t.Date = time.Now().Format(timeFormat)
-	}
-	_, err := time.Parse(timeFormat, t.Date)
-	if err != nil {
-		return 0, fmt.Errorf("дата представлена в формате, отличном от 20060102")
-	}
-
-	if t.Date < time.Now().Format(timeFormat) {
-		if t.Repeat == "" {
-			t.Date = time.Now().Format(timeFormat)
-		} else {
-			taskDay, err := DateParse(now, t.Date, t.Repeat)
-			if err != nil {
-				return 0, fmt.Errorf("ошибка при парсинге даты: %v", err)
-			}
-			t.Date = taskDay
-		}
-	}
-
-	dateInt, err := strconv.Atoi(t.Date)
-	if err != nil {
-		return 0, fmt.Errorf("не удалось конвертировать дату в число")
-	}
-
-	if t.Title == "" {
-		return 0, fmt.Errorf("не указан заголовок задачи")
-	}
-
-	return dateInt, nil
-}
-
 func main() {
-	// appPath, err := os.Executable()
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-
+	// Подключение к БД
 	dbPath := os.Getenv("TODO_DBFILE")
 	if dbPath == "" {
 		dbPath = "scheduler.db"
@@ -136,7 +76,10 @@ func main() {
 
 	r := chi.NewRouter()
 
+	// Маршрут для статических файлов
 	r.Handle("/*", http.StripPrefix("/", http.FileServer(http.Dir("web"))))
+
+	// Маршруты API
 	r.Get("/api/nextdate", NextDateHandler)
 	r.Post("/api/task", Auth(PostTask))
 	r.Get("/api/tasks", Auth(GetTasks))
@@ -146,6 +89,7 @@ func main() {
 	r.Delete("/api/task", Auth(DeleteTask))
 	r.Post("/api/signin", SignIn)
 
+	// Настройка порта
 	port := os.Getenv("TODO_PORT")
 
 	if port == "" {
@@ -154,6 +98,7 @@ func main() {
 
 	adress := "0.0.0.0:" + port
 
+	// Запуск сервера
 	if err := http.ListenAndServe(adress, r); err != nil {
 		fmt.Printf("Ошибка при запуске сервера: %s", err.Error())
 		return
