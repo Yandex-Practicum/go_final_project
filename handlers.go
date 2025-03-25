@@ -29,8 +29,16 @@ type JSONObject struct {
 	ID    string `json:"id,omitempty"`
 	Token string `json:"token,omitempty"`
 	Error string `json:"error,omitempty"`
+}
+
+// TaskResponse используется для передачи списка задач в формате JSON
+type TasksResponse struct {
 	Tasks []Task `json:"tasks"`
-	Pass  string `json:"password"`
+}
+
+// Password используется для передачи пароля в формате JSON
+type Password struct {
+	Pass string `json:"password"`
 }
 
 // SendErrorResponse отправляет ошибку в формате JSON и статус сервера
@@ -211,12 +219,12 @@ func GetTasks(res http.ResponseWriter, req *http.Request) {
 	}
 
 	if tasks == nil {
-		response := JSONObject{Tasks: []Task{}}
+		response := TasksResponse{Tasks: []Task{}}
 		SendJSONResponse(res, response)
 		return
 	}
 
-	response := JSONObject{Tasks: tasks}
+	response := TasksResponse{Tasks: tasks}
 	SendJSONResponse(res, response)
 }
 
@@ -408,7 +416,7 @@ func DeleteTask(res http.ResponseWriter, req *http.Request) {
 // Если пароль совпадает, возвращает формирует JWT и передает его в поле JSON-объекта.
 // Если пароль невернный или произошла ошибка, возвращает JSON с текстом ошибки
 func SignIn(res http.ResponseWriter, req *http.Request) {
-	var p JSONObject
+	var p Password
 
 	pass := os.Getenv("TODO_PASSWORD")
 	if len(pass) > 0 { // Получаем пароль из JSON

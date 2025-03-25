@@ -83,7 +83,7 @@ func main() {
 	r.Get("/api/nextdate", NextDateHandler)
 	r.Post("/api/task", Auth(PostTask))
 	r.Get("/api/tasks", Auth(GetTasks))
-	r.Get("/api/task", Auth(GetTasks))
+	r.Get("/api/task", Auth(GetTaskId))
 	r.Put("/api/task", Auth(PutTask))
 	r.Post("/api/task/done", Auth(TaskDone))
 	r.Delete("/api/task", Auth(DeleteTask))
