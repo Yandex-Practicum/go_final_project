@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -9,7 +10,7 @@ import (
 
 var timeFormat = "20060102"
 
-// Формирует мапу допустимых значений дней в месяце
+// daysInMonth формирует мапу допустимых значений дней в месяце
 func daysInMonth(year int) map[int]int {
 	daysAmout := make(map[int]int)
 	for month := 1; month < 13; month++ {
@@ -20,7 +21,25 @@ func daysInMonth(year int) map[int]int {
 	return daysAmout
 }
 
-// ParseRepeater парсит строку на символ, слайс первой группы чисел, слайс второй группы чисел и ошибку
+// DateParse возвращает ближайшее время задачи
+func DateParse(now time.Time, dateStr string, repeat string) (string, error) {
+	date, err := time.Parse(timeFormat, dateStr)
+	if err != nil {
+		return "", fmt.Errorf("ошибка при парсинге времени date: %v", err)
+	}
+
+	taskDays, err := NextDate(now, date.Format(timeFormat), repeat)
+	if err != nil {
+		return "", fmt.Errorf("ошибка в функции NextDate: %v", err)
+	}
+
+	slices.Sort(taskDays)
+	return taskDays[0], nil
+}
+
+// ParseRepeater парсит строку на символ, слайс первой группы чисел,
+//
+//	слайс второй группы чисел (для месяцев) и ошибку
 func ParseRepeater(repeat string) (string, []int, []int, error) {
 	if repeat == "" {
 		return "", nil, nil, fmt.Errorf("пустая строка")
