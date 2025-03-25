@@ -26,6 +26,7 @@ func mainHandle(res http.ResponseWriter, req *http.Request) {
 
 const webDir = "./web"
 
+// 3ий шаг
 func nextDateHandler(w http.ResponseWriter, req *http.Request) {
 	nowStr := req.URL.Query().Get("now")
 	if nowStr == "" {
@@ -54,6 +55,7 @@ func nextDateHandler(w http.ResponseWriter, req *http.Request) {
 
 }
 
+// 4ый шаг
 func taskHandler(w http.ResponseWriter, req *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	switch req.Method {
@@ -82,6 +84,7 @@ func main() {
 	http.Handle("/", http.FileServer(http.Dir(webDir)))
 	http.HandleFunc(`/api/nextdate`, nextDateHandler)
 	http.HandleFunc(`/api/task`, taskHandler)
+	http.HandleFunc(`/api/tasks`, task.GetTasks)
 	envPort := os.Getenv("TODO_PORT")
 	if envPort == "" {
 		envPort = "7540"
