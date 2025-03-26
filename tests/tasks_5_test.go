@@ -71,7 +71,7 @@ func TestTasks(t *testing.T) {
 		repeat:  "d 30",
 	})
 	tasks = getTasks(t, "")
-	assert.Equal(t, len(tasks), 3)
+	assert.Equal(t, 3, len(tasks))
 
 	now = now.AddDate(0, 0, 2)
 	date = now.Format(`20060102`)
@@ -95,14 +95,14 @@ func TestTasks(t *testing.T) {
 	})
 
 	tasks = getTasks(t, "")
-	assert.Equal(t, len(tasks), 6)
+	assert.Equal(t, 6, len(tasks))
 
 	if !Search {
 		return
 	}
 	tasks = getTasks(t, "УК")
-	assert.Equal(t, len(tasks), 1)
+	assert.Equal(t, 1, len(tasks))
 	tasks = getTasks(t, now.Format(`02.01.2006`))
-	assert.Equal(t, len(tasks), 3)
+	assert.Equal(t, 3, len(tasks))
 
 }
