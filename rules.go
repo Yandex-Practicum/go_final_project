@@ -13,8 +13,8 @@ var timeFormat = "20060102"
 // daysInMonth формирует мапу допустимых значений дней в месяце
 func daysInMonth(year int) map[int]int {
 	daysAmout := make(map[int]int)
-	for month := 1; month < 13; month++ {
-		nextMonth := time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.Local)
+	for month := 1; month <= 12; month++ {
+		nextMonth := time.Date(year, time.Month(month)+1, 1, 0, 0, 0, 0, time.Local)
 		days := nextMonth.AddDate(0, 0, -1).Day()
 		daysAmout[month] = days
 	}
@@ -38,8 +38,7 @@ func DateParse(now time.Time, dateStr string, repeat string) (string, error) {
 }
 
 // ParseRepeater парсит строку на символ, слайс первой группы чисел,
-//
-//	слайс второй группы чисел (для месяцев) и ошибку
+// слайс второй группы чисел (для месяцев) и ошибку
 func ParseRepeater(repeat string) (string, []int, []int, error) {
 	if repeat == "" {
 		return "", nil, nil, fmt.Errorf("пустая строка")
@@ -191,7 +190,7 @@ func NextDate(now time.Time, date string, repeat string) ([]string, error) {
 		// Получаем мапу допустимых значений
 		daysAmount := daysInMonth(currentYear)
 
-		// Если есть вторая группа чисел после "m"
+		//Если есть вторая группа чисел после "m"
 		if months != nil {
 			for _, month := range months {
 				if month < 1 || month > 12 {
@@ -199,30 +198,32 @@ func NextDate(now time.Time, date string, repeat string) ([]string, error) {
 				}
 
 				for _, day := range days {
-					if day > 0 && day <= currentMonthDay { // Если день меньше или равен текущему дню, переносится на следующий месяц
-						futureDate = time.Date(currentYear, time.Month(month)+1, day, 0, 0, 0, 0, now.Location())
-					} else if day < 0 { // Если указано -1 или -2 переносится на последнее и предпоследнее число месяца, соотвественно
-						futureDate = time.Date(currentYear, time.Month(month)+1, 1, 0, 0, 0, 0, now.Location()).AddDate(0, 0, day)
-					} else { // Если день больше текущего дня, используется текущий месяц
-						futureDate = time.Date(currentYear, time.Month(month), day, 0, 0, 0, 0, now.Location())
+					futureDate = time.Date(t.Year(), time.Month(month), day, 0, 0, 0, 0, now.Location())
+
+					for futureDate.Before(now) {
+						futureDate = futureDate.AddDate(1, 0, 0)
 					}
+
+					taskDays = append(taskDays, futureDate.Format(timeFormat))
 				}
 			}
 		} else { // если только одна группа чисел после "m"
 			for _, day := range days {
+				// Сначала проверяем, если day больше или равен количеству дней в месяце
 				if day > daysAmount[int(currentMonth)] {
-					futureDate = time.Date(currentYear, t.Month()+1, day, 0, 0, 0, 0, now.Location())
+					futureDate = time.Date(currentYear, currentMonth+1, day, 0, 0, 0, 0, now.Location())
+				} else if day > 0 && day <= currentMonthDay { // Если день меньше или равен текущему дню
+					futureDate = time.Date(currentYear, currentMonth+1, day, 0, 0, 0, 0, now.Location())
+				} else if day < 0 { // Перенос на последний (предпоследний) день месяца
+					futureDate = time.Date(currentYear, currentMonth+1, 1, 0, 0, 0, 0, now.Location()).AddDate(0, 0, day)
+				} else { // день больше текущего, использовать текущий месяц
+					futureDate = time.Date(currentYear, currentMonth, day, 0, 0, 0, 0, now.Location())
 				}
-				if day > 0 && day <= currentMonthDay { // Если день меньше или равен текущему дню, переносится на следующий месяц
-					futureDate = time.Date(currentYear, t.Month()+1, day, 0, 0, 0, 0, now.Location())
-				} else if day < 0 { // Если указано -1 или -2 переносится на последнее и предпоследнее число месяца, соотвественно
-					futureDate = time.Date(currentYear, t.Month()+1, 1, 0, 0, 0, 0, now.Location()).AddDate(0, 0, day)
-				} else { // Если день больше текущего дня, используется текущий месяц
-					futureDate = time.Date(currentYear, t.Month(), day, 0, 0, 0, 0, now.Location())
+
+				for futureDate.Before(now) {
+					futureDate = futureDate.AddDate(0, 1, 0)
 				}
-				// for futureDate.Before(now) {
-				// 	futureDate = futureDate.AddDate(0, 1, 0)
-				// }
+
 				taskDays = append(taskDays, futureDate.Format(timeFormat))
 			}
 		}

@@ -67,9 +67,12 @@ func SendJSONResponse(res http.ResponseWriter, response interface{}) {
 // AddTaskRules проверяет необходимые условия при добавлении задачи, а именно:
 // корректность формата даты и наличие поля title. Возвращает дату в формате int и ошибку
 func AddTaskRules(t *Task) (int, error) {
+	// Если время не указано, устанавливаем текущее время
 	if t.Date == "" {
 		t.Date = time.Now().Format(timeFormat)
 	}
+
+	// Проверяем формат времени
 	_, err := time.Parse(timeFormat, t.Date)
 	if err != nil {
 		return 0, fmt.Errorf("дата представлена в формате, отличном от 20060102")
@@ -87,6 +90,7 @@ func AddTaskRules(t *Task) (int, error) {
 		}
 	}
 
+	// Переводим дату в int
 	dateInt, err := strconv.Atoi(t.Date)
 	if err != nil {
 		return 0, fmt.Errorf("не удалось конвертировать дату в число")
@@ -103,7 +107,7 @@ func AddTaskRules(t *Task) (int, error) {
 // "/api/nextdate?now=<20060102>&date=<20060102>&repeat=<правило>"
 // и возвращает следующую дату задачи или ошибку
 func NextDateHandler(res http.ResponseWriter, req *http.Request) {
-	// Получаем параметры now, daye, repeat из запроса
+	// Получаем параметры now, date, repeat из запроса
 	nowStr := req.FormValue("now")
 	dateStr := req.FormValue("date")
 	repeatStr := req.FormValue("repeat")
@@ -125,11 +129,11 @@ func NextDateHandler(res http.ResponseWriter, req *http.Request) {
 	_, _ = res.Write([]byte(taskDay))
 }
 
-// PostTask POST-обработчик /api/task, который добавляет задачу в базу данных.
+// PostTask обработчик для POST-запроса /api/task, который добавляет задачу в базу данных.
 // Запрос передается в формате JSON. Возвращает JSON с полем id, в случае успешного
 // добавления задачи, или error с текстом ошибки
 func PostTask(res http.ResponseWriter, req *http.Request) {
-	// Создаем экзмепляр структуры Task и заполняем его поля значениеми,
+	// Создаем экземпляр структуры Task и заполняем его поля значениями,
 	// полученными в формате JSON
 	var task Task
 	err := json.NewDecoder(req.Body).Decode(&task)
@@ -160,13 +164,12 @@ func PostTask(res http.ResponseWriter, req *http.Request) {
 
 	// Отправляем JSON-ответ
 	response := JSONObject{ID: fmt.Sprintf("%d", id)}
-	//SendJSONResponse(res, response)
 
 	res.Header().Set("Content-Type", "application/json;charset=UTF-8")
 	json.NewEncoder(res).Encode(response)
 }
 
-// GetTasks GET-обработчик /api/tasks, который возвращает список ближайших
+// GetTasks обработчик для GET-запроса /api/tasks, который возвращает список ближайших
 // задач в формате JSON.
 // Дополнительно обрабатывает параметр search в строке поиска
 // Поиск происходит по слову и по дате
@@ -228,10 +231,10 @@ func GetTasks(res http.ResponseWriter, req *http.Request) {
 	SendJSONResponse(res, response)
 }
 
-// GetTaskId GET-обработчки запроса /api/task?id=<идентификатор>.
-// Возращает JSON-объект со всеми плолями задачи с указанным идентификатором.
+// GetTaskId обработчик для GET-запроса /api/task?id=<идентификатор>.
+// Возращает JSON-объект со всеми полями задачи с указанным идентификатором.
 func GetTaskId(res http.ResponseWriter, req *http.Request) {
-	// Получаем id из url
+	// Получаем id из запроса
 	id := req.URL.Query().Get("id")
 
 	// Создаем экзмепляр структуры Task и заполняем его поля значениеми из таблицы scheduler
@@ -263,7 +266,7 @@ func GetTaskId(res http.ResponseWriter, req *http.Request) {
 
 // PutTask реализует редактирование задач.
 // PUT-обработчик /api/task, который отправляет значение
-// всех полей в виде JSON-объекта. Возвращает пустой JSON или ошибку
+// всех полей в виде JSON-объекта. Возвращает JSON cо структурой Task или ошибку
 func PutTask(res http.ResponseWriter, req *http.Request) {
 	var (
 		taskCurrent Task
@@ -289,6 +292,7 @@ func PutTask(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	// Если переданные в JSON поля пустые, оставляем поля преждней структуры
 	if taskUpdate.Title == "" {
 		SendErrorResponse(res, "не указан заголовок задачи", http.StatusInternalServerError)
 		return
@@ -310,6 +314,7 @@ func PutTask(res http.ResponseWriter, req *http.Request) {
 		taskCurrent.Repeat = taskUpdate.Repeat
 	}
 
+	// Обновляем поля в таблице
 	_, err = db.Exec("UPDATE scheduler SET date = :date, title = :title, comment = :comment , repeat = :repeat WHERE id = :id",
 		sql.Named("date", dateInt),
 		sql.Named("title", taskCurrent.Title),
@@ -327,6 +332,7 @@ func PutTask(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	// Отправляем JSON со структурой taskCurrent
 	SendJSONResponse(res, taskCurrent)
 }
 
@@ -342,8 +348,8 @@ func TaskDone(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// Создаем экзмплер структуры типа Task и заполняем его поля
-	// значениями из таблицы с указнным id
+	// Создаем экземпляр структуры типа Task и заполняем его поля
+	// значениями из таблицы с указанным id
 	var taskCurrent Task
 
 	err := db.QueryRow("SELECT * FROM scheduler WHERE id = :id", sql.Named("id", id)).
@@ -382,15 +388,18 @@ func TaskDone(res http.ResponseWriter, req *http.Request) {
 	}
 
 	taskCurrent.Date = date
-	// В случае успешного обновления столбца (?) таблицы, отправляем пустой JSON
+
+	// В случае успешного обновления поля таблицы, отправляем пустой JSON
 	SendJSONResponse(res, struct{}{})
 }
 
 // DeleteTask обработчик DELETE-запроса /api/task/done?id=<идентификатор>.
 // Удаляет задачу из таблицы scheduler. Возвращает пустой JSON или ошибку.
 func DeleteTask(res http.ResponseWriter, req *http.Request) {
+	// Получаем id из запроса
 	id := req.URL.Query().Get("id")
 
+	// Удаляем задачу по полученному id
 	result, err := db.Exec("DELETE FROM scheduler WHERE id = :id",
 		sql.Named("id", id))
 	if err != nil {
@@ -398,6 +407,7 @@ func DeleteTask(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	// Проверяем полявились ли изменения в таблице
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
 		SendErrorResponse(res, "ошибка при получении количества удалённых строк", http.StatusInternalServerError)
@@ -409,11 +419,12 @@ func DeleteTask(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	// В случае успешного удаления, отправляем пустой JSON
 	SendJSONResponse(res, struct{}{})
 }
 
 // SignIn обработчик POST-запроса /api/signin. Получает JSON с полем password.
-// Если пароль совпадает, возвращает формирует JWT и передает его в поле JSON-объекта.
+// Если пароль совпадает, формирует JWT и передает его в поле JSON-объекта.
 // Если пароль невернный или произошла ошибка, возвращает JSON с текстом ошибки
 func SignIn(res http.ResponseWriter, req *http.Request) {
 	var p Password

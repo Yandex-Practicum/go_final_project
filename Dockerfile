@@ -12,9 +12,9 @@ COPY .env ./
 
 RUN go mod tidy && go mod download
 
-RUN go build -o /myapp
+RUN go build -o /grigorpower
 
 EXPOSE 7540
 
-CMD [ "/myapp" ]
+CMD [ "/grigorpower" ]
 

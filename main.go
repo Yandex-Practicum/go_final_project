@@ -41,6 +41,7 @@ func createTable() {
 	}
 }
 
+// Загружаем переменные окружения
 func init() {
 	err := godotenv.Load()
 	if err != nil {
@@ -91,7 +92,6 @@ func main() {
 
 	// Настройка порта
 	port := os.Getenv("TODO_PORT")
-
 	if port == "" {
 		port = "0.0.0.0:7540"
 	}
