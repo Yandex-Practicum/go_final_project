@@ -10,6 +10,7 @@ import (
 	_ "modernc.org/sqlite"
 )
 
+// Создание базы данных 2ой шаг
 func CreateDB(envDBFILE string) {
 	var appPath string
 	var err error
@@ -46,7 +47,7 @@ func CreateDB(envDBFILE string) {
 		// Создание базы данных
 		_, err = db.Exec(`CREATE TABLE IF NOT EXISTS scheduler(
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			date INTEGER,
+			date TEXT NOT NULL,
 			title TEXT NOT NULL DEFAULT "",
 			comment TEXT,
 			repeat VARCHAR(128) NOT NULL DEFAULT "");`)

@@ -63,6 +63,21 @@ func taskHandler(w http.ResponseWriter, req *http.Request) {
 		task.GetTask(w, req)
 	case http.MethodPost:
 		task.AddTask(w, req)
+	case http.MethodPut:
+		task.UpdateTask(w, req)
+	default:
+		http.Error(w, fmt.Sprintf("Сервер не поддерживает %s запросы", req.Method),
+			http.StatusMethodNotAllowed)
+		return
+	}
+}
+func taskDoneDeleteHandler(w http.ResponseWriter, req *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	switch req.Method {
+	case http.MethodPost:
+		task.DoneTask(w, req)
+	case http.MethodDelete:
+		task.DeleteTask(w, req)
 	default:
 		http.Error(w, fmt.Sprintf("Сервер не поддерживает %s запросы", req.Method),
 			http.StatusMethodNotAllowed)
@@ -86,6 +101,7 @@ func main() {
 	http.HandleFunc(`/api/nextdate`, nextDateHandler)
 	http.HandleFunc(`/api/task`, taskHandler)
 	http.HandleFunc(`/api/tasks`, task.GetTasks)
+	http.HandleFunc(`/api/task/done`, taskDoneDeleteHandler)
 	envPort := os.Getenv("TODO_PORT")
 	if envPort == "" {
 		envPort = "7540"
