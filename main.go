@@ -98,6 +98,8 @@ func main() {
 
 	adress := "0.0.0.0:" + port
 
+	log.Println("Сервер запущен на порту: ", port)
+
 	// Запуск сервера
 	if err := http.ListenAndServe(adress, r); err != nil {
 		fmt.Printf("Ошибка при запуске сервера: %s", err.Error())

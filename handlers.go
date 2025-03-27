@@ -5,7 +5,9 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -44,10 +46,18 @@ type Password struct {
 // SendErrorResponse отправляет ошибку в формате JSON и статус сервера
 func SendErrorResponse(res http.ResponseWriter, errorMessage string, statusCode int) {
 	response := JSONObject{Error: errorMessage}
+
+	resp, err := json.Marshal(response)
+	if err != nil {
+		log.Println(err)
+		http.Error(res, "ошибка при сериализации JSON", http.StatusInternalServerError)
+	}
+
 	res.Header().Set("Content-Type", "application/json;charset=UTF-8")
-	res.WriteHeader(http.StatusInternalServerError)
-	if err := json.NewEncoder(res).Encode(response); err != nil {
-		http.Error(res, "не удалось обработать ошибку", statusCode)
+	res.WriteHeader(statusCode)
+	_, err = res.Write(resp)
+	if err != nil {
+		log.Println(err)
 	}
 }
 
@@ -55,13 +65,17 @@ func SendErrorResponse(res http.ResponseWriter, errorMessage string, statusCode 
 func SendJSONResponse(res http.ResponseWriter, response interface{}) {
 	resp, err := json.Marshal(response)
 	if err != nil {
-		SendErrorResponse(res, fmt.Sprintf("ошибка при сериализации JSON: %v", err), http.StatusInternalServerError)
+		log.Println(err)
+		SendErrorResponse(res, "ошибка при сериализации JSON", http.StatusInternalServerError)
 		return
 	}
 
 	res.Header().Set("Content-Type", "application/json;charset=UTF-8")
 	res.WriteHeader(http.StatusOK)
-	_, _ = res.Write(resp)
+	_, err = res.Write(resp)
+	if err != nil {
+		log.Println(err)
+	}
 }
 
 // AddTaskRules проверяет необходимые условия при добавлении задачи, а именно:
@@ -75,7 +89,7 @@ func AddTaskRules(t *Task) (int, error) {
 	// Проверяем формат времени
 	_, err := time.Parse(timeFormat, t.Date)
 	if err != nil {
-		return 0, fmt.Errorf("дата представлена в формате, отличном от 20060102")
+		return 0, fmt.Errorf("дата представлена в формате, отличном от 20060102: %w", err)
 	}
 
 	if t.Date < time.Now().Format(timeFormat) {
@@ -84,7 +98,7 @@ func AddTaskRules(t *Task) (int, error) {
 		} else {
 			taskDay, err := DateParse(now, t.Date, t.Repeat)
 			if err != nil {
-				return 0, fmt.Errorf("ошибка при парсинге даты: %v", err)
+				return 0, fmt.Errorf("ошибка при парсинге даты: %w", err)
 			}
 			t.Date = taskDay
 		}
@@ -93,7 +107,7 @@ func AddTaskRules(t *Task) (int, error) {
 	// Переводим дату в int
 	dateInt, err := strconv.Atoi(t.Date)
 	if err != nil {
-		return 0, fmt.Errorf("не удалось конвертировать дату в число")
+		return 0, fmt.Errorf("не удалось конвертировать дату в число: %w", err)
 	}
 
 	if t.Title == "" {
@@ -115,14 +129,16 @@ func NextDateHandler(res http.ResponseWriter, req *http.Request) {
 	// Проверяем передано ли время в нужном формате
 	t, err := time.Parse(timeFormat, nowStr)
 	if err != nil {
-		SendErrorResponse(res, fmt.Sprintf("ошибка при парсинге времени now: %v", err), http.StatusInternalServerError)
+		log.Println(err)
+		SendErrorResponse(res, "ошибка при парсинге времени now", http.StatusBadRequest)
 		return
 	}
 
 	// Получаем ближайшую дату задачи
 	taskDay, err := DateParse(t, dateStr, repeatStr)
 	if err != nil {
-		SendErrorResponse(res, fmt.Sprintf("ошибка при парсинге даты: %v", err), http.StatusInternalServerError)
+		log.Println(err)
+		SendErrorResponse(res, "ошибка при парсинге даты", http.StatusBadRequest)
 		return
 	}
 
@@ -138,26 +154,34 @@ func PostTask(res http.ResponseWriter, req *http.Request) {
 	var task Task
 	err := json.NewDecoder(req.Body).Decode(&task)
 	if err != nil {
-		SendErrorResponse(res, fmt.Sprintf("ошибка десериализации JSON: %v", err), http.StatusInternalServerError)
+		log.Println(err)
+		SendErrorResponse(res, "ошибка десериализации JSON", http.StatusBadRequest)
 		return
 	}
 
 	dateInt, err := AddTaskRules(&task)
 	if err != nil {
-		SendErrorResponse(res, fmt.Sprintf("ошибка при добавлении задачи: %v", err), http.StatusInternalServerError)
+		log.Println(err)
+		SendErrorResponse(res, "ошибка при добавлении задачи", http.StatusBadRequest)
 		return
 	}
 
 	// Добавляем задачу в таблицу scheduler
-	result, err := db.Exec("INSERT INTO scheduler (date, title, comment, repeat) VALUES (?, ?, ?, ?)",
-		dateInt, task.Title, task.Comment, task.Repeat)
+	result, err := db.Exec("INSERT INTO scheduler (date, title, comment, repeat) VALUES (:date, :title, :comment, :repeat)",
+		sql.Named("date", dateInt),
+		sql.Named("title", task.Title),
+		sql.Named("comment", task.Comment),
+		sql.Named("repeat", task.Repeat))
+
 	if err != nil {
+		log.Println(err)
 		SendErrorResponse(res, "не удалось вставить задачу в таблицу", http.StatusInternalServerError)
 		return
 	}
 
 	id, err := result.LastInsertId()
 	if err != nil {
+		log.Println(err)
 		SendErrorResponse(res, "ошибка получения последнего ID", http.StatusInternalServerError)
 		return
 	}
@@ -199,6 +223,7 @@ func GetTasks(res http.ResponseWriter, req *http.Request) {
 
 	rows, err := db.Query(query, args...)
 	if err != nil {
+		log.Println(err)
 		SendErrorResponse(res, "не удалось получить задачу", http.StatusInternalServerError)
 		return
 	}
@@ -209,7 +234,8 @@ func GetTasks(res http.ResponseWriter, req *http.Request) {
 
 		err := rows.Scan(&task.ID, &task.Date, &task.Title, &task.Comment, &task.Repeat)
 		if err != nil {
-			SendErrorResponse(res, fmt.Sprintf("ошибка при извлечении данных: %v", err), http.StatusInternalServerError)
+			log.Println(err)
+			SendErrorResponse(res, "ошибка при извлечении данных", http.StatusInternalServerError)
 			return
 		}
 
@@ -217,7 +243,8 @@ func GetTasks(res http.ResponseWriter, req *http.Request) {
 	}
 
 	if err := rows.Err(); err != nil {
-		SendErrorResponse(res, fmt.Sprintf("ошибка при итерации: %v", err), http.StatusInternalServerError)
+		log.Println(err)
+		SendErrorResponse(res, "ошибка при итерации", http.StatusInternalServerError)
 		return
 	}
 
@@ -243,7 +270,12 @@ func GetTaskId(res http.ResponseWriter, req *http.Request) {
 	rows, err := db.Query("SELECT *FROM scheduler WHERE id = :id",
 		sql.Named("id", id))
 	if err != nil {
-		SendErrorResponse(res, "задача не найдена", http.StatusInternalServerError)
+		log.Println(err)
+		if errors.Is(err, sql.ErrNoRows) {
+			SendErrorResponse(res, "задача не найдена", http.StatusNotFound)
+			return
+		}
+		SendErrorResponse(res, "ошибка на стороне сервера", http.StatusInternalServerError)
 		return
 	}
 	defer rows.Close()
@@ -251,13 +283,14 @@ func GetTaskId(res http.ResponseWriter, req *http.Request) {
 	for rows.Next() {
 		err := rows.Scan(&task.ID, &task.Date, &task.Title, &task.Comment, &task.Repeat)
 		if err != nil {
-			SendErrorResponse(res, fmt.Sprintf("ошибка при извлечении данных: %v", err), http.StatusInternalServerError)
+			log.Println(err)
+			SendErrorResponse(res, "ошибка при извлечении данных", http.StatusInternalServerError)
 			return
 		}
 	}
 
 	if task == (Task{}) {
-		SendErrorResponse(res, "не указан идентификатор", http.StatusInternalServerError)
+		SendErrorResponse(res, "не указан идентификатор", http.StatusBadRequest)
 		return
 	}
 
@@ -275,26 +308,29 @@ func PutTask(res http.ResponseWriter, req *http.Request) {
 
 	err := json.NewDecoder(req.Body).Decode(&taskUpdate)
 	if err != nil {
-		SendErrorResponse(res, fmt.Sprintf("ошибка десериализации JSON: %v", err), http.StatusInternalServerError)
+		log.Println(err)
+		SendErrorResponse(res, "ошибка десериализации JSON", http.StatusBadRequest)
 		return
 	}
 
 	err = db.QueryRow("SELECT * FROM scheduler WHERE id = :id", sql.Named("id", taskUpdate.ID)).
 		Scan(&taskCurrent.ID, &taskCurrent.Date, &taskCurrent.Title, &taskCurrent.Comment, &taskCurrent.Repeat)
 	if err != nil {
+		log.Println(err)
 		SendErrorResponse(res, "ошибка при извлечении данных", http.StatusInternalServerError)
 		return
 	}
 
 	dateInt, err := AddTaskRules(&taskUpdate)
 	if err != nil {
-		SendErrorResponse(res, fmt.Sprintf("ошибка при добавлении задачи: %v", err), http.StatusInternalServerError)
+		log.Println(err)
+		SendErrorResponse(res, "ошибка при добавлении задачи", http.StatusBadRequest)
 		return
 	}
 
 	// Если переданные в JSON поля пустые, оставляем поля преждней структуры
 	if taskUpdate.Title == "" {
-		SendErrorResponse(res, "не указан заголовок задачи", http.StatusInternalServerError)
+		SendErrorResponse(res, "не указан заголовок задачи", http.StatusBadRequest)
 		return
 	}
 
@@ -323,12 +359,13 @@ func PutTask(res http.ResponseWriter, req *http.Request) {
 		sql.Named("id", taskCurrent.ID))
 
 	if err != nil {
+		log.Println(err)
 		SendErrorResponse(res, "ошибка при обновлении данных", http.StatusInternalServerError)
 		return
 	}
 
 	if taskCurrent == (Task{}) {
-		SendErrorResponse(res, "не указан идентификатор", http.StatusInternalServerError)
+		SendErrorResponse(res, "не указан идентификатор", http.StatusBadRequest)
 		return
 	}
 
@@ -344,7 +381,7 @@ func TaskDone(res http.ResponseWriter, req *http.Request) {
 	id := req.URL.Query().Get("id")
 
 	if id == "" {
-		SendErrorResponse(res, "не указан идентификатор", http.StatusInternalServerError)
+		SendErrorResponse(res, "не указан идентификатор", http.StatusBadRequest)
 		return
 	}
 
@@ -355,7 +392,12 @@ func TaskDone(res http.ResponseWriter, req *http.Request) {
 	err := db.QueryRow("SELECT * FROM scheduler WHERE id = :id", sql.Named("id", id)).
 		Scan(&taskCurrent.ID, &taskCurrent.Date, &taskCurrent.Title, &taskCurrent.Comment, &taskCurrent.Repeat)
 	if err != nil {
-		SendErrorResponse(res, "задача не найдена", http.StatusInternalServerError)
+		log.Println(err)
+		if errors.Is(err, sql.ErrNoRows) {
+			SendErrorResponse(res, "задача не найдена", http.StatusNotFound)
+			return
+		}
+		SendErrorResponse(res, "ошибка на стороне сервера", http.StatusInternalServerError)
 		return
 	}
 
@@ -368,14 +410,16 @@ func TaskDone(res http.ResponseWriter, req *http.Request) {
 	// Получаем ближайшее время задачи
 	date, err := DateParse(now, taskCurrent.Date, taskCurrent.Repeat)
 	if err != nil {
-		SendErrorResponse(res, "ошибка при получении даты", http.StatusInternalServerError)
+		log.Println(err)
+		SendErrorResponse(res, "ошибка при получении даты", http.StatusBadRequest)
 		return
 	}
 
 	// Приводим время к типу int и обновляем строку в таблице scheduler
 	dateInt, err := strconv.Atoi(date)
 	if err != nil {
-		SendErrorResponse(res, fmt.Sprintf("ошибка при преобразовании: %v", err), http.StatusInternalServerError)
+		log.Println(err)
+		SendErrorResponse(res, "ошибка при преобразовании", http.StatusInternalServerError)
 	}
 
 	_, err = db.Exec("UPDATE scheduler SET date = :date WHERE id = :id",
@@ -383,6 +427,7 @@ func TaskDone(res http.ResponseWriter, req *http.Request) {
 		sql.Named("id", id))
 
 	if err != nil {
+		log.Println(err)
 		SendErrorResponse(res, "ошибка при обновлении данных", http.StatusInternalServerError)
 		return
 	}
@@ -403,6 +448,7 @@ func DeleteTask(res http.ResponseWriter, req *http.Request) {
 	result, err := db.Exec("DELETE FROM scheduler WHERE id = :id",
 		sql.Named("id", id))
 	if err != nil {
+		log.Println(err)
 		SendErrorResponse(res, "ошибка при удалении задачи", http.StatusInternalServerError)
 		return
 	}
@@ -410,12 +456,13 @@ func DeleteTask(res http.ResponseWriter, req *http.Request) {
 	// Проверяем полявились ли изменения в таблице
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
+		log.Println(err)
 		SendErrorResponse(res, "ошибка при получении количества удалённых строк", http.StatusInternalServerError)
 		return
 	}
 
 	if rowsAffected == 0 {
-		SendErrorResponse(res, "задача с таким id не найдена", http.StatusInternalServerError)
+		SendErrorResponse(res, "задача с таким id не найдена", http.StatusNotFound)
 		return
 	}
 
@@ -430,35 +477,43 @@ func SignIn(res http.ResponseWriter, req *http.Request) {
 	var p Password
 
 	pass := os.Getenv("TODO_PASSWORD")
-	if len(pass) > 0 { // Получаем пароль из JSON
-		err := json.NewDecoder(req.Body).Decode(&p)
-		if err != nil {
-			SendErrorResponse(res, fmt.Sprintf("ошибка десериализации JSON: %v", err), http.StatusUnauthorized)
-			return
-		}
-
-		if p.Pass == pass { // Создаем токен и в качетсве полезной нагрузки передаем хэш
-			secret := []byte("secret_key")
-
-			hashedPass := sha256.Sum256([]byte(p.Pass))
-			hashString := hex.EncodeToString(hashedPass[:])
-
-			claims := jwt.MapClaims{
-				"hash": hashString,
-			}
-
-			jwtToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-
-			signedToken, err := jwtToken.SignedString(secret)
-			if err != nil {
-				http.Error(res, "ошибка получения подписанного токена", http.StatusBadRequest)
-			}
-			response := JSONObject{Token: signedToken}
-			SendJSONResponse(res, response)
-		} else {
-			SendErrorResponse(res, "невереный пароль", http.StatusUnauthorized)
-		}
+	if len(pass) == 0 {
+		return
 	}
+
+	// Получаем пароль из JSON
+	err := json.NewDecoder(req.Body).Decode(&p)
+	if err != nil {
+		log.Println(err)
+		SendErrorResponse(res, "ошибка десериализации JSON", http.StatusUnauthorized)
+		return
+	}
+
+	if p.Pass != pass {
+		SendErrorResponse(res, "неверный пароль", http.StatusUnauthorized)
+		return
+	}
+
+	// Создаем токен и в качетсве полезной нагрузки передаем хэш
+	secret := []byte("secret_key")
+
+	hashedPass := sha256.Sum256([]byte(p.Pass))
+	hashString := hex.EncodeToString(hashedPass[:])
+
+	claims := jwt.MapClaims{
+		"hash": hashString,
+	}
+
+	jwtToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	signedToken, err := jwtToken.SignedString(secret)
+	if err != nil {
+		log.Println(err)
+		http.Error(res, "ошибка получения подписанного токена", http.StatusUnauthorized)
+		return
+	}
+	response := JSONObject{Token: signedToken}
+	SendJSONResponse(res, response)
 }
 
 // Auth проводит проверку аутентификации для API-запросов
@@ -466,53 +521,57 @@ func Auth(next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		// Смотрим наличие пароля
 		pass := os.Getenv("TODO_PASSWORD")
-		if len(pass) > 0 {
-			var jwtCookie string // JWT-токен из куки
-			// Получаем куку
-			cookie, err := req.Cookie("token")
-			if err == nil {
-				jwtCookie = cookie.Value
-			}
-
-			//валидация и проверка JWT-токена
-			secret := []byte("secret_key")
-			jwtToken, err := jwt.Parse(jwtCookie, func(t *jwt.Token) (interface{}, error) {
-				return secret, nil
-			})
-			if err != nil {
-				http.Error(res, fmt.Sprintf("Ошибка при парсинге токена: %v", err), http.StatusUnauthorized)
-				return
-			}
-
-			if !jwtToken.Valid {
-				SendErrorResponse(res, fmt.Sprint("токен не валиден"), http.StatusUnauthorized)
-				return
-			}
-
-			// Получаем хэш из полезной нагрузки токена
-			result, ok := jwtToken.Claims.(jwt.MapClaims)
-			if !ok {
-				SendErrorResponse(res, fmt.Sprint("не удалось выполнить приведение типа к  jwt.MapClaims"), http.StatusUnauthorized)
-				return
-			}
-
-			hashRow := result["hash"]
-
-			hash, ok := hashRow.(string)
-			if !ok {
-				SendErrorResponse(res, fmt.Sprint("не удалось выполнить приведение типа к string"), http.StatusUnauthorized)
-				return
-			}
-
-			// Получаем хэш, как в функции SignIn
-			hashedPass := sha256.Sum256([]byte(pass))
-			expectedHash := hex.EncodeToString(hashedPass[:])
-
-			if hash != expectedHash {
-				SendErrorResponse(res, fmt.Sprint("ошибка валидации хэша"), http.StatusUnauthorized)
-				return
-			}
+		if len(pass) == 0 {
+			return
 		}
+
+		var jwtCookie string // JWT-токен из куки
+		// Получаем куку
+		cookie, err := req.Cookie("token")
+		if err == nil {
+			jwtCookie = cookie.Value
+		}
+
+		//валидация и проверка JWT-токена
+		secret := []byte("secret_key")
+		jwtToken, err := jwt.Parse(jwtCookie, func(t *jwt.Token) (interface{}, error) {
+			return secret, nil
+		})
+		if err != nil {
+			log.Println(err)
+			http.Error(res, "Ошибка при парсинге токена", http.StatusUnauthorized)
+			return
+		}
+
+		if !jwtToken.Valid {
+			SendErrorResponse(res, "токен не валиден", http.StatusUnauthorized)
+			return
+		}
+
+		// Получаем хэш из полезной нагрузки токена
+		result, ok := jwtToken.Claims.(jwt.MapClaims)
+		if !ok {
+			SendErrorResponse(res, "не удалось выполнить приведение типа к  jwt.MapClaims", http.StatusUnauthorized)
+			return
+		}
+
+		hashRow := result["hash"]
+
+		hash, ok := hashRow.(string)
+		if !ok {
+			SendErrorResponse(res, "не удалось выполнить приведение типа к string", http.StatusUnauthorized)
+			return
+		}
+
+		// Получаем хэш, как в функции SignIn
+		hashedPass := sha256.Sum256([]byte(pass))
+		expectedHash := hex.EncodeToString(hashedPass[:])
+
+		if hash != expectedHash {
+			SendErrorResponse(res, "ошибка валидации хэша", http.StatusUnauthorized)
+			return
+		}
+
 		next(res, req)
 	})
 }

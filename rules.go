@@ -25,12 +25,12 @@ func daysInMonth(year int) map[int]int {
 func DateParse(now time.Time, dateStr string, repeat string) (string, error) {
 	date, err := time.Parse(timeFormat, dateStr)
 	if err != nil {
-		return "", fmt.Errorf("ошибка при парсинге времени date: %v", err)
+		return "", fmt.Errorf("ошибка при парсинге времени date: %w", err)
 	}
 
 	taskDays, err := NextDate(now, date.Format(timeFormat), repeat)
 	if err != nil {
-		return "", fmt.Errorf("ошибка в функции NextDate: %v", err)
+		return "", fmt.Errorf("ошибка в функции NextDate: %w", err)
 	}
 
 	slices.Sort(taskDays)
@@ -116,7 +116,7 @@ func NextDate(now time.Time, date string, repeat string) ([]string, error) {
 
 	t, err := time.Parse(timeFormat, date)
 	if err != nil {
-		return nil, fmt.Errorf("ошибка при парсинге даты: %v", err)
+		return nil, fmt.Errorf("ошибка при парсинге даты: %w", err)
 	}
 
 	symbol, days, months, err := ParseRepeater(repeat)
@@ -135,7 +135,7 @@ func NextDate(now time.Time, date string, repeat string) ([]string, error) {
 		}
 
 		if days[0] > 400 {
-			return nil, fmt.Errorf("превышен максимально допустимый интервал дней")
+			return nil, fmt.Errorf("превышен максимально допустимый интервал дней: %d", days[0])
 		}
 
 		futureDate = t.AddDate(0, 0, days[0])
@@ -153,7 +153,7 @@ func NextDate(now time.Time, date string, repeat string) ([]string, error) {
 
 		for _, day := range days {
 			if day < 1 || day > 7 {
-				return nil, fmt.Errorf("недопустимое значение дня недели %v", day)
+				return nil, fmt.Errorf("недопустимое значение дня недели %d", day)
 			}
 		}
 
@@ -179,7 +179,7 @@ func NextDate(now time.Time, date string, repeat string) ([]string, error) {
 
 		for _, day := range days {
 			if day > 31 || day < -2 {
-				return nil, fmt.Errorf("недопустимое значение числа месяца %v", day)
+				return nil, fmt.Errorf("недопустимое значение числа месяца %d", day)
 			}
 		}
 
@@ -194,7 +194,7 @@ func NextDate(now time.Time, date string, repeat string) ([]string, error) {
 		if months != nil {
 			for _, month := range months {
 				if month < 1 || month > 12 {
-					return nil, fmt.Errorf("недопустимое значение месяца %v", month)
+					return nil, fmt.Errorf("недопустимое значение месяца %d", month)
 				}
 
 				for _, day := range days {
@@ -242,7 +242,7 @@ func NextDate(now time.Time, date string, repeat string) ([]string, error) {
 		return taskDays, nil
 
 	default:
-		return nil, fmt.Errorf("недопустимый символ")
+		return nil, fmt.Errorf("недопустимый символ: %s", symbol)
 
 	}
 
