@@ -65,6 +65,8 @@ func taskHandler(w http.ResponseWriter, req *http.Request) {
 		task.AddTask(w, req)
 	case http.MethodPut:
 		task.UpdateTask(w, req)
+	case http.MethodDelete:
+		task.DeleteTask(w, req)
 	default:
 		http.Error(w, fmt.Sprintf("Сервер не поддерживает %s запросы", req.Method),
 			http.StatusMethodNotAllowed)

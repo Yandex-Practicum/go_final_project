@@ -17,8 +17,6 @@ import (
 
 var DateFormat = "20060102"
 
-//var db *sql.DB
-
 type Task struct {
 	ID      string `json:"id"`
 	Date    string `json:"date"`
@@ -344,10 +342,14 @@ func GetTask(w http.ResponseWriter, req *http.Request) {
 
 	// Формируем ответ
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	json.NewEncoder(w).Encode(t)
+	if err := json.NewEncoder(w).Encode(t); err != nil {
+		log.Printf("Ошибка при формировании ответа: %v\n", err)
+		http.Error(w, `{"error": "Ошибка при формировании ответа: `+err.Error()+`"}`, http.StatusInternalServerError)
+		return
+	}
 }
 
-// 6ой шаг
+// UpdateTasks обрабатывает PUT-запросы для редактирования задачи  6ой шаг
 func UpdateTask(w http.ResponseWriter, req *http.Request) {
 	log.Printf("Получен запрос: %s %s", req.Method, req.URL.Path)
 	if req.Method != http.MethodPut {
@@ -447,7 +449,7 @@ func UpdateTask(w http.ResponseWriter, req *http.Request) {
 	w.Write([]byte("{}"))
 }
 
-// 7ой шаг
+// DoneTask обрабатывает PUT-запросы для выполненной задачи 7ой шаг
 func DoneTask(w http.ResponseWriter, req *http.Request) {
 	log.Printf("Получен запрос: %s %s", req.Method, req.URL.Path)
 
@@ -517,7 +519,7 @@ func DoneTask(w http.ResponseWriter, req *http.Request) {
 	w.Write([]byte("{}"))
 }
 
-// 7ой шаг
+// DeleteTask обрабатывает DELETE-запросы для удаления задачи 7ой шаг
 func DeleteTask(w http.ResponseWriter, req *http.Request) {
 	log.Printf("Получен запрос: %s %s", req.Method, req.URL.Path)
 	if req.Method != http.MethodDelete {
@@ -539,6 +541,7 @@ func DeleteTask(w http.ResponseWriter, req *http.Request) {
 	}
 	defer db.Close()
 
+	// Удаляем задачу из БД
 	result, err := db.Exec("DELETE FROM scheduler WHERE id = ?", id)
 	if err != nil {
 		log.Printf("Не удалось удалить задачу")
