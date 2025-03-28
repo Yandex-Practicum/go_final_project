@@ -17,7 +17,7 @@ func main() {
 	db, err := base.CreateDB(envDBFILE)
 	// Подключаемся к БД
 	if err != nil {
-		log.Printf("1")
+		log.Printf("Ошибка подключения к БД")
 		fmt.Println(err)
 		return
 
