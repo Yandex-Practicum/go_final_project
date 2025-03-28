@@ -11,36 +11,30 @@ import (
 )
 
 // Создание базы данных 2ой шаг
-func CreateDB(envDBFILE string) {
+func CreateDB(envDBFILE string) (db *sql.DB, err error) {
 	var appPath string
-	var err error
 	if envDBFILE != "" {
 		appPath = envDBFILE
 	} else {
 		appPath, err = os.Getwd() //не смогла реализовать через os.Executable()
 		if err != nil {
 			log.Fatal(err)
+			return nil, err
 		}
 	}
 
-	dbFile := filepath.Join(appPath, "scheduler.db")
-	_, err = os.Stat(dbFile)
-
-	fmt.Println(err)
-
 	var install bool
-	if os.IsNotExist(err) {
+	dbFile := filepath.Join(appPath, "scheduler.db")
+	if _, err := os.Stat(dbFile); os.IsNotExist(err) {
 		install = true
-		fmt.Println("db не найдена")
-	} else if err != nil {
-		log.Fatal(err)
+		fmt.Println("db не найдена, создаём новую")
 	}
 
-	db, err := sql.Open("sqlite", dbFile)
+	db, err = sql.Open("sqlite", dbFile)
 	if err != nil {
 		log.Fatal(err)
+		return nil, err
 	}
-	defer db.Close()
 
 	if install {
 
@@ -53,12 +47,15 @@ func CreateDB(envDBFILE string) {
 			repeat VARCHAR(128) NOT NULL DEFAULT "");`)
 		if err != nil {
 			log.Fatal(err)
+			return nil, err
 		}
 		_, err = db.Exec(`CREATE INDEX IF NOT EXISTS scheduler_date ON scheduler (date);`)
 		if err != nil {
 			log.Fatal(err)
+			return nil, err
 		}
 
 		fmt.Println("База данных успешно создана!")
 	}
+	return db, nil
 }

@@ -1,4 +1,4 @@
-module main.go
+module github.com/dekatei/go_final_project 
 
 go 1.22.6
 
