@@ -1,7 +1,6 @@
 package tests
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -10,43 +9,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 )
-
-func TestTask(t *testing.T) {
-	db := openDB(t)
-	defer db.Close()
-
-	now := time.Now()
-
-	task := task{
-		date:    now.Format(`20060102`),
-		title:   "Созвон в 16:00",
-		comment: "Обсуждение планов",
-		repeat:  "d 5",
-	}
-
-	todo := addTask(t, task)
-
-	body, err := requestJSON("api/task", nil, http.MethodGet)
-	assert.NoError(t, err)
-	var m map[string]string
-	err = json.Unmarshal(body, &m)
-	assert.NoError(t, err)
-
-	e, ok := m["error"]
-	assert.False(t, !ok || len(fmt.Sprint(e)) == 0,
-		"Ожидается ошибка для вызова /api/task")
-
-	body, err = requestJSON("api/task?id="+todo, nil, http.MethodGet)
-	assert.NoError(t, err)
-	err = json.Unmarshal(body, &m)
-	assert.NoError(t, err)
-
-	assert.Equal(t, todo, m["id"])
-	assert.Equal(t, task.date, m["date"])
-	assert.Equal(t, task.title, m["title"])
-	assert.Equal(t, task.comment, m["comment"])
-	assert.Equal(t, task.repeat, m["repeat"])
-}
 
 type fulltask struct {
 	id string

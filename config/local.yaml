@@ -1,0 +1,6 @@
+env: "local" # local, dev, prod
+storage_path: "../scheduler.db"
+http-server:
+      address: "localhost:7540"
+      timeout: 5s
+      idle_timeout: 60s
