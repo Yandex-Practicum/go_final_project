@@ -31,5 +31,5 @@ go.mod / go.sum – управление зависимостями.
 main.go – стартовая точка проекта, запуск веб-сервера (порт 7540), инициализация БД, маршрутизация API.
 
 Команды для сборки
-docker build -t go_final_project .
+docker build -t YourGoPlanner .
 docker run -d -p 7540:7540 -v ${PWD}/scheduler.db:/app/scheduler.db go_final_project
