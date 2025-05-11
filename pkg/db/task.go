@@ -61,6 +61,26 @@ func UpdateTask(task *Task) error {
 	return nil
 }
 
+func DeleteTask(id string) error {
+	query := `DELETE FROM scheduler WHERE id = ?`
+	_, err := db.Exec(query, id)
+	if err != nil {
+		return fmt.Errorf("Could not delete Task %w\n", err)
+	}
+
+	return nil
+}
+
+func UpdateDate(id, date string) error {
+	query := `UPDATE scheduler SET date = ? WHERE id = ?`
+	_, err := db.Exec(query, date, id)
+	if err != nil {
+		return fmt.Errorf("Could not update date %w\n", err)
+	}
+
+	return nil
+}
+
 func Tasks(limit int, search, tip string) ([]*Task, error) {
 	var query string
 	var args []interface{}

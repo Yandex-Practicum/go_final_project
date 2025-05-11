@@ -251,10 +251,76 @@ func PutTaskHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	emptyJSON, err := json.Marshal(map[string]string{"result": "ok"})
+	emptyJSON, err := json.Marshal(struct{}{})
 	if err != nil {
 		errHandler(w, "", err)
 	}
 
+	writeJSON(w, emptyJSON, http.StatusOK)
+}
+
+func TaskDoneHandler(w http.ResponseWriter, r *http.Request) {
+	id := r.URL.Query().Get("id")
+
+	task, err := db.GetTask(id)
+	if err != nil {
+		errHandler(w, "", err)
+	}
+
+	if task.Repeat == "" {
+		if err := db.DeleteTask(id); err != nil {
+			errHandler(w, "", err)
+			return
+		}
+
+		emptyJSON, err := json.Marshal(struct{}{})
+		if err != nil {
+			errHandler(w, "", err)
+			return
+		}
+		writeJSON(w, emptyJSON, http.StatusOK)
+		return
+	}
+
+	nextDate, err := nextDate(time.Now(), task.Date, task.Repeat)
+	if err != nil {
+		errHandler(w, "", err)
+		return
+	}
+
+	err = db.UpdateDate(id, nextDate)
+	if err != nil {
+		errHandler(w, "", err)
+		return
+	}
+
+	emptyJSON, err := json.Marshal(struct{}{})
+	if err != nil {
+		errHandler(w, "", err)
+		return
+	}
+	writeJSON(w, emptyJSON, http.StatusOK)
+}
+
+func DeleteTaskHandler(w http.ResponseWriter, r *http.Request) {
+	id := r.URL.Query().Get("id")
+
+	_, err := db.GetTask(id)
+	if err != nil {
+		errHandler(w, "", err)
+		return
+	}
+
+	if err := db.DeleteTask(id); err != nil {
+		errHandler(w, "", err)
+		return
+	}
+
+
+	emptyJSON, err := json.Marshal(struct{}{})
+	if err != nil {
+		errHandler(w, "", err)
+		return
+	}
 	writeJSON(w, emptyJSON, http.StatusOK)
 }

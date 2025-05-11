@@ -22,6 +22,8 @@ func main() {
 	r.Get("/api/tasks", api.GetTasksHandler)
 	r.Get("/api/task", api.GetTaskHandler)
 	r.Put("/api/task", api.PutTaskHandler)
+	r.Post("/api/task/done", api.TaskDoneHandler)
+	r.Delete("/api/task", api.DeleteTaskHandler)
 
 	if err := server.Run(r); err != nil {
 		log.Printf("Could not start the server %v\n", err)
