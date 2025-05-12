@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/joho/godotenv"
 	_ "modernc.org/sqlite"
 )
 
@@ -23,12 +22,8 @@ repeat VARCHAR(128) NOT NULL DEFAULT ""
 var db *sql.DB
 
 func InitDB() (*sql.DB, error) {
-	if err := godotenv.Load(); err != nil {
-		return nil, fmt.Errorf("Error load env: %w", err)
-	}
-
 	dbFile := "scheduler.db"
-	if envFile := os.Getenv("TODO_DBFILE"); envFile != "" {
+	if envFile := os.Getenv("DBFILE"); envFile != "" {
 		dbFile = envFile
 	}
 

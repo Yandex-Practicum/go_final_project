@@ -1,0 +1,14 @@
+services:
+  app:
+    build: .
+    env_file:
+      - .env
+    environment:
+      - PORT=${TODO_PORT}
+      - DBFILE=${TODO_DBFILE}
+      - PASSWORD=${TODO_PASSWORD}
+    ports:
+      - "7540:7540"
+    command: ["./scheduler"]
+    volumes:
+      - ./scheduler.db:/sched/scheduler.db

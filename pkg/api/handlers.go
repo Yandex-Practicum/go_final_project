@@ -8,8 +8,6 @@ import (
 	"net/http"
 	"os"
 	"time"
-
-	"github.com/joho/godotenv"
 )
 
 func errHandler(w http.ResponseWriter, message string, err error, code int) {
@@ -333,11 +331,6 @@ func DeleteTaskHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func SignInHandler(w http.ResponseWriter, r *http.Request) {
-	if err := godotenv.Load(); err != nil {
-		errHandler(w, "", err, http.StatusBadRequest)
-		return
-	}
-
 	var pasStruct map[string]interface{}
 
 	body, err := io.ReadAll(r.Body)
