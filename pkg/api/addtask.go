@@ -96,3 +96,5 @@ func writeJson(w http.ResponseWriter, status int, data any) {
 func afterNow(now, t time.Time) bool {
 	return t.After(now)
 }
+
+// sdasadsdasadsadasdasdsad
