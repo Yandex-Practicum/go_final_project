@@ -10,6 +10,8 @@
 1. Склонируйте репозиторию:
     git clone https://github.com/ZhakiyaK/final_project.git
     cd FINAL_PROJECT
+2. Перейти в ветку final_project:
+    git checkout final_project    
 3. Установите зависимости:
     go mod download
 4. Запустите сервер:
