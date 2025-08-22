@@ -2,6 +2,7 @@ package tests
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"testing"
 	"time"
@@ -13,6 +14,7 @@ func notFoundTask(t *testing.T, id string) {
 	body, err := requestJSON("api/task?id="+id, nil, http.MethodGet)
 	assert.NoError(t, err)
 	var m map[string]any
+
 	err = json.Unmarshal(body, &m)
 	assert.NoError(t, err)
 	_, ok := m["error"]
@@ -28,6 +30,8 @@ func TestDone(t *testing.T) {
 		date:  now.Format(`20060102`),
 		title: "Свести баланс",
 	})
+
+	log.Println("qqq id: ", id)
 
 	ret, err := postJSON("api/task/done?id="+id, nil, http.MethodPost)
 	assert.NoError(t, err)
@@ -71,5 +75,6 @@ func TestDelTask(t *testing.T) {
 	assert.NotEmpty(t, ret)
 	ret, err = postJSON("api/task?id=wjhgese", nil, http.MethodDelete)
 	assert.NoError(t, err)
+	log.Println(ret, err)
 	assert.NotEmpty(t, ret)
 }

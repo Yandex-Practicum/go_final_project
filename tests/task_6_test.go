@@ -3,6 +3,7 @@ package tests
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"testing"
@@ -36,8 +37,10 @@ func TestTask(t *testing.T) {
 	assert.False(t, !ok || len(fmt.Sprint(e)) == 0,
 		"Ожидается ошибка для вызова /api/task")
 
+	log.Println(todo)
 	body, err = requestJSON("api/task?id="+todo, nil, http.MethodGet)
 	assert.NoError(t, err)
+	log.Printf("qqqqq: type: %T , %s", body, string(body))
 	err = json.Unmarshal(body, &m)
 	assert.NoError(t, err)
 
