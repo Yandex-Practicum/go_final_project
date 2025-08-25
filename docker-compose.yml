@@ -1,0 +1,11 @@
+services:
+  todo-app:
+    image: kmakasheva/todo-list
+    ports:
+      - "7540:7540"
+    volumes:
+      - ./scheduler.db:/app/scheduler.db
+      - .env:/app/.env
+    restart: unless-stopped
+    environment:
+      - DATABASE_PATH=/app/scheduler.db

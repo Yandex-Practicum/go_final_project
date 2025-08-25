@@ -144,7 +144,7 @@ func TestAddTask(t *testing.T) {
 			assert.Equal(t, v.comment, task.Comment)
 			assert.Equal(t, v.repeat, task.Repeat)
 			if task.Date < now.Format(`20060102`) {
-				t.Errorf("Дата не может быть меньше сегодняшней %v", v)
+				t.Errorf("Дата не может быть меньше сегодняшней %v vot data v.Date= %s now = %v", v, v.date, now)
 				continue
 			}
 			if today && task.Date != now.Format(`20060102`) {

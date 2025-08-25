@@ -1,0 +1,8 @@
+/bin/
+/build/
+/dist/
+*.exe
+*.out
+*.o
+*.so
+server
