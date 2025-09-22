@@ -25,7 +25,7 @@ func TestDone(t *testing.T) {
 
 	now := time.Now()
 	id := addTask(t, task{
-		date:  now.Format(`20060102`),
+		date:  now.Format("20060102"),
 		title: "Свести баланс",
 	})
 
