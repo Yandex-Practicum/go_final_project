@@ -34,7 +34,32 @@ func openDB(t *testing.T) *sqlx.DB {
 	return db
 }
 
+func initDB() error {
+	dbfile := DBFile
+	envFile := os.Getenv("TODO_DBFILE")
+	if len(envFile) > 0 {
+		dbfile = envFile
+	}
+	db, err := sqlx.Connect("sqlite3", dbfile)
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS scheduler (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        date TEXT,
+        title TEXT,
+        comment TEXT,
+        repeat TEXT
+    )`)
+	return err
+}
+
 func TestDB(t *testing.T) {
+	err := initDB()
+	assert.NoError(t, err)
+
 	db := openDB(t)
 	defer db.Close()
 
@@ -44,7 +69,7 @@ func TestDB(t *testing.T) {
 	today := time.Now().Format(`20060102`)
 
 	res, err := db.Exec(`INSERT INTO scheduler (date, title, comment, repeat) 
-	VALUES (?, 'Todo', 'Комментарий', '')`, today)
+    VALUES (?, 'Todo', 'Комментарий', '')`, today)
 	assert.NoError(t, err)
 
 	id, err := res.LastInsertId()
@@ -63,4 +88,9 @@ func TestDB(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Equal(t, before, after)
+}
+
+func TestInitDB(t *testing.T) {
+	err := initDB()
+	assert.NoError(t, err)
 }
