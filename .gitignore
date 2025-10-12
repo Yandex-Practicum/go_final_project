@@ -1,0 +1,26 @@
+cat > .gitignore << 'EOF'
+# Бинарные файлы
+*.exe
+*.db
+main
+
+# Файлы окружения
+.env
+.env.local
+
+# Временные файлы
+cookies.txt
+docker-data/
+docker-data;C/
+*.log
+
+# IDE файлы
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Системные файлы
+.DS_Store
+Thumbs.db
+EOF
