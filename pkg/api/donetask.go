@@ -2,9 +2,10 @@ package api
 
 import (
 	"fmt"
-	"go_final_project/pkg/db"
 	"net/http"
 	"time"
+
+	"go_final_project/pkg/db"
 )
 
 // DoneTaskHandler обработчик для отметки задачи выполненной

@@ -25,7 +25,7 @@ func NextDateHandler(w http.ResponseWriter, r *http.Request) {
 		now = time.Now()
 	} else {
 		var err error
-		now, err = time.Parse(dateFormat, nowStr)
+		now, err = time.Parse(DateFormat, nowStr)
 		if err != nil {
 			writeJSON(w, map[string]string{"error": fmt.Sprintf("Неверный формат now: %v", err)}, http.StatusBadRequest)
 			return

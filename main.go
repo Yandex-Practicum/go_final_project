@@ -3,7 +3,6 @@ package main
 import (
 	"log"
 	"net/http"
-	"os"
 
 	"go_final_project/pkg/api"
 	"go_final_project/pkg/auth"
@@ -11,22 +10,19 @@ import (
 )
 
 func main() {
-	// Получаем порт из переменной окружения
-	port := os.Getenv("TODO_PORT")
-	if port == "" {
-		port = "7540"
-	}
+	// Инициализируем конфигурацию
+	api.InitConfig()
+	config := api.GetConfig()
 
-	// Получаем путь к БД из переменной окружения
-	dbFile := os.Getenv("TODO_DBFILE")
-	if dbFile == "" {
-		dbFile = "scheduler.db"
-	}
+	// используем конфиг для порта и БД
+	port := config.Port
+	dbFile := config.DBfile
 
 	// Инициализируем базу данных
 	if err := db.Init(dbFile); err != nil {
 		log.Fatalf("Ошибка инициализации БД: %v", err)
 	}
+
 	defer db.Close()
 
 	// Инициализируем API обработчики
@@ -36,12 +32,11 @@ func main() {
 	webDir := "./web"
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		// Если запрос к корню ("/") и аутентификация включена
 		if r.URL.Path == "/" && auth.IsAuthEnabled() {
 			// Проверяем есть ли токен в куках
 			cookie, err := r.Cookie("token")
 			if err != nil {
-				// Нет куки - перенаправляем на логин
+				// Нет куки - перенаправление на логин
 				http.Redirect(w, r, "/login.html", http.StatusFound)
 				return
 			}
@@ -49,12 +44,11 @@ func main() {
 			// Проверяем валидность токена
 			valid, err := auth.ValidateToken(cookie.Value)
 			if err != nil || !valid {
-				// Невалидный токен - перенаправляем на логин
-				http.Redirect(w, r, "/login.html", http.StatusFound)
+				// Невалидный логин - перенаправляем на логин
+				http.Redirect(w, r, "/ligin.html", http.StatusFound)
 				return
 			}
 		}
-
 		// Во всех остальных случаях отдаем статические файлы
 		http.FileServer(http.Dir(webDir)).ServeHTTP(w, r)
 	})
@@ -62,9 +56,15 @@ func main() {
 	// Запускаем сервер
 	log.Printf("Сервер запущен на порту %s", port)
 	log.Printf("База данных: %s", dbFile)
-	log.Printf("Откройте http://localhost:%s в браузере", port)
+	if auth.IsAuthEnabled() {
+		log.Printf("Аутентификация ВКЛЮЧЕНА")
+	} else {
+		log.Printf("Аутентификация ОТКЛЮЧЕНА")
+	}
+	log.Printf("Откройте http://localgost:%s в браузере", port)
 
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
 		log.Fatalf("Ошибка запуска сервера: %v", err)
 	}
+
 }

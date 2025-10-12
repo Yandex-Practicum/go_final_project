@@ -2,12 +2,11 @@ package api
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
 )
-
-const dateFormat = "20060102"
 
 // NextDate вычисляет следующую дату выполнения задач
 func NextDate(now time.Time, dateStr string, repeat string) (string, error) {
@@ -17,7 +16,7 @@ func NextDate(now time.Time, dateStr string, repeat string) (string, error) {
 	}
 
 	// Парсим исходную дату
-	date, err := time.Parse(dateFormat, dateStr)
+	date, err := time.Parse(DateFormat, dateStr)
 	if err != nil {
 		return "", fmt.Errorf("неверный формат даты: %v", err)
 	}
@@ -69,7 +68,7 @@ func calculateDaily(startDate, now time.Time, parts []string) (string, error) {
 			break
 		}
 	}
-	return date.Format(dateFormat), nil
+	return date.Format(DateFormat), nil
 }
 
 // calculateYearly вычисляет следующую дату для ежегодного повторения
@@ -85,7 +84,7 @@ func calculateYearly(startDate, now time.Time, parts []string) (string, error) {
 			break
 		}
 	}
-	return date.Format(dateFormat), nil
+	return date.Format(DateFormat), nil
 }
 
 // calculateWeekly вычисляет следующую дату для еженедельного повторения
@@ -96,118 +95,134 @@ func calculateWeekly(startDate, now time.Time, parts []string) (string, error) {
 
 	// Парсим дни недели (1 - понедельник, 7 - воскресенье)
 	daysStr := strings.Split(parts[1], ",")
-	days := make(map[int]bool)
+	weekdays := make([]int, 0, len(daysStr))
 	for _, dayStr := range daysStr {
 		day, err := strconv.Atoi(dayStr)
 		if err != nil || day < 1 || day > 7 {
 			return "", fmt.Errorf("неверный день недели: %s", dayStr)
 		}
-		days[day] = true
+		weekdays = append(weekdays, day)
 	}
 
-	date := startDate
 	// Начинаем поиск со следующего дня
-	date = date.AddDate(0, 0, 1)
+	current := startDate.AddDate(0, 0, 1)
 
-	// Ищем ближайший подходящий день недели
-	for i := 0; i < 365; i++ { // Ограничим поиск годом
-		weekday := int(date.Weekday())
+	// Ищем ближайший подходящий день в течение 2 лет
+	for i := 0; i < 365*5; i++ {
+		currentWeekday := int(current.Weekday())
 		// Преобразуем: Sunday=0, Monday=1, ... Saturday=6
 		// в наш формат: Monday=1, Sunday=7
-		if weekday == 0 {
-			weekday = 7
+		if currentWeekday == 0 {
+			currentWeekday = 7
 		}
 
-		if days[weekday] && afterNow(date, now) {
-			return date.Format(dateFormat), nil
+		// Проверяем подходит ли текущий день недели
+		for _, targetWeekday := range weekdays {
+			if currentWeekday == targetWeekday {
+				if afterNow(current, now) {
+					return current.Format(DateFormat), nil
+				}
+			}
 		}
-		date = date.AddDate(0, 0, 1)
+
+		current = current.AddDate(0, 0, 1)
 	}
 
-	return "", fmt.Errorf("не удалось найти подходящую дату в течении года")
-
+	return "", fmt.Errorf("не удалось найти подходящую дату в течении 2 лет")
 }
 
 // calculateMonthly вычисляет дату для ежемесячного повторения
 func calculateMonthly(startDate, now time.Time, parts []string) (string, error) {
 	if len(parts) < 2 {
-		return "", fmt.Errorf("неверный формат для ежмесячного повтореня")
+		return "", fmt.Errorf("неверный формат для ежемесячного повторения")
 	}
 
 	// Парсим дни месяца
 	daysStr := strings.Split(parts[1], ",")
-	days := make([]int, 0)
+	monthDays := make([]int, 0, len(daysStr))
 	for _, dayStr := range daysStr {
 		day, err := strconv.Atoi(dayStr)
 		if err != nil || day < -2 || day == 0 || day > 31 {
 			return "", fmt.Errorf("неверный день месяца: %s", dayStr)
 		}
-		days = append(days, day)
+		monthDays = append(monthDays, day)
 	}
 
 	// Парсим месяцы (если указаны)
-	months := make(map[int]bool)
+	targetMonths := make(map[int]bool)
 	if len(parts) > 2 {
 		monthsStr := strings.Split(parts[2], ",")
 		for _, monthStr := range monthsStr {
 			month, err := strconv.Atoi(monthStr)
 			if err != nil || month < 1 || month > 12 {
-				return "", fmt.Errorf("неверный месяц: %d", month)
+				return "", fmt.Errorf("неверный месяц: %s", monthStr)
 			}
-			months[month] = true
+			targetMonths[month] = true
 		}
 	}
 
-	date := startDate
-	// Начинаем поиск со следующего дня
-	date = date.AddDate(0, 0, 1)
+	// Начинаем поиск со следующего дня после startDate
+	current := startDate.AddDate(0, 0, 1)
 
-	// Ищем ближайшую дату
-	for i := 0; i < 366; i++ { // Ограничим поиск годом + 1 день
-		currentMonth := int(date.Month())
-		currentDay := date.Day()
-		lastDay := getLastDayOfMonth(date.Year(), date.Month())
+	// Ищем ближайшую дату в течение 5 лет
+	for i := 0; i < 365*5; i++ {
+		currentMonth := int(current.Month())
+		currentYear := current.Year()
+		currentDay := current.Day()
 
-		// Проверяе5м подходит ли месяц (если указаны конкретные месяцы)
-		validMonth := len(months) == 0 || months[currentMonth]
+		// Проверяем подходит ли месяц (если указаны конкретные месяцы)
+		if len(targetMonths) > 0 && !targetMonths[currentMonth] {
+			current = current.AddDate(0, 0, 1)
+			continue
+		}
 
-		if validMonth {
-			// Проверяем все возможные дни
-			for _, day := range days {
-				var validDay bool
-				switch {
-				case day > 0:
-					// Обычный день месяца
-					validDay = currentDay == day
-				case day == -1:
-					// Последний день месяца
-					validDay = currentDay == lastDay
-				case day == -2:
-					// Предпоследний день месяца
-					validDay = currentDay == lastDay-1
+		// Сортируем дни для поиска от меньшего к большему
+		sortedDays := make([]int, len(monthDays))
+		copy(sortedDays, monthDays)
+		sort.Ints(sortedDays)
 
+		// Проверяем все возможные дни
+		for _, targetDay := range sortedDays {
+			var actualDay int
+			lastDay := getLastDayOfMonth(currentYear, time.Month(currentMonth))
+
+			if targetDay > 0 {
+				// Обычный день месяца
+				if targetDay > lastDay {
+					continue // Пропускаем если дня нет в этом месяце
 				}
-				if validDay && afterNow(date, now) {
-					return date.Format(dateFormat), nil
+				actualDay = targetDay
+			} else if targetDay == -1 {
+				// Последний день месяца
+				actualDay = lastDay
+			} else if targetDay == -2 {
+				// Предпоследний день месяца
+				if lastDay < 2 {
+					continue
 				}
+				actualDay = lastDay - 1
+			}
+
+			// Если текущий день совпадает с целевым и дата после now
+			if currentDay == actualDay && afterNow(current, now) {
+				return current.Format(DateFormat), nil
 			}
 		}
 
-		date = date.AddDate(0, 0, 1)
-
+		current = current.AddDate(0, 0, 1)
 	}
-	return "", fmt.Errorf("не удалось найти подходящую дату в течении года")
 
+	return "", fmt.Errorf("не удалось найти подходящую дату в течении 5 лет")
 }
 
-// getLastDayOfMonth возвращает последний день месца
+// getLastDayOfMonth возвращает последний день месяца
 func getLastDayOfMonth(year int, month time.Month) int {
-	// Создаем дату первого дня следующего месяца и вычитаем 1 день
-	if month == 12 {
-		return 31 // Декабрь всегда имеет 31 день
+	if month == time.December {
+		return 31
 	}
-	nextMonth := time.Date(year, month+1, 1, 0, 0, 0, 0, time.UTC)
-	lastDay := nextMonth.AddDate(0, 0, -1)
+	// Первый день следующего месяца минус 1 день = последний день текущего месяца
+	firstOfNextMonth := time.Date(year, month+1, 1, 0, 0, 0, 0, time.UTC)
+	lastDay := firstOfNextMonth.AddDate(0, 0, -1)
 	return lastDay.Day()
 }
 

@@ -2,7 +2,6 @@ package auth
 
 import (
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
@@ -10,9 +9,9 @@ import (
 
 var jwtSecret []byte
 
-func init() {
-	// Получаем секрет из переменной окружения
-	if secret := os.Getenv("TODO_PASSWORD"); secret != "" {
+// Init инициализирует JWT секрет
+func Init(secret string) {
+	if secret != "" {
 		jwtSecret = []byte(secret)
 	}
 }

@@ -54,6 +54,10 @@ func GetTasks(limit int) ([]*Task, error) {
 		tasks = append(tasks, task)
 	}
 
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("ошибка во время итерации по задачам: %v", err)
+	}
+
 	// Если задач нет, возвращаем пустой слайс вместо nil
 	if tasks == nil {
 		tasks = []*Task{}
@@ -96,6 +100,7 @@ func isDateSearch(s string) bool {
 
 // convertSearchDate конвертирует дату из различных форматов в YYYYMMDD
 func convertSearchDate(dateStr string) (string, error) {
+	fmt.Printf("convertSearchDate: входная дата='%s'\n", dateStr) // отладка удалить
 	// Заменяем все возможные разделители на точку для унификации
 	normalized := strings.ReplaceAll(dateStr, ",", ".")
 	normalized = strings.ReplaceAll(normalized, "/", ".")
@@ -106,7 +111,9 @@ func convertSearchDate(dateStr string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("неверный формат даты: %v", err)
 	}
-	return t.Format("20060102"), nil
+
+	fmt.Printf("convertSearchDate: выходная дата='%s'\n", normalized) // отладка удалить
+	return t.Format(DateFormat), nil
 }
 
 // searchByDate ищет задачи по дате
@@ -161,6 +168,10 @@ func scanTasks(rows *sql.Rows) ([]*Task, error) {
 			return nil, err
 		}
 		tasks = append(tasks, task)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("ошибка во время итерации по результатам поиска: %v", err)
 	}
 
 	if tasks == nil {

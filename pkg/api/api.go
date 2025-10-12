@@ -2,6 +2,8 @@ package api
 
 import "net/http"
 
+const DateFormat = "20060102"
+
 // Init регистрирует все API обработчики
 func Init() {
 	// Публичные endpoints (без аутентификации)

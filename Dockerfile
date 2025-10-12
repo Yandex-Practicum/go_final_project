@@ -1,5 +1,5 @@
 # Используем многостадийную сборку
-FROM golang:1.25-alpine AS builder
+FROM golang:1.25.1-alpine AS builder
 
 # Устанавливаем зависимости для сборки
 RUN apk add --no-cache gcc musl-dev
@@ -41,8 +41,8 @@ RUN mkdir -p /data && chown -R app:app /data
 # Переключаемся на пользователя app
 USER app
 
-# Открываем порт
-EXPOSE 7540
+# Используем переменную для порта 
+EXPOSE ${TODO_PORT:-7540}
 
 # Переменные окружения по умолчанию
 ENV TODO_PORT=7540

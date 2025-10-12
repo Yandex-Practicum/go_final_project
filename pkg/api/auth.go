@@ -3,10 +3,11 @@ package api
 import (
 	"encoding/json"
 	"fmt"
-	"go_final_project/pkg/auth"
 	"net/http"
 	"os"
 	"time"
+
+	"go_final_project/pkg/auth"
 )
 
 // SingInRequest структура для запроса входа
@@ -68,6 +69,15 @@ func SingInHandler(w http.ResponseWriter, r *http.Request) {
 // AuthMiddleware middleware для проверки аутентификации
 func AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		config := GetConfig()
+		fmt.Printf("AuthMiddleware: Password='%s', Path=%s\n", config.Password, r.URL.Path)
+
+		if config.Password == "" {
+			fmt.Printf("AuthMiddleware: Аутентификация ОТКЛЮЧЕНА - пропускаем\n")
+			next(w, r)
+			return
+		}
+		fmt.Printf("AuthMiddleware: Аутентификация ВКЛЮЧЕНА - проверяем токен\n")
 		// Если аутентификация отключена, пропускаем
 		if !auth.IsAuthEnabled() {
 			next(w, r)
@@ -91,7 +101,11 @@ func AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 
 		valid, err := auth.ValidateToken(token)
 		if err != nil || !valid {
-			http.Error(w, "Authentication required", http.StatusUnauthorized)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(map[string]string{
+				"error": "Authentication required",
+			})
 			return
 		}
 		next(w, r)

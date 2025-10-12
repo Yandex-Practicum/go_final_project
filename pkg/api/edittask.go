@@ -3,8 +3,9 @@ package api
 import (
 	"encoding/json"
 	"fmt"
-	"go_final_project/pkg/db"
 	"net/http"
+
+	"go_final_project/pkg/db"
 )
 
 // GetTaskHandler обработчик для получения задачи по ID

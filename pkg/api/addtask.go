@@ -86,11 +86,11 @@ func processTaskDate(task *db.Task) error {
 
 	// Если дата не указана, используем сегодня
 	if task.Date == "" {
-		task.Date = now.Format(dateFormat)
+		task.Date = now.Format(DateFormat)
 	}
 
 	// Парсим дату для проверки формата
-	parsedDate, err := time.Parse(dateFormat, task.Date)
+	parsedDate, err := time.Parse(DateFormat, task.Date)
 	if err != nil {
 		return fmt.Errorf("неверный формат даты: %v", err)
 	}
@@ -99,7 +99,7 @@ func processTaskDate(task *db.Task) error {
 	if !afterNow(parsedDate, now) {
 		if task.Repeat == "" {
 			// Без повторения - используем сегодня
-			task.Date = now.Format(dateFormat)
+			task.Date = now.Format(DateFormat)
 		} else {
 			// С повторением - вычисляем следующую дату
 			nextDate, err := NextDate(now, task.Date, task.Repeat)
@@ -126,7 +126,10 @@ func writeJSON(w http.ResponseWriter, data interface{}, statusCode int) {
 	w.WriteHeader(statusCode) // ← ТОЛЬКО ОДИН ВЫЗОВ
 
 	if data == nil {
-		w.Write([]byte("{}"))
+		if _, err := w.Write([]byte("{}")); err != nil {
+			// Логируем ошибку, но не можем изменить статус код, так как он уже установлен
+			fmt.Printf("Ошибка записи пустого ответа: %v\n", err)
+		}
 		return
 	}
 
@@ -134,9 +137,13 @@ func writeJSON(w http.ResponseWriter, data interface{}, statusCode int) {
 	if err != nil {
 		// Если ошибка, пишем простой JSON ошибки
 		errorJson := []byte(`{"error":"Ошибка формирования JSON"}`)
-		w.Write(errorJson)
+		if _, writeErr := w.Write(errorJson); writeErr != nil {
+			fmt.Printf("Ошибка записи JSON ошибки: %v\n", writeErr)
+		}
 		return
 	}
 
-	w.Write(jsonData)
+	if _, err := w.Write(jsonData); err != nil {
+		fmt.Printf("Ошибка записи JSON ответа: %v\n", err)
+	}
 }

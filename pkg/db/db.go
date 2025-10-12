@@ -8,6 +8,8 @@ import (
 	_ "modernc.org/sqlite"
 )
 
+const DateFormat = "20060102"
+
 var DB *sql.DB
 
 const schema = `
