@@ -1,0 +1,5 @@
+.git
+.env
+.env.example
+tests/
+README.md
