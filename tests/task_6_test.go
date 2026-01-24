@@ -125,7 +125,7 @@ func TestEditTask(t *testing.T) {
 	updateTask(map[string]any{
 		"id":      id,
 		"date":    now.Format(`20060102`),
-		"title":   "Заказать хинкали",
+		"title":   "Заказать еду",
 		"comment": "в 18:00",
 		"repeat":  "d 7",
 	})

@@ -52,15 +52,15 @@ func TestTasks(t *testing.T) {
 
 	addTask(t, task{
 		date:    now.Format(`20060102`),
-		title:   "Просмотр фильма",
-		comment: "с попкорном",
+		title:   "Просмотр вебинара",
+		comment: "высшмат",
 		repeat:  "",
 	})
 	now = now.AddDate(0, 0, 1)
 	date := now.Format(`20060102`)
 	addTask(t, task{
 		date:    date,
-		title:   "Сходить в бассейн",
+		title:   "Бассейн",
 		comment: "",
 		repeat:  "",
 	})
@@ -83,13 +83,13 @@ func TestTasks(t *testing.T) {
 	})
 	addTask(t, task{
 		date:    date,
-		title:   "Позвонить в УК",
-		comment: "Разобраться с горячей водой",
+		title:   "Позвонить маме",
+		comment: "Подарок",
 		repeat:  "",
 	})
 	addTask(t, task{
 		date:    date,
-		title:   "Встретится с Васей",
+		title:   "Позвонить Оле",
 		comment: "в 18:00",
 		repeat:  "",
 	})
