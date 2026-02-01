@@ -1,0 +1,18 @@
+services:
+  web:
+    build: .
+    ports:
+      - "7540:7540"
+    env_file:
+      - .env
+    volumes:
+      # Монтируем файл базы данных SQLite
+      - ./scheduler.db:/app/scheduler.db
+      # Опционально: монтируем web директорию для разработки
+      # - ./web:/app/web
+    environment:
+      TODO_PORT: ${TODO_PORT}
+      TODO_DBFILE: ${TODO_DBFILE}
+      TODO_WEB_DIR: ${TODO_WEB_DIR}
+      TODO_PASSWORD: ${TODO_PASSWORD}
+    restart: unless-stopped
