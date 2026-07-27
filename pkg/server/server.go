@@ -1,0 +1,52 @@
+package server
+
+import (
+	"context"
+	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"proj/pkg/api/service"
+	"syscall"
+	"time"
+
+	_ "modernc.org/sqlite"
+)
+
+func ServerRun() {
+	mux := http.NewServeMux()
+	webDir := "./web"
+	fs := http.FileServer(http.Dir(webDir))
+	mux.Handle("/", fs)
+
+	server := &http.Server{
+		Addr:         ":" + service.PortGlobal(),
+		Handler:      mux,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  15 * time.Second,
+	}
+
+	log.Println("Запускаем сервер...")
+	go func() {
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("Ошибка сервера: %v", err)
+		}
+	}()
+
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
+	<-sigCh
+
+	log.Println("Получен сигнал остановки сервера...")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := server.Shutdown(ctx); err != nil {
+		log.Fatalf("Ошибка при остановке сервера: %v", err)
+	}
+
+	log.Println("Зервер остановлен.")
+
+}
