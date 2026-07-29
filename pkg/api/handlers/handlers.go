@@ -38,12 +38,12 @@ func AddTaskHandler(w http.ResponseWriter, r *http.Request) {
 		service.SendErrorJSON(w, "Ошибка чтения body из запроса", http.StatusInternalServerError)
 		return
 	}
+
 	err = json.Unmarshal(byteBody, &task)
 	if err != nil {
 		service.SendErrorJSON(w, "Ошибка дисериализации json из прочитанного body", http.StatusInternalServerError)
 		return
 	}
-
 	if task.Title == "" {
 		service.SendErrorJSON(w, "Не указан заголовок задачи", http.StatusBadRequest)
 		return
@@ -54,6 +54,7 @@ func AddTaskHandler(w http.ResponseWriter, r *http.Request) {
 		service.SendErrorJSON(w, "Ошибка при проверке параметров.", http.StatusBadRequest)
 		return
 	}
+
 	id, err := service.AddTask(&task)
 	if err != nil {
 		service.SendErrorJSON(w, "Ошибка добавления новой задачи", http.StatusInternalServerError)
