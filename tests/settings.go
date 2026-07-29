@@ -6,7 +6,7 @@ import (
 )
 
 var Port, _ = (strconv.Atoi(service.PortGlobal()))
-var DBFile = service.PathDbManual()
-var FullNextDate = false
+var DBFile = "../scheduler.db"
+var FullNextDate = true
 var Search = false
 var Token = ``

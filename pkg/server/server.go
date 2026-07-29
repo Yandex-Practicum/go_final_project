@@ -6,22 +6,27 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+
+	"proj/pkg/api/handlers"
 	"proj/pkg/api/service"
 	"syscall"
 	"time"
 
+	"github.com/go-chi/chi/v5"
 	_ "modernc.org/sqlite"
 )
 
 func ServerRun() {
-	mux := http.NewServeMux()
-	webDir := "./web"
-	fs := http.FileServer(http.Dir(webDir))
-	mux.Handle("/", fs)
+	r := chi.NewRouter()
+	r.Get("/api/nextdate", handlers.NextDayHandler)
+	r.Post("/api/task", handlers.AddTaskHandler)
+
+	fs := http.FileServer(http.Dir("./web"))
+	r.Handle("/*", fs)
 
 	server := &http.Server{
 		Addr:         ":" + service.PortGlobal(),
-		Handler:      mux,
+		Handler:      r,
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
 		IdleTimeout:  15 * time.Second,

@@ -62,8 +62,8 @@ const Schema string = `CREATE TABLE IF NOT EXISTS scheduler (
     comment TEXT NOT NULL DEFAULT "",
     repeat VARCHAR(128) NOT NULL DEFAULT ""
 );
-    
-CREATE INDEX idx_date ON scheduler (date);`
+
+CREATE INDEX IF NOT EXISTS idx_date ON scheduler (date);`
 
 func Init(dbFile string) error {
 
