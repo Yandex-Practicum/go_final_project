@@ -18,7 +18,7 @@ type Task struct {
 func AddTask(task *Task) (int64, error) {
 	var id int64
 
-	db, err := sql.Open("sqlite", "scheduler.db")
+	db, err := sql.Open("sqlite", PathDbManual())
 	if err != nil {
 		log.Println(err)
 		return 0, err
@@ -34,4 +34,5 @@ func AddTask(task *Task) (int64, error) {
 		id, err = res.LastInsertId()
 	}
 	return id, err
+
 }

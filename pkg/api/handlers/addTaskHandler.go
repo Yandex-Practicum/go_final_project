@@ -5,30 +5,9 @@ import (
 	"io"
 	"net/http"
 	"proj/pkg/api/service"
+
 	"strconv"
-	"time"
 )
-
-func NextDayHandler(w http.ResponseWriter, r *http.Request) {
-	now := r.FormValue("now")
-	date := r.FormValue("date")
-	repeat := r.FormValue("repeat")
-
-	time, err := time.Parse(service.LayoutDate, now)
-	if err != nil {
-		http.Error(w, "Ошибка парсинга полученного из пути параметра date", http.StatusBadRequest)
-		return
-	}
-
-	res, err := service.NextDate(time, date, repeat)
-	if err != nil {
-		http.Error(w, "Ошибка вычисления следующей даты", http.StatusInternalServerError)
-		return
-	}
-
-	w.Write([]byte(res))
-
-}
 
 func AddTaskHandler(w http.ResponseWriter, r *http.Request) {
 	var task service.Task
@@ -61,13 +40,14 @@ func AddTaskHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	task.ID = strconv.Itoa(int(id))
+	// task.ID = strconv.Itoa(int(id))
 
 	type response struct {
 		ID string `json:"id"`
 	}
 	var res response
-	res.ID = task.ID
+
+	res.ID = strconv.Itoa(int(id))
 
 	jsByte, err := json.Marshal(res)
 	if err != nil {

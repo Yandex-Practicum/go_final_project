@@ -9,6 +9,7 @@ import (
 
 	"proj/pkg/api/handlers"
 	"proj/pkg/api/service"
+
 	"syscall"
 	"time"
 
@@ -20,6 +21,7 @@ func ServerRun() {
 	r := chi.NewRouter()
 	r.Get("/api/nextdate", handlers.NextDayHandler)
 	r.Post("/api/task", handlers.AddTaskHandler)
+	r.Get("/api/tasks", handlers.GetTaskHandler)
 
 	fs := http.FileServer(http.Dir("./web"))
 	r.Handle("/*", fs)
