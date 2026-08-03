@@ -23,6 +23,12 @@ func ServerRun() {
 	r.Post("/api/task", handlers.AddTaskHandler)
 	r.Get("/api/tasks", handlers.GetTaskHandler)
 
+	r.Get("/api/task", handlers.GetIDhandler)
+	r.Put("/api/task", handlers.PutTaskHandler)
+
+	r.Post("/api/task/done", handlers.DonePostHandler)
+	r.Delete("/api/task", handlers.DeleteTaskHandler)
+
 	fs := http.FileServer(http.Dir("./web"))
 	r.Handle("/*", fs)
 

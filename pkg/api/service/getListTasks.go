@@ -145,7 +145,7 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-func GetTask(limit int, w http.ResponseWriter, r *http.Request) ([]byte, error) {
+func GetListTask(limit int, w http.ResponseWriter, r *http.Request) ([]byte, error, int) {
 
 	type TasksResp struct {
 		Tasks []Task `json:"tasks"`
@@ -153,7 +153,7 @@ func GetTask(limit int, w http.ResponseWriter, r *http.Request) ([]byte, error) 
 
 	db, err := sql.Open("sqlite", PathDbManual())
 	if err != nil {
-		return nil, err
+		return nil, err, http.StatusInternalServerError
 	}
 	defer db.Close()
 
@@ -164,7 +164,7 @@ func GetTask(limit int, w http.ResponseWriter, r *http.Request) ([]byte, error) 
 		rows, err = db.Query("SELECT * FROM scheduler ORDER BY date LIMIT :limit ;",
 			sql.Named("limit", limit))
 		if err != nil {
-			return nil, err
+			return nil, err, http.StatusInternalServerError
 		}
 		defer rows.Close()
 	} else {
@@ -174,13 +174,13 @@ func GetTask(limit int, w http.ResponseWriter, r *http.Request) ([]byte, error) 
 		if err == nil {
 			rows, err = db.Query(fmt.Sprint("SELECT * FROM scheduler WHERE date LIKE '%", timesis, "%';"))
 			if err != nil {
-				return nil, err
+				return nil, err, http.StatusInternalServerError
 			}
 			defer rows.Close()
 		} else {
 			rows, err = db.Query(fmt.Sprint("SELECT * FROM scheduler WHERE title || comment LIKE '%", search, "%';"))
 			if err != nil {
-				return nil, err
+				return nil, err, http.StatusInternalServerError
 			}
 			defer rows.Close()
 		}
@@ -193,13 +193,13 @@ func GetTask(limit int, w http.ResponseWriter, r *http.Request) ([]byte, error) 
 	for rows.Next() {
 		err := rows.Scan(&res.ID, &res.Date, &res.Title, &res.Comment, &res.Repeat)
 		if err != nil {
-			return nil, err
+			return nil, err, http.StatusInternalServerError
 		}
 		resTask.Tasks = append(resTask.Tasks, res)
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, err
+		return nil, err, http.StatusInternalServerError
 	}
 
 	if resTask.Tasks == nil {
@@ -208,8 +208,8 @@ func GetTask(limit int, w http.ResponseWriter, r *http.Request) ([]byte, error) 
 
 	jsonbyte, err := json.Marshal(resTask)
 	if err != nil {
-		return nil, err
+		return nil, err, http.StatusInternalServerError
 	}
-	return jsonbyte, nil
+	return jsonbyte, nil, http.StatusOK
 
 }

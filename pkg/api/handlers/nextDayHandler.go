@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"log"
 	"net/http"
 	"proj/pkg/api/service"
 	"time"
@@ -13,6 +14,7 @@ func NextDayHandler(w http.ResponseWriter, r *http.Request) {
 
 	time, err := time.Parse(service.LayoutDate, now)
 	if err != nil {
+		log.Println(err.Error())
 		http.Error(w, "Ошибка парсинга полученного из пути параметра date", http.StatusBadRequest)
 		return
 	}

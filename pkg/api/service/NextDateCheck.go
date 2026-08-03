@@ -53,7 +53,7 @@ func NextDate(now time.Time, dstart string, repeat string) (string, error) {
 
 	case "m":
 		if len(rep) != 2 && len(rep) != 3 {
-			return "", fmt.Errorf("repeat m не может содержать меньше 1 и больше 3 параметров")
+			return "", fmt.Errorf("repeat  не может содержать меньше 1 и больше 3 параметров")
 		}
 		var daysAll [34]bool
 		days := strings.Split(rep[1], ",")
