@@ -7,7 +7,7 @@ import (
 	"proj/pkg/api/service"
 )
 
-func GetIDhandler(w http.ResponseWriter, r *http.Request) {
+func GetIDHandler(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Query().Get("id")
 
 	res, err, status := service.GetTaskID(id)
@@ -17,14 +17,12 @@ func GetIDhandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	byteJSON, err := json.Marshal(res)
+	byteResp, err := json.Marshal(res)
 	if err != nil {
 		service.SendErrorJSON(w, err.Error(), status)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	w.WriteHeader(status)
-	w.Write(byteJSON)
+	service.SendOkJSONBytes(w, status, byteResp)
 
 }

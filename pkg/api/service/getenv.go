@@ -17,3 +17,11 @@ func PathDbManual() string {
 	}
 	return path
 }
+
+func AutherENV() string {
+	pass := os.Getenv("TODO_PASSWORD")
+	if pass == "" {
+		return ""
+	}
+	return pass
+}

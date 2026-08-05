@@ -6,7 +6,6 @@ import (
 )
 
 func DeleteTask(id string) ([]byte, error, int) {
-	// var res Task
 
 	db, err := sql.Open("sqlite", PathDbManual())
 	if err != nil {
@@ -23,11 +22,6 @@ func DeleteTask(id string) ([]byte, error, int) {
 	if err != nil {
 		return nil, err, http.StatusInternalServerError
 	}
-
-	// jsByte, err := json.Marshal(res)
-	// if err != nil {
-	// 	return nil, err, http.StatusInternalServerError
-	// }
 
 	return []byte("{}"), nil, http.StatusOK
 

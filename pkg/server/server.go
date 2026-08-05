@@ -8,6 +8,7 @@ import (
 	"os/signal"
 
 	"proj/pkg/api/handlers"
+	"proj/pkg/api/middleware"
 	"proj/pkg/api/service"
 
 	"syscall"
@@ -19,15 +20,19 @@ import (
 
 func ServerRun() {
 	r := chi.NewRouter()
-	r.Get("/api/nextdate", handlers.NextDayHandler)
-	r.Post("/api/task", handlers.AddTaskHandler)
-	r.Get("/api/tasks", handlers.GetTaskHandler)
 
-	r.Get("/api/task", handlers.GetIDhandler)
-	r.Put("/api/task", handlers.PutTaskHandler)
+	r.Post("/api/signin", handlers.LoginHandle)
 
-	r.Post("/api/task/done", handlers.DonePostHandler)
-	r.Delete("/api/task", handlers.DeleteTaskHandler)
+	r.Group(func(r chi.Router) {
+		r.Use(middleware.AuthMiddleware)
+		r.Get("/api/nextdate", handlers.NextDayHandler)
+		r.Post("/api/task", handlers.AddTaskHandler)       //
+		r.Get("/api/tasks", handlers.GetTaskHandler)       //
+		r.Get("/api/task", handlers.GetIDHandler)          //
+		r.Put("/api/task", handlers.PutTaskHandler)        //
+		r.Post("/api/task/done", handlers.DonePostHandler) //
+		r.Delete("/api/task", handlers.DeleteTaskHandler)  //
+	})
 
 	fs := http.FileServer(http.Dir("./web"))
 	r.Handle("/*", fs)
@@ -60,6 +65,6 @@ func ServerRun() {
 		log.Fatalf("Ошибка при остановке сервера: %v", err)
 	}
 
-	log.Println("Зервер остановлен.")
+	log.Println("Сервер остановлен.")
 
 }

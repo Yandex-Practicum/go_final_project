@@ -5,6 +5,12 @@ import (
 	"net/http"
 )
 
+func SendOkJSONBytes(w http.ResponseWriter, status int, b []byte) {
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.WriteHeader(status)
+	w.Write(b)
+}
+
 func SendErrorJSON(w http.ResponseWriter, errorString string, statusCode int) {
 	type response struct {
 		Error string `json:"error"`
