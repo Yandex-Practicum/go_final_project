@@ -1,0 +1,9 @@
+services:
+  app:
+    build: .
+    env_file:
+      - .env
+    ports: 
+      - "7540:7540"
+    volumes:
+      - ./scheduler.db:/app/scheduler.db
