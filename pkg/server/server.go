@@ -1,16 +1,17 @@
 package server
 
 import (
-	"log"
+	"fmt"
 	"net/http"
 )
 
-func Start() {
+func Start() error {
 	port := getPort()
 
 	http.Handle("/", http.FileServer(http.Dir("./web")))
 
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
-		log.Fatalf("http server: %v", err)
+		return fmt.Errorf("http server: %w", err)
 	}
+	return nil
 }

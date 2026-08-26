@@ -20,13 +20,18 @@ func main() {
 		dbFile = envFile
 	}
 
-	err := db.Init(dbFile) 
+	err := db.Init(dbFile)
 	if err != nil {
-		log.Fatalf("database initialization failed: %v", err)
+		log.Printf("database initialization failed: %v", err)
+		os.Exit(1)
 	}
-	
+	defer db.Close()
+
 	api.Init()
 
-	server.Start()
-	
+	if err := server.Start(); err != nil {
+		log.Printf("server error: %v", err)
+		return
+	}
+
 }

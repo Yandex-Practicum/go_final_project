@@ -10,34 +10,39 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-
-
 func auth(next http.HandlerFunc) http.HandlerFunc {
+	pass := os.Getenv("TODO_PASSWORD") // проверяем наличие пароля, читаем один раз при регистрации middleware
+
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// проверяем наличие пароля
-		pass := os.Getenv("TODO_PASSWORD")
-		if len(pass) > 0 {
-			var tokenString string
+		if pass == "" {
+			next(w, r) // авторизация не требуется
+			return
+		}
 
-			cookie, err := r.Cookie("token")
-			if err == nil {
-				tokenString = cookie.Value
-			}
-			valid := validateToken(tokenString, pass)
+		var tokenString string
 
-			if !valid {
-				http.Error(w, "Authentification required", http.StatusUnauthorized)
-				return
-			}
+		cookie, err := r.Cookie("token")
+		if err != nil {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{
+				"error": "authentication required",
+			})
+			return
+		}
+		tokenString = cookie.Value
+
+		valid := validateToken(tokenString, pass)
+		if !valid {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{
+				"error": "authentication required",
+			})
+			return
 		}
 		next(w, r)
 	})
 }
 
 func validateToken(tokenString string, password string) bool {
-	secret := getJWTSecret()
-
-	if secret == "" {
+	if password == "" {
 		return false
 	}
 
@@ -45,14 +50,10 @@ func validateToken(tokenString string, password string) bool {
 		if token.Method != jwt.SigningMethodHS256 {
 			return nil, errors.New("unexpected signing method")
 		}
-		return []byte(secret), nil
+		return []byte(password), nil
 	})
 
-	if err != nil {
-		return false
-	}
-
-	if !token.Valid {
+	if err != nil || !token.Valid {
 		return false
 	}
 
@@ -67,11 +68,6 @@ func validateToken(tokenString string, password string) bool {
 
 	hash := sha256.Sum256([]byte(password))
 	currentHash := hex.EncodeToString(hash[:])
-	
 
 	return hashFromToken == currentHash
-}
-
-func getJWTSecret() string {
-	return os.Getenv("JWT_SECRET")
 }

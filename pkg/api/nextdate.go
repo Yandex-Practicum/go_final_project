@@ -15,7 +15,6 @@ func afterNow(date, now time.Time) bool {
 	return date.After(now)
 }
 
-
 // NextDate вычисляет следующую дату выполнения задачи.
 // согласно переданному правилу повторения.
 //
@@ -48,7 +47,7 @@ func NextDate(now time.Time, dstart string, repeat string) (string, error) {
 		if err != nil {
 			return "", fmt.Errorf("parse day interval: %w", err)
 		}
-		
+
 		if interval < 1 || interval > 400 {
 			return "", fmt.Errorf("invalid day interval: %d", interval)
 		}
@@ -61,7 +60,7 @@ func NextDate(now time.Time, dstart string, repeat string) (string, error) {
 		}
 		return date.Format(dateLayout), nil
 
-	case "y": 
+	case "y":
 		if len(parts) != 1 {
 			return "", errors.New("invalid yearly repeat format")
 		}
@@ -98,7 +97,6 @@ func NextDate(now time.Time, dstart string, repeat string) (string, error) {
 			date = date.AddDate(0, 0, 1)
 
 			weekdayNum := int(date.Weekday())
-			
 
 			// time.Weekday() использует воскресенье как 0.
 			// поэтому преобразовываем его в 7,
@@ -111,7 +109,7 @@ func NextDate(now time.Time, dstart string, repeat string) (string, error) {
 				return date.Format(dateLayout), nil
 			}
 		}
-	
+
 	case "m":
 		// Индексы массивов соответствуют номерам месяцев и дней:
 		// month - 1-12, day - 1-31.
@@ -125,7 +123,6 @@ func NextDate(now time.Time, dstart string, repeat string) (string, error) {
 		if len(parts) < 2 || len(parts) > 3 {
 			return "", errors.New("invalid month repeat format")
 		}
-
 
 		days := strings.Split(parts[1], ",")
 		for _, d := range days {
@@ -167,8 +164,13 @@ func NextDate(now time.Time, dstart string, repeat string) (string, error) {
 			}
 		}
 
+		limit := now.AddDate(2, 0, 0)
+
 		for {
 			date = date.AddDate(0, 0, 1)
+			if date.After(limit) {
+				return "", errors.New("repeat rule never matches within a reasonable range")
+			}
 
 			monthNum := int(date.Month())
 
@@ -177,32 +179,29 @@ func NextDate(now time.Time, dstart string, repeat string) (string, error) {
 			}
 
 			dayNum := date.Day()
-			
+
 			if day[dayNum] && afterNow(date, now) {
 				return date.Format(dateLayout), nil
 			}
-
 
 			// Первый день следующего месяца минус один день - последний день текущего месяца.
 			firstNextMonth := time.Date(
 				date.Year(),
 				date.Month()+1,
 				1,
-				0,0,0,0,
+				0, 0, 0, 0,
 				date.Location(),
 			)
 			lastDayOfMonth := firstNextMonth.AddDate(0, 0, -1)
 
-
-			if lastDay && date.Day() ==  lastDayOfMonth.Day() && afterNow(date, now) {
+			if lastDay && date.Day() == lastDayOfMonth.Day() && afterNow(date, now) {
 				return date.Format(dateLayout), nil
 			}
-			if prevDay && date.Day() ==  lastDayOfMonth.Day()-1 && afterNow(date, now) {
+			if prevDay && date.Day() == lastDayOfMonth.Day()-1 && afterNow(date, now) {
 				return date.Format(dateLayout), nil
 			}
 
 		}
-		
 
 	default:
 		return "", errors.New("unsupported repeat rule")

@@ -4,7 +4,7 @@ import (
 	"os"
 )
 
-const defaultPort = "7540" 
+const defaultPort = "7540"
 
 // getPort возвращает порт из переменной окружения TODO_PORT
 // или значение по умолчанию, если переменная не задана.
@@ -13,5 +13,5 @@ func getPort() string {
 	if !found || port == "" {
 		return defaultPort
 	}
-	return port 
+	return port
 }

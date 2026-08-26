@@ -15,14 +15,14 @@ func addTaskHandler(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(&task)
 	if err != nil {
-		writeJSON(w, map[string]string{
+		writeJSON(w, http.StatusBadRequest, map[string]string{
 			"error": err.Error(),
 		})
-		return 
+		return
 	}
 
 	if task.Title == "" {
-		writeJSON(w, map[string]string{
+		writeJSON(w, http.StatusBadRequest, map[string]string{
 			"error": "title is required",
 		})
 		return
@@ -31,7 +31,7 @@ func addTaskHandler(w http.ResponseWriter, r *http.Request) {
 	// Проверяем дату и правило повторения
 	err = checkDate(&task)
 	if err != nil {
-		writeJSON(w, map[string]string{
+		writeJSON(w, http.StatusBadRequest, map[string]string{
 			"error": err.Error(),
 		})
 		return
@@ -40,15 +40,14 @@ func addTaskHandler(w http.ResponseWriter, r *http.Request) {
 	// добавляем задачу в БД.
 	id, err := db.AddTask(&task)
 	if err != nil {
-		writeJSON(w, map[string]string{
+		writeJSON(w, http.StatusInternalServerError, map[string]string{
 			"error": err.Error(),
 		})
 		return
 	}
 
-	
 	// Возвращаем ID созданной задачи.
-	err = writeJSON(w, map[string]string{
+	err = writeJSON(w, http.StatusOK, map[string]string{
 		"id": strconv.FormatInt(id, 10),
 	})
 	if err != nil {
@@ -63,7 +62,6 @@ func checkDate(task *db.Task) error {
 	if task.Date == "" {
 		task.Date = now.Format(dateLayout)
 	}
-
 
 	t, err := time.Parse(dateLayout, task.Date)
 	if err != nil {
@@ -87,10 +85,8 @@ func checkDate(task *db.Task) error {
 	return nil
 }
 
-
-func writeJSON(w http.ResponseWriter, data any) error {
+func writeJSON(w http.ResponseWriter, status int, data any) error {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.WriteHeader(status)
 	return json.NewEncoder(w).Encode(data)
 }
-
-

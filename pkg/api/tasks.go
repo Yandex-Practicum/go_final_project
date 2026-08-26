@@ -4,6 +4,8 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
+	"log"
 	"net/http"
 	"os"
 	"time"
@@ -17,8 +19,10 @@ type TasksResp struct {
 }
 
 type SignInRequest struct {
-	Password  string  `json:"password"`
+	Password string `json:"password"`
 }
+
+const Limit = 50
 
 // TaskHandler обрабатывает GET запрос /api/tasks
 // и возвращает список задач с возможностью поиска.
@@ -26,19 +30,19 @@ func tasksHandler(w http.ResponseWriter, r *http.Request) {
 
 	search := r.URL.Query().Get("search")
 
-	tasks, err := db.Tasks(50, search)
+	tasks, err := db.Tasks(Limit, search)
 	if err != nil {
-		writeJSON(w, map[string]string{
+		writeJSON(w, http.StatusInternalServerError, map[string]string{
 			"error": err.Error(),
 		})
 		return
 	}
 
-	err = writeJSON(w, TasksResp{
+	err = writeJSON(w, http.StatusOK, TasksResp{
 		Tasks: tasks,
 	})
 	if err != nil {
-		return 
+		return
 	}
 }
 
@@ -49,7 +53,7 @@ func getTaskHandler(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Query().Get("id")
 
 	if id == "" {
-		writeJSON(w, map[string]string {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
 			"error": "Не указан идентификатор",
 		})
 		return
@@ -57,13 +61,13 @@ func getTaskHandler(w http.ResponseWriter, r *http.Request) {
 
 	task, err := db.GetTask(id)
 	if err != nil {
-		writeJSON(w, map[string]string{
+		writeJSON(w, http.StatusNotFound, map[string]string{
 			"error": "Задача не найдена",
 		})
 		return
 	}
 
-	err = writeJSON(w, task)
+	err = writeJSON(w, http.StatusOK, task)
 	if err != nil {
 		return
 	}
@@ -76,14 +80,14 @@ func updateTaskHandler(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(&task)
 	if err != nil {
-		writeJSON(w, map[string]string{
+		writeJSON(w, http.StatusBadRequest, map[string]string{
 			"error": err.Error(),
 		})
 		return
 	}
 
 	if task.Title == "" {
-		writeJSON(w, map[string]string{
+		writeJSON(w, http.StatusBadRequest, map[string]string{
 			"error": "Не указано название задачи",
 		})
 		return
@@ -91,7 +95,7 @@ func updateTaskHandler(w http.ResponseWriter, r *http.Request) {
 
 	err = checkDate(&task)
 	if err != nil {
-		writeJSON(w, map[string]string{
+		writeJSON(w, http.StatusBadRequest, map[string]string{
 			"error": err.Error(),
 		})
 		return
@@ -99,15 +103,15 @@ func updateTaskHandler(w http.ResponseWriter, r *http.Request) {
 
 	err = db.UpdateTask(&task)
 	if err != nil {
-		writeJSON(w, map[string]string{
+		writeJSON(w, http.StatusInternalServerError, map[string]string{
 			"error": err.Error(),
 		})
 		return
 	}
 
-	err = writeJSON(w, map[string]string{})
+	err = writeJSON(w, http.StatusOK, map[string]string{})
 	if err != nil {
-		return 
+		return
 	}
 
 }
@@ -115,24 +119,24 @@ func updateTaskHandler(w http.ResponseWriter, r *http.Request) {
 // deleteTaskHandler обрабатывает DELETE запрос /api/task
 // и удаляет задачу по идентификатору.
 func deleteTaskHandler(w http.ResponseWriter, r *http.Request) {
-	
+
 	id := r.URL.Query().Get("id")
 
 	if id == "" {
-		writeJSON(w, map[string]string{
+		writeJSON(w, http.StatusBadRequest, map[string]string{
 			"error": "не указан идентификатор",
 		})
 		return
 	}
 	err := db.DeleteTask(id)
 	if err != nil {
-		writeJSON(w, map[string]string{
+		writeJSON(w, http.StatusInternalServerError, map[string]string{
 			"error": err.Error(),
 		})
 		return
 	}
 
-	err = writeJSON(w, map[string]string{})
+	err = writeJSON(w, http.StatusOK, map[string]string{})
 	if err != nil {
 		return
 	}
@@ -143,10 +147,17 @@ func deleteTaskHandler(w http.ResponseWriter, r *http.Request) {
 // Для повторяющихся задач устанавливается следующая дата,
 // для одноразовой задачи, запись удаляется.
 func doneTaskHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{
+			"error": "метод не поддерживается",
+		})
+		return
+	}
+
 	id := r.URL.Query().Get("id")
 
 	if id == "" {
-		writeJSON(w, map[string]string{
+		writeJSON(w, http.StatusBadRequest, map[string]string{
 			"error": "не указан идентификатор",
 		})
 		return
@@ -154,16 +165,23 @@ func doneTaskHandler(w http.ResponseWriter, r *http.Request) {
 
 	task, err := db.GetTask(id)
 	if err != nil {
-		writeJSON(w, map[string]string{
-			"error": "задача не найдена",
-		})
-		return 
+		if errors.Is(err, db.ErrNotFound) {
+			writeJSON(w, http.StatusNotFound, map[string]string{
+				"error": "задача не найдена",
+			})
+		} else {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{
+				"error": "internal server error",
+			})
+		}
+
+		return
 	}
 
 	if task.Repeat == "" {
 		err = db.DeleteTask(id)
 		if err != nil {
-			writeJSON(w, map[string]string{
+			writeJSON(w, http.StatusInternalServerError, map[string]string{
 				"error": err.Error(),
 			})
 			return
@@ -174,22 +192,22 @@ func doneTaskHandler(w http.ResponseWriter, r *http.Request) {
 
 		next, err := NextDate(now, task.Date, task.Repeat)
 		if err != nil {
-			writeJSON(w, map[string]string{
-				"error": err.Error(),	
+			writeJSON(w, http.StatusInternalServerError, map[string]string{
+				"error": err.Error(),
 			})
 			return
 		}
 		err = db.UpdateDate(next, id)
 		if err != nil {
-			writeJSON(w, map[string]string{
+			writeJSON(w, http.StatusInternalServerError, map[string]string{
 				"error": err.Error(),
 			})
 			return
 		}
-	} 
-	err = writeJSON(w, map[string]string{})
+	}
+	err = writeJSON(w, http.StatusOK, map[string]string{})
 	if err != nil {
-		return 
+		return
 	}
 }
 
@@ -198,16 +216,22 @@ func signInHandler(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		writeJSON(w, map[string]string{
+		writeJSON(w, http.StatusBadRequest, map[string]string{
 			"error": err.Error(),
 		})
 		return
 	}
 
 	pass := os.Getenv("TODO_PASSWORD")
+	if pass == "" {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{
+			"error": "internal server error",
+		})
+		return
+	}
 
 	if pass != req.Password {
-		writeJSON(w, map[string]string{
+		writeJSON(w, http.StatusUnauthorized, map[string]string{
 			"error": "неверный пароль",
 		})
 		return
@@ -216,7 +240,7 @@ func signInHandler(w http.ResponseWriter, r *http.Request) {
 	hash := sha256.Sum256([]byte(pass))
 	hashString := hex.EncodeToString(hash[:])
 
-	claims := jwt.MapClaims {
+	claims := jwt.MapClaims{
 		"hash": hashString,
 	}
 
@@ -225,26 +249,19 @@ func signInHandler(w http.ResponseWriter, r *http.Request) {
 		claims,
 	)
 
-	secret := getJWTSecret()
-	if secret == "" {
-		writeJSON(w, map[string]string{
-			"error": "JWT_SECRET is not set",
-		})
-		return
-	}
-
-	tokenString, err := token.SignedString([]byte(secret))
+	tokenString, err := token.SignedString([]byte(pass))
 	if err != nil {
-		writeJSON(w, map[string]string{
+		writeJSON(w, http.StatusInternalServerError, map[string]string{
 			"error": err.Error(),
 		})
 		return
 	}
 
-	err = writeJSON(w, map[string]string{
+	err = writeJSON(w, http.StatusOK, map[string]string{
 		"token": tokenString,
 	})
 	if err != nil {
-		return 
+		log.Printf("write token response: %v", err)
+		return
 	}
 }

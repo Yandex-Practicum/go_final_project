@@ -14,7 +14,6 @@ func Init() {
 	http.HandleFunc("/api/signin", signInHandler)
 }
 
-
 // nextDayHandler обрабатывает запрос на вычисление следующей даты выполнения задачи.
 //
 // Если параметр now не указан, используется текущая дата.
@@ -42,7 +41,7 @@ func nextDayHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "date is required", http.StatusBadRequest)
 		return
 	}
-	
+
 	if repeat == "" {
 		http.Error(w, "repeat is required", http.StatusBadRequest)
 		return
@@ -67,8 +66,14 @@ func taskHandler(w http.ResponseWriter, r *http.Request) {
 
 	case http.MethodPut:
 		updateTaskHandler(w, r)
-	
+
 	case http.MethodDelete:
 		deleteTaskHandler(w, r)
+	default:
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{
+			"error": "метод не поддерживается",
+		})
+		return
 	}
+
 }

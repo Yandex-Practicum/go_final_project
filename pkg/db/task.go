@@ -1,6 +1,8 @@
 package db
 
 import (
+	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 )
@@ -14,7 +16,7 @@ type Task struct {
 	Repeat  string `json:"repeat"`
 }
 
-// AddTask добавляет задачу в таблицу scheduler 
+// AddTask добавляет задачу в таблицу scheduler
 // и возвращает ID добавленной записи.
 func AddTask(task *Task) (int64, error) {
 
@@ -39,11 +41,10 @@ func AddTask(task *Task) (int64, error) {
 	return id, nil
 }
 
-
 // Tasks реализует логику получения данных из БД
 // принимает максимальное кол-во записей и возвращает их
 func Tasks(limit int, search string) ([]*Task, error) {
-	
+
 	query := `
 	SELECT id, date, title, comment, repeat
 	FROM scheduler
@@ -65,7 +66,7 @@ func Tasks(limit int, search string) ([]*Task, error) {
 			LIMIT ?`
 
 			args = []any{
-				searchDate.Format("20060102"), 
+				searchDate.Format("20060102"),
 				limit,
 			}
 
@@ -78,14 +79,13 @@ func Tasks(limit int, search string) ([]*Task, error) {
 			LIMIT ?`
 
 			search = "%" + search + "%"
-			
-			args = []any{search, 
-				search, 
+
+			args = []any{search,
+				search,
 				limit,
 			}
 		}
 	}
-		
 
 	rows, err := db.Query(query, args...)
 	if err != nil {
@@ -100,10 +100,10 @@ func Tasks(limit int, search string) ([]*Task, error) {
 		task := &Task{}
 
 		err := rows.Scan(
-			&task.ID, 
-			&task.Date, 
-			&task.Title, 
-			&task.Comment, 
+			&task.ID,
+			&task.Date,
+			&task.Title,
+			&task.Comment,
 			&task.Repeat,
 		)
 		if err != nil {
@@ -125,7 +125,6 @@ func GetTask(id string) (*Task, error) {
 	FROM scheduler
 	WHERE id = ?`
 
-
 	task := &Task{}
 
 	err := db.QueryRow(query, id).Scan(
@@ -136,11 +135,13 @@ func GetTask(id string) (*Task, error) {
 		&task.Repeat,
 	)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrNotFound
+		}
 		return nil, fmt.Errorf(`get task: %w`, err)
 	}
 	return task, nil
 }
-
 
 // UpdateTask обновляет все поля указанной задачи.
 func UpdateTask(task *Task) error {
@@ -170,7 +171,7 @@ func UpdateTask(task *Task) error {
 		return err
 	}
 	if count == 0 {
-		return fmt.Errorf(`incorrect ID for updating task`)
+		return ErrNotFound
 	}
 	return nil
 }
@@ -181,7 +182,6 @@ func UpdateDate(next string, id string) error {
 	UPDATE scheduler
 	SET date = ?
 	WHERE id = ?`
-
 
 	res, err := db.Exec(
 		query,
@@ -196,7 +196,7 @@ func UpdateDate(next string, id string) error {
 		return err
 	}
 	if count == 0 {
-		return fmt.Errorf(`incorrect ID for updating date`)
+		return ErrNotFound
 	}
 	return nil
 }
@@ -217,8 +217,7 @@ func DeleteTask(id string) error {
 		return err
 	}
 	if count == 0 {
-		return fmt.Errorf(`incorrect ID for deleting task`)
+		return ErrNotFound
 	}
 	return nil
 }
-
