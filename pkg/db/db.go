@@ -23,19 +23,38 @@ CREATE INDEX scheduler_date ON scheduler (date);
 
 func Init(dbFile string) error {
 	_, err := os.Stat(dbFile)
+	if err != nil && !os.IsNotExist(err) {
+		return err
+	}
 	install := os.IsNotExist(err)
 
-	var openErr error
-	database, openErr = sql.Open("sqlite", dbFile)
-	if openErr != nil {
-		return openErr
+	conn, err := sql.Open("sqlite", dbFile)
+	if err != nil {
+		return err
 	}
 
 	if install {
-		if _, err := database.Exec(schema); err != nil {
+		if _, err := conn.Exec(schema); err != nil {
+			conn.Close()
 			return err
 		}
 	}
 
-	return database.Ping()
+	if err := conn.Ping(); err != nil {
+		conn.Close()
+		return err
+	}
+
+	database = conn
+	return nil
+}
+
+func Close() error {
+	if database == nil {
+		return nil
+	}
+
+	err := database.Close()
+	database = nil
+	return err
 }

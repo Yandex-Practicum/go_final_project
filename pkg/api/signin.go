@@ -4,10 +4,16 @@ import (
 	"crypto/subtle"
 	"encoding/json"
 	"net/http"
-	"os"
 )
 
 func signInHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{
+			"error": "Метод не поддерживается",
+		})
+		return
+	}
+
 	var request struct {
 		Password string `json:"password"`
 	}
@@ -20,7 +26,7 @@ func signInHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	password := os.Getenv("TODO_PASSWORD")
+	password := configuredPassword
 
 	if password == "" {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{

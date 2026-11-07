@@ -5,7 +5,6 @@ import (
 	"crypto/subtle"
 	"fmt"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -66,19 +65,13 @@ func validateToken(tokenString string, password string) bool {
 
 func auth(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		password := os.Getenv("TODO_PASSWORD")
-
-		if password == "" {
-			http.Error(
-				w,
-				"Пароль не настроен на сервере",
-				http.StatusInternalServerError,
-			)
+		if configuredPassword == "" {
+			next(w, r)
 			return
 		}
 
 		cookie, err := r.Cookie("token")
-		if err != nil || !validateToken(cookie.Value, password) {
+		if err != nil || !validateToken(cookie.Value, configuredPassword) {
 			http.Error(
 				w,
 				"Требуется авторизация",

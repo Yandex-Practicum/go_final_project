@@ -107,6 +107,36 @@ func NextDate(now time.Time, dstart string, repeat string) (string, error) {
 			}
 		}
 
+		monthsToCheck := validMonths
+
+		if len(parts) == 2 {
+			for month := 1; month <= 12; month++ {
+				monthsToCheck[month] = true
+			}
+		}
+
+		hasPossibleDate := validDays[-1] || validDays[-2]
+
+		for month := range monthsToCheck {
+			daysInMonth := time.Date(
+				2000,
+				time.Month(month)+1,
+				0,
+				0, 0, 0, 0,
+				time.UTC,
+			).Day()
+
+			for day := range validDays {
+				if day > 0 && day <= daysInMonth {
+					hasPossibleDate = true
+				}
+			}
+		}
+
+		if !hasPossibleDate {
+			return "", fmt.Errorf("для указанного правила нет подходящей даты")
+		}
+
 		for {
 			date = date.AddDate(0, 0, 1)
 
@@ -162,6 +192,10 @@ func afterNow(date time.Time, now time.Time) bool {
 }
 
 func nextDayHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Метод не поддерживается", http.StatusMethodNotAllowed)
+		return
+	}
 
 	nowStr := r.FormValue("now")
 

@@ -19,5 +19,13 @@ func main() {
 		log.Fatal(err)
 	}
 
-	server.Start()
+	defer func() {
+		if err := db.Close(); err != nil {
+			log.Printf("Ошибка закрытия базы данных: %v", err)
+		}
+	}()
+
+	if err := server.Start(); err != nil {
+		log.Printf("Ошибка запуска сервера: %v", err)
+	}
 }

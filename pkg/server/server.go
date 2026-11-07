@@ -8,7 +8,7 @@ import (
 	"go_final_project/pkg/api"
 )
 
-func Start() {
+func Start() error {
 	webDir := "./web"
 
 	port := os.Getenv("TODO_PORT")
@@ -22,7 +22,5 @@ func Start() {
 
 	log.Println("Сервер запущен на порту", port)
 
-	if err := http.ListenAndServe(":"+port, nil); err != nil {
-		log.Fatal(err)
-	}
+	return http.ListenAndServe(":"+port, nil)
 }

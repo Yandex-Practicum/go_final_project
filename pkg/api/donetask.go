@@ -1,6 +1,8 @@
 package api
 
 import (
+	"database/sql"
+	"errors"
 	"net/http"
 	"time"
 
@@ -8,6 +10,13 @@ import (
 )
 
 func doneTaskHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{
+			"error": "Метод не поддерживается",
+		})
+		return
+	}
+
 	id := r.URL.Query().Get("id")
 
 	if id == "" {
@@ -19,8 +28,15 @@ func doneTaskHandler(w http.ResponseWriter, r *http.Request) {
 
 	task, err := db.GetTask(id)
 	if err != nil {
-		writeJSON(w, http.StatusNotFound, map[string]string{
-			"error": "Задача не найдена",
+		if errors.Is(err, sql.ErrNoRows) {
+			writeJSON(w, http.StatusNotFound, map[string]string{
+				"error": "Задача не найдена",
+			})
+			return
+		}
+
+		writeJSON(w, http.StatusInternalServerError, map[string]string{
+			"error": err.Error(),
 		})
 		return
 	}

@@ -91,8 +91,8 @@ docker build -t go-final-project .
 docker run -d \
  --name go-final-project \
  -p 7540:7540 \
- -v "$PWD/scheduler.db:/app/scheduler.db" \
- -e TODO_DBFILE=/app/scheduler.db \
+ -v "$PWD/data:/app/data" \
+ -e TODO_DBFILE=/app/data/scheduler.db \
  -e TODO_PORT=7540 \
  -e TODO_PASSWORD=12345 \
  go-final-project

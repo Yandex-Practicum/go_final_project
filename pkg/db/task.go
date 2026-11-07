@@ -5,6 +5,8 @@ import (
 	"time"
 )
 
+const dateFormat = "20060102"
+
 type Task struct {
 	ID      string `json:"id"`
 	Date    string `json:"date"`
@@ -118,7 +120,7 @@ func Tasks(limit int, search string) ([]*Task, error) {
 		`
 
 		params = []any{
-			date.Format("20060102"),
+			date.Format(dateFormat),
 			limit,
 		}
 
