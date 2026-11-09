@@ -16,13 +16,13 @@ func addTaskHandler(database *sql.DB, w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		writeJson(w, map[string]string{
 			"error": err.Error(),
-		})
+		}, http.StatusBadRequest)
 		return
 	}
 	if task.Title == "" {
 		writeJson(w, map[string]string{
 			"error": "Не указан заголовок задачи",
-		})
+		}, http.StatusBadRequest)
 
 		return
 	}
@@ -30,20 +30,18 @@ func addTaskHandler(database *sql.DB, w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		writeJson(w, map[string]string{
 			"error": err.Error(),
-		})
+		}, http.StatusBadRequest)
 		return
 	}
 
 	id, err := db.AddTask(database, &task)
 	if err != nil {
-		writeJson(w, map[string]string{
-			"error": err.Error(),
-		})
+		writeInternalError(w, err)
 		return
 	}
 	writeJson(w, map[string]string{
 		"id": strconv.FormatInt(id, 10),
-	})
+	}, http.StatusOK)
 }
 
 func checkDate(task *db.Task) error {

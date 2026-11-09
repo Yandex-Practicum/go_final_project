@@ -2,8 +2,10 @@ package db
 
 import (
 	"database/sql"
-	"fmt"
+	"errors"
 )
+
+var ErrTaskNotFound = errors.New("Задача не найдена")
 
 type Task struct {
 	ID      string `json:"id"`
@@ -126,7 +128,7 @@ func UpdateTask(database *sql.DB, task *Task) error {
 	}
 
 	if rows == 0 {
-		return fmt.Errorf("Задача не найдена")
+		return ErrTaskNotFound
 	}
 
 	return nil
@@ -149,7 +151,7 @@ func DeleteTask(database *sql.DB, id string) error {
 	}
 
 	if rows == 0 {
-		return fmt.Errorf("Задача не найдена")
+		return ErrTaskNotFound
 	}
 
 	return nil

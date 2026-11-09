@@ -77,6 +77,11 @@ func sameDay(date, now time.Time) bool {
 }
 
 func nextDateHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Метод не поддерживается", http.StatusMethodNotAllowed)
+		return
+	}
+
 	now := r.URL.Query().Get("now")
 	date := r.URL.Query().Get("date")
 	repeat := r.URL.Query().Get("repeat")

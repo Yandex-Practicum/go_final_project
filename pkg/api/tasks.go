@@ -2,9 +2,9 @@ package api
 
 import (
 	"database/sql"
-	"net/http"
-
+	"errors"
 	"github.com/Yandex-Practicum/go_final_project/pkg/db"
+	"net/http"
 )
 
 type TasksResp struct {
@@ -14,15 +14,13 @@ type TasksResp struct {
 func tasksHandler(database *sql.DB, w http.ResponseWriter, r *http.Request) {
 	tasks, err := db.Tasks(database, 50)
 	if err != nil {
-		writeJson(w, map[string]string{
-			"error": err.Error(),
-		})
+		writeInternalError(w, err)
 		return
 	}
 
 	writeJson(w, TasksResp{
 		Tasks: tasks,
-	})
+	}, http.StatusOK)
 }
 
 func getTaskHandler(database *sql.DB, w http.ResponseWriter, r *http.Request) {
@@ -31,24 +29,24 @@ func getTaskHandler(database *sql.DB, w http.ResponseWriter, r *http.Request) {
 	if id == "" {
 		writeJson(w, map[string]string{
 			"error": "Не указан идентификатор",
-		})
+		}, http.StatusBadRequest)
 		return
 	}
 
 	task, err := db.GetTask(database, id)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			writeJson(w, map[string]string{
 				"error": "Задача не найдена",
-			})
+			}, http.StatusNotFound)
 			return
 		}
 
-		writeJson(w, map[string]string{
-			"error": err.Error(),
-		})
+		writeInternalError(w, err)
+
 		return
+
 	}
 
-	writeJson(w, task)
+	writeJson(w, task, http.StatusOK)
 }
