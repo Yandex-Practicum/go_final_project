@@ -155,8 +155,18 @@ func NextDate(now time.Time, dstart string, repeat string) (string, error) {
 			}
 		}
 
+		if !afterNow(date, now) {
+			date = time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+		}
+
+		limit := date.AddDate(5, 0, 0)
+
 		for {
 			date = date.AddDate(0, 0, 1)
+
+			if date.After(limit) {
+				return "", fmt.Errorf("по правилу повторения нет подходящей даты")
+			}
 
 			if !afterNow(date, now) {
 				continue

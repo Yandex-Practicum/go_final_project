@@ -138,6 +138,12 @@ func TestNextDate(t *testing.T) {
 			repeat:  "m 5 1,13",
 			wantErr: true,
 		},
+		{
+			name:    "несуществующее число месяца",
+			dstart:  "20240113",
+			repeat:  "m 31 2",
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range tests {

@@ -1,0 +1,12 @@
+# SQLite database
+*.db
+*.db-shm
+*.db-wal
+
+# Go binaries
+*.exe
+*.out
+
+# IDE
+.vscode/
+.idea/
